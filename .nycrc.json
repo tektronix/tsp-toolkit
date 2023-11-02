@@ -1,0 +1,14 @@
+{
+    "extends": "@istanbuljs/nyc-config-typescript",
+    "all": true,
+    "cache": false,
+    "clean": false,
+    "silent": false,
+    "include": [
+        "out/**",
+        "src/**"
+    ],
+    "exclude": [
+        "**/test/**"
+    ]
+}

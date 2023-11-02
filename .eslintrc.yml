@@ -1,0 +1,77 @@
+root: true
+reportUnusedDisableDirectives: true
+env:
+  node: true
+  es2021: true
+plugins:
+  - "@typescript-eslint"
+  - import
+  - jsdoc
+  - prettier
+extends:
+  - eslint:recommended
+  # - plugin:@typescript-eslint/eslint-recommended
+  - plugin:@typescript-eslint/recommended
+  - plugin:@typescript-eslint/recommended-requiring-type-checking
+  - plugin:import/recommended
+  - plugin:import/typescript
+  - plugin:prettier/recommended
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 13
+  sourceType: module
+  ecmaFeatures:
+    impliedStrict: true
+  project:
+    - ./tsconfig.json
+ignorePatterns:
+  # Directory globs
+  - "**/target/"
+  # File globs
+  - "*.js"
+  # Directories
+  - ".vscode/"
+  - "dist/"
+  - "out/"
+settings:
+  import/resolver:
+    typescript:
+      alwaysTryTypes: true
+rules:
+  # eslint
+  indent:
+    - error
+    - 4
+  linebreak-style:
+    - error
+    - unix
+  no-constant-condition:
+    - error
+    - checkLoops: false
+  quotes:
+    - error
+    - double
+    - avoidEscape: true
+      allowTemplateLiterals: false
+  # typescript
+  "@typescript-eslint/no-namespace":
+    - error
+    - allowDeclarations: false
+      allowDefinitionFiles: true
+  "@typescript-eslint/no-floating-promises": error
+  semi: off
+  "@typescript-eslint/semi": off
+  "@typescript-eslint/unified-signatures": warn
+  # eslint-plugin-import
+  sort-imports:
+    - warn
+    - ignoreCase: true
+      ignoreDeclarationSort: true
+  import/order: error
+  # eslint-plugin-jsdoc
+  jsdoc/check-alignment: error
+  # eslint-plugin-prettier
+  prettier/prettier:
+    - warn
+    - {}
+    - usePrettierrc: true

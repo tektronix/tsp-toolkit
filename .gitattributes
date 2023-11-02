@@ -1,0 +1,6 @@
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+
+# Tell GitLab that tsp files should be highlighted as Lua
+*.tsp gitlab-language=lua

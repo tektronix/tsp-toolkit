@@ -1,0 +1,14 @@
+# Directory globs
+**/target/
+**/.cargo/
+# File globs
+*.md
+# Directories
+.nyc_output/
+.vscode/
+coverage/
+out/
+# Files
+.gitlab-ci.yml
+.nycrc.json
+tsconfig.json

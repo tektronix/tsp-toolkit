@@ -1,0 +1,6 @@
+recursive: true
+require:
+  - ts-node/register
+  - source-map-support/register
+spec: src/test/*.test.ts
+ui: tdd
