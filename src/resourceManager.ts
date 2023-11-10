@@ -1,3 +1,4 @@
+import * as child from "child_process"
 import { EventEmitter } from "events"
 import fetch from "node-fetch"
 import { EXECUTABLE } from "@trebuchet/ki-comms"
@@ -186,9 +187,9 @@ export class KicProcessMgr {
         connType: string,
         maxerr?: number,
         filePath?: string
-    ) {
+    ): string {
         const newCell = new KicCell()
-        newCell.initialiseComponents(
+        const info = newCell.initialiseComponents(
             name,
             unique_id,
             connType,
@@ -205,13 +206,10 @@ export class KicProcessMgr {
         //     )
         //     this.kicList.splice(idx)
         // })
+        return info
     }
 
-    public exitConnectionToDebug(
-        kicCell: KicCell | undefined,
-        connDetails: ConnectionDetails | undefined
-    ) {
-        this._reconnectInstrDetails = connDetails
+    public exitConnectionToDebug(kicCell: KicCell | undefined) {
         kicCell?.sendTextToTrerminal(".exit")
     }
 
@@ -268,6 +266,7 @@ export class KicCell extends EventEmitter {
     ) {
         //#ToDo: need to verify if maxerr is required
         this._uniqueID = unique_id
+        let info = ""
         this._connDetails = new ConnectionDetails(
             name,
             unique_id,
@@ -276,6 +275,15 @@ export class KicCell extends EventEmitter {
         )
 
         if (connType == "lan" && maxerr != undefined) {
+            //getting instr info before we do the actual connection.
+
+            info = child
+                .spawnSync(EXECUTABLE, ["info", "lan", "--json", unique_id], {
+                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                })
+                .stdout.toString()
+            if (info == "") return info
+
             this._term = vscode.window.createTerminal({
                 name: name,
                 shellPath: EXECUTABLE,
@@ -299,6 +307,9 @@ export class KicCell extends EventEmitter {
                 this._term.sendText(filePath)
             }
         }
+
+        console.log(info)
+        return info
     }
 
     private sendEvent(event: string, ...args: string[]): void {
@@ -478,19 +489,4 @@ export class DebugHelper {
      * same file is used till end of that debug session
      */
     public static debuggeeFilePath: string | undefined
-}
-
-/**
- * Class containing firmware upgrade info required by kic exe
- */
-export class FirmwareInfo {
-    FileName: string
-    IsModule: boolean | undefined
-    Slot: number | undefined
-
-    constructor(fileName: string, isModule?: boolean, slot?: number) {
-        this.FileName = fileName
-        this.IsModule = isModule
-        this.Slot = slot
-    }
 }
