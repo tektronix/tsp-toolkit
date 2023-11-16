@@ -209,10 +209,6 @@ export class KicProcessMgr {
         return info
     }
 
-    public exitConnectionToDebug(kicCell: KicCell | undefined) {
-        kicCell?.sendTextToTrerminal(".exit")
-    }
-
     public restartConnectionAfterDebug() {
         if (this._reconnectInstrDetails != undefined) {
             this.createKicCell(
@@ -249,6 +245,8 @@ export class KicCell extends EventEmitter {
     public terminalPid: Thenable<number | undefined> | undefined
     private _uniqueID = ""
     private _connDetails: ConnectionDetails | undefined
+    public isTerminalClosed = false
+    private sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
     constructor() {
         super()
@@ -312,6 +310,18 @@ export class KicCell extends EventEmitter {
         return info
     }
 
+    public async getTerminalState(): Promise<string> {
+        const max_attempts = 60
+        for (let i = 0; i < max_attempts; i++) {
+            if (this.isTerminalClosed == true) {
+                return Promise.resolve("terminal is closed")
+            } else {
+                await this.sleep(500)
+            }
+        }
+        return Promise.reject("couldn't close terminal")
+    }
+
     private sendEvent(event: string, ...args: string[]): void {
         setTimeout(() => {
             this.emit(event, ...args)
@@ -322,7 +332,7 @@ export class KicCell extends EventEmitter {
         return this._uniqueID
     }
 
-    public sendTextToTrerminal(input: string) {
+    public sendTextToTerminal(input: string) {
         this._term?.sendText(input)
     }
 

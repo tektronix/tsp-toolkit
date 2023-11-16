@@ -258,6 +258,7 @@ export class CommunicationManager {
 
         this._kicProcessMgr.kicList.forEach((kicCell, idx) => {
             if (kicCell.terminalPid == e.processId) {
+                kicCell.isTerminalClosed = true
                 //#ToDo: is the next line needed?
                 //kicCell.writeToChild(".exit\n")
                 index_arr.push(idx)

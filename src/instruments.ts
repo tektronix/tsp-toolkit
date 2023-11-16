@@ -1068,7 +1068,7 @@ export class InstrumentsExplorer {
                             return
                         } else {
                             // .update "path" --slot {number}
-                            kicCell.sendTextToTrerminal(
+                            kicCell.sendTextToTerminal(
                                 `.update "${fw_file[0].fsPath}" --slot ${slot}\n
                                 `
                             )

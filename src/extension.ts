@@ -434,17 +434,31 @@ const base_api = {
         return kicTerminals
     },
 
-    fetchConnDetails(
+    async fetchConnDetails(
         term_pid: Thenable<number | undefined> | undefined
-    ): ConnectionDetails | undefined {
+    ): Promise<ConnectionDetails | undefined> {
         if (_kicProcessMgr != undefined) {
             const kicCell = _kicProcessMgr.kicList.find(
                 (x) => x.terminalPid == term_pid
             )
 
             const connDetails = kicCell?.fetchConnDetials()
-            _kicProcessMgr.exitConnectionToDebug(kicCell)
-            return connDetails
+            kicCell?.sendTextToTerminal(".exit")
+            let found = false
+            await kicCell?.getTerminalState().then(
+                () => {
+                    found = true
+                },
+                () => {
+                    found = false
+                }
+            )
+            if (found) {
+                return Promise.resolve(connDetails)
+            }
+            return Promise.reject(
+                "Couldn't close terminal. Please check instrument state"
+            )
         }
     },
 
