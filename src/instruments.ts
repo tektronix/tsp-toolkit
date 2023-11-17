@@ -1,4 +1,3 @@
-import * as path from "path"
 import * as cp from "node:child_process"
 
 import * as vscode from "vscode"
@@ -8,13 +7,9 @@ import {
     JSONRPCRequest,
     JSONRPCResponse,
 } from "json-rpc-2.0"
-import {
-    ECHO_SOCKET_SERVER as DISCOVER_EXECUTABLE,
-    EXECUTABLE,
-} from "@trebuchet/ki-comms"
+import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@trebuchet/ki-comms"
 import fetch from "node-fetch"
 import {
-    FirmwareInfo,
     FriendlyNameMgr,
     InstrDetails,
     IoType,
@@ -25,6 +20,64 @@ const DISCOVERY_TIMEOUT = 300
 
 let nextID = 0
 const createID = () => nextID++
+
+const instr_map = new Map<string, string>()
+instr_map.set("2601", "non_nimitz")
+instr_map.set("2602", "non_nimitz")
+instr_map.set("2611", "non_nimitz")
+instr_map.set("2612", "non_nimitz")
+instr_map.set("2635", "non_nimitz")
+instr_map.set("2636", "non_nimitz")
+instr_map.set("2601A", "non_nimitz")
+instr_map.set("2602A", "non_nimitz")
+instr_map.set("2611A", "non_nimitz")
+instr_map.set("2612A", "non_nimitz")
+instr_map.set("2635A", "non_nimitz")
+instr_map.set("2636A", "non_nimitz")
+instr_map.set("2651A", "non_nimitz")
+instr_map.set("2657A", "non_nimitz")
+instr_map.set("2601B", "non_nimitz")
+instr_map.set("2601B-PULSE", "non_nimitz")
+instr_map.set("2602B", "non_nimitz")
+instr_map.set("2606B", "non_nimitz")
+instr_map.set("2611B", "non_nimitz")
+instr_map.set("2612B", "non_nimitz")
+instr_map.set("2635B", "non_nimitz")
+instr_map.set("2636B", "non_nimitz")
+instr_map.set("2604B", "non_nimitz")
+instr_map.set("2614B", "non_nimitz")
+instr_map.set("2614B", "non_nimitz")
+instr_map.set("2634B", "non_nimitz")
+instr_map.set("2601B-L", "non_nimitz")
+instr_map.set("2602B-L", "non_nimitz")
+instr_map.set("2611B-L", "non_nimitz")
+instr_map.set("2612B-L", "non_nimitz")
+instr_map.set("2635B-L", "non_nimitz")
+instr_map.set("2636B-L", "non_nimitz")
+instr_map.set("2604B-L", "non_nimitz")
+instr_map.set("2614B-L", "non_nimitz")
+instr_map.set("2634B-L", "non_nimitz")
+instr_map.set("3706-SNFP", "non_nimitz")
+instr_map.set("3706-S", "non_nimitz")
+instr_map.set("3706-NFP", "non_nimitz")
+instr_map.set("3706A", "non_nimitz")
+instr_map.set("3706A-SNFP", "non_nimitz")
+instr_map.set("3706A-S", "non_nimitz")
+instr_map.set("3706A-NFP", "non_nimitz")
+instr_map.set("707B", "non_nimitz")
+instr_map.set("708B", "non_nimitz")
+instr_map.set("2450", "nimitz")
+instr_map.set("2470", "nimitz")
+instr_map.set("DMM7510", "nimitz")
+instr_map.set("2460", "nimitz")
+instr_map.set("2461", "nimitz")
+instr_map.set("2461-SYS", "nimitz")
+instr_map.set("DMM7512", "nimitz")
+instr_map.set("DMM6500", "nimitz")
+instr_map.set("DAQ6510", "nimitz")
+instr_map.set("VERSATEST-300", "versatest")
+instr_map.set("VERSATEST-600", "versatest")
+instr_map.set("TSP", "versatest")
 
 const rpcClient: JSONRPCClient = new JSONRPCClient(
     (jsonRPCRequest) =>
@@ -55,19 +108,13 @@ const jsonRPCRequest: JSONRPCRequest = {
     id: createID(),
     method: "get_instr_list",
 }
-/*
-async function getListResp() {
-    return await rpcClient.makeRequest({
-        method: "get_instr_list",
-        id: createID,
-        jsonrpc: JSONRPC,
-    })
-}
-*/
-enum NodeType {
-    Root,
-    Child,
-    Leaf,
+
+//interface for *idn? response
+interface IIDNInfo {
+    vendor: string
+    model: string
+    serial_number: string
+    firmware_rev: string
 }
 
 /**
@@ -847,7 +894,6 @@ export class InstrumentsExplorer {
 
     private startDiscovery() {
         if (this.InstrumentsDiscoveryViewer.description == undefined) {
-            //#ToDo: remove ECHO_SOCKET_SERVER once index.js is updated
             cp.spawn(
                 DISCOVER_EXECUTABLE,
                 ["all", "--timeout", DISCOVERY_TIMEOUT.toString(), "--exit"]
@@ -918,26 +964,42 @@ export class InstrumentsExplorer {
     }
 
     private async upgradeFirmware(_e: unknown) {
-        await this.genericUpgradeFW(_e, false, 1)
+        await this.genericUpgradeFW(_e, 0)
     }
 
-    public saveWhileConnect(instr_to_save: string, ioType: IoType) {
-        //fetch *IDN? resposnse stored at package.json here.
-        const instr_details = {
-            io_type: "Lan",
-            ip_addr: "134.64.78.84",
-            manufacturer: "Keithley Instruments",
-            model: "2450",
-            serial_number: "00000008",
-            firmware_revision: "1.0.0",
-            socket_port: "5025",
-            unique_string: "Lan:2450#00000008",
-            instrument_categ: "SMU",
+    public saveWhileConnect(
+        instr_to_save: string,
+        ip: string,
+        ioType: IoType,
+        info: string,
+        port: string | undefined
+    ) {
+        if (info == "") {
+            void vscode.window.showErrorMessage(
+                "Unable to connect to instrument"
+            )
+            return
         }
+
+        const _info = <IIDNInfo>JSON.parse(info)
+        const __info: IInstrInfo = {
+            io_type: ioType,
+            ip_addr: ip,
+            socket_port: port,
+            manufacturer: _info.vendor,
+            model: _info.model,
+            serial_number: _info.serial_number,
+            firmware_revision: _info.firmware_rev,
+            instr_categ: "",
+        }
+
+        const categ = instr_map.get(_info.model)
+        if (categ != undefined) __info.instr_categ = categ
+
         this.treeDataProvider?.saveInstrumentFromConnect(
             instr_to_save,
             ioType,
-            instr_details
+            __info
         )
     }
 
@@ -952,19 +1014,19 @@ export class InstrumentsExplorer {
     }
 
     private async upgradeMainframe(_e: unknown) {
-        await this.genericUpgradeFW(_e, false, 1)
+        await this.genericUpgradeFW(_e, 0)
     }
 
     private async upgradeSlot1(_e: unknown) {
-        await this.genericUpgradeFW(_e, true, 1)
+        await this.genericUpgradeFW(_e, 1)
     }
 
     private async upgradeSlot2(_e: unknown) {
-        await this.genericUpgradeFW(_e, true, 2)
+        await this.genericUpgradeFW(_e, 2)
     }
 
     private async upgradeSlot3(_e: unknown) {
-        await this.genericUpgradeFW(_e, true, 3)
+        await this.genericUpgradeFW(_e, 3)
     }
 
     /**
@@ -973,7 +1035,7 @@ export class InstrumentsExplorer {
      * @param is_module - whether instrument contains a module or not
      * @param slot - the slot to upgrade if any
      */
-    private async genericUpgradeFW(_e: unknown, is_module = false, slot = 1) {
+    private async genericUpgradeFW(_e: unknown, slot = 0) {
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
@@ -1005,17 +1067,11 @@ export class InstrumentsExplorer {
                         if (!fw_file || fw_file.length < 1) {
                             return
                         } else {
-                            const fw_info = new FirmwareInfo(
-                                fw_file[0].fsPath,
-                                is_module,
-                                slot
+                            // .update "path" --slot {number}
+                            kicCell.sendTextToTerminal(
+                                `.update "${fw_file[0].fsPath}" --slot ${slot}\n
+                                `
                             )
-                            const fw_info_str = JSON.stringify(fw_info)
-                            //#ToDo: this needs to be tested
-                            kicCell.sendTextToTrerminal(
-                                ".update " + fw_info_str + "\n"
-                            )
-                            console.log(fw_info_str)
                         }
                         return
                     }
