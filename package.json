@@ -88,7 +88,7 @@
             },
             {
                 "command": "Kic.configureTspLanguage",
-                "title": "fetch TSP-Link nodes for connected instrument",
+                "title": "Fetch TSP-Link nodes for connected instrument",
                 "category": "KIC"
             },
             {
