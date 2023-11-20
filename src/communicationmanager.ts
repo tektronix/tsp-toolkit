@@ -87,7 +87,7 @@ export class CommunicationManager {
      */
     private async fetchAndUpdateInstrumentTspLinkConfiguration(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const text = `.configLang ${uriObject.fsPath}\\config.tsp.json`
+        const text = `.TspLinkNodes "${uriObject.fsPath}\\config.tsp.json"`
         await this.handleSendTextToTerminal(text)
         void vscode.window.showInformationMessage(
             "Fetching and Updating Instrument tspLink Configuration"
