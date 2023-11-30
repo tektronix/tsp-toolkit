@@ -7,6 +7,24 @@ on:
       - "*"
 
 jobs:
+  style-prettier:
+    name: compile
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+    steps:
+      - name: Tool Versions
+        run: npx prettier --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: run prettier
+        run: npx prettier --list-different
+    
+
   compile:
     name: compile
     runs-on: ubuntu-latest
@@ -23,9 +41,10 @@ jobs:
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
-          npm install -g npm@latest
-          npm cache clean --force
           npm install
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
       - name: Build
         run: npm run compile
       - name: Upload Artifacts
