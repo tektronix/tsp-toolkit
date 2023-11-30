@@ -38,24 +38,19 @@ jobs:
         run: npm --version
       - name: install node
         uses: actions/setup-node@v3
-        with:
-          node-version: '20.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@tek-engineering'
+       
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
           npm install
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        
       - name: Build
         run: npm run compile
       - name: npm Package
         run: |
           npx vsce package --pre-release
-          cp *.vsix tsp-toolkit.vsix
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
