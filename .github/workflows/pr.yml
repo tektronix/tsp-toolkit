@@ -20,10 +20,12 @@ jobs:
         run: npm --version
       - name: Checkout
         uses: actions/checkout@v3
-      - name: compile
+      - name: Install dependencies
         run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
           npm install
-          npm run compile
+      - name: Build
+        run: npm run compile
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
