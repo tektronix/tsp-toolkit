@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@trebuchet/ki-comms"
+import { EXECUTABLE } from "@tek-engineering/kic-cli"
 import { CONNECTION_RE } from "./resourceManager"
 
 export class TerminationManager {

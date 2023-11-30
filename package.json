@@ -362,9 +362,9 @@
         "typescript": "^4.6.4"
     },
     "dependencies": {
-        "@trebuchet/keithley_instrument_libraries": "^0.10.1",
-        "@trebuchet/ki-comms": "^0.11.1-rc2",
-        "@trebuchet/web-help-documents": "^0.10.1",
+        "@tek-engineering/kic-cli": "^0.11.2",
+        "@tek-engineering/web-help-documents": "^0.10.1",
+        "@tek-engineering/keithley_instrument_libraries": "0.11.2",
         "@types/cheerio": "^0.22.31",
         "cheerio": "^1.0.0-rc.12",
         "class-transformer": "^0.5.1",

@@ -1,0 +1,59 @@
+name: Pull Request
+
+on:
+  pull_request:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  compile:
+    name: Style
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - name: Tool Versions
+        run: npm --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: compile
+        run: npm run compile
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: out
+          path: |
+            out/
+  
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - name: Tool Versions
+        run: npm --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: executable
+          path: target/
+      - name: npm Package
+        run: |
+          npx vsce package --pre-release --baseContentUrl https://git.keithley.com/trebuchet/teaspoon/teaspoon/
+          cp *.vsix tsp-toolkit.vsix
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: package
+          path: "*.vsix"
