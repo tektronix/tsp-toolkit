@@ -8,7 +8,7 @@ on:
 
 jobs:
   compile:
-    name: Style
+    name: compile
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
@@ -21,7 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: compile
-        run: npm run compile
+        run: |
+          npm install -g typescript
+          npm run compile
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
