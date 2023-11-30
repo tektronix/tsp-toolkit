@@ -23,6 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install -g npm@latest
+          npm cache clean --force
           npm install
       - name: Build
         run: npm run compile
