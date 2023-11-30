@@ -21,7 +21,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
  -->
 
 ## [v0.9.2]
-[v0.9.2 Release Page]
 
 ### Added
 - Add and remove saved instruments in the instrument pane
