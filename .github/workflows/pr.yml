@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v3
       - name: compile
         run: |
-          npm install -g typescript
+          npm install
           npm run compile
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
