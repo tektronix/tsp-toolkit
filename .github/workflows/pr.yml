@@ -8,7 +8,7 @@ on:
 
 jobs:
   style-prettier:
-    name: compile
+    name: style
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
@@ -36,6 +36,12 @@ jobs:
     steps:
       - name: Tool Versions
         run: npm --version
+      - name: install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@tek-engineering'
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install dependencies
@@ -44,7 +50,6 @@ jobs:
           npm install
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
       - name: Build
         run: npm run compile
       - name: Upload Artifacts
