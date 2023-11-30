@@ -73,11 +73,6 @@ jobs:
         run: npm --version
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Get Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: executable
-          path: target/
       - name: npm Package
         run: |
           npx vsce package --pre-release --baseContentUrl https://git.keithley.com/trebuchet/teaspoon/teaspoon/
