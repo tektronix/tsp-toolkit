@@ -1,7 +1,7 @@
 {
-    "name": "teaspoon",
+    "name": "tsp-toolkit",
     "publisher": "keithley-instruments",
-    "displayName": "teaspoon",
+    "displayName": "tsp-toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Protocol",
     "version": "0.11.1-rc1",
     "repository": {
@@ -362,7 +362,7 @@
         "typescript": "^4.6.4"
     },
     "dependencies": {
-        "@tek-engineering/kic-cli": "^0.11.2",
+        "@tek-engineering/kic-cli": "0.11.2-12",
         "@tek-engineering/web-help-documents": "^0.10.1",
         "@tek-engineering/keithley_instrument_libraries": "0.11.2",
         "@types/cheerio": "^0.22.31",
