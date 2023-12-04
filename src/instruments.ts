@@ -138,9 +138,11 @@ interface IInstrInfo {
 
 class InstrNode {
     #labelPrivate: string
+    #expandablePrivate: boolean
     children: InstrNode[] = []
-    constructor(name: string) {
+    constructor(name: string, expandable?: boolean) {
         this.#labelPrivate = name
+        this.#expandablePrivate = expandable ?? false
     }
     public get label(): string {
         return this.#labelPrivate
@@ -152,11 +154,15 @@ class InstrNode {
     public updateLabelVal(label: string) {
         this.#labelPrivate = label
     }
+
+    public get isExpandable(): boolean {
+        return this.#expandablePrivate
+    }
 }
 
 class IONode extends InstrNode {
-    constructor(label: string, supported_type: IoType) {
-        super(label)
+    constructor(label: string, supported_type: IoType, isExpandable?: boolean) {
+        super(label, isExpandable)
         this.supported_type = supported_type
     }
 
@@ -250,17 +256,17 @@ class IONode extends InstrNode {
 }
 class LanNode extends IONode {
     constructor() {
-        super("LAN", IoType.Lan)
+        super("LAN", IoType.Lan, true)
     }
 }
 class USBNode extends IONode {
     constructor() {
-        super("USB", IoType.Usb)
+        super("USB", IoType.Usb, true)
     }
 }
 class SavedNode extends InstrNode {
     constructor() {
-        super("Saved")
+        super("Saved", true)
     }
 }
 
@@ -723,12 +729,20 @@ export class InstrTDP implements newTDP {
     getTreeItem(
         element: InstrNode
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
-        const treeItem = new vscode.TreeItem(
-            element.label,
-            element.children.length > 0
-                ? vscode.TreeItemCollapsibleState.Collapsed
-                : vscode.TreeItemCollapsibleState.None
-        )
+        let expandableState = vscode.TreeItemCollapsibleState.None
+
+        //Created TSP-481 to focus the newly connected instrument info in "Instruments" pane
+        if (element.children.length > 0) {
+            if (element.isExpandable) {
+                expandableState = vscode.TreeItemCollapsibleState.Expanded
+            } else {
+                expandableState = vscode.TreeItemCollapsibleState.Collapsed
+            }
+        } else {
+            expandableState = vscode.TreeItemCollapsibleState.None
+        }
+
+        const treeItem = new vscode.TreeItem(element.label, expandableState)
 
         if (element.children.length > 0) {
             const main_node = element as IOInstrNode
