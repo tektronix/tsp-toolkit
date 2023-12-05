@@ -2,7 +2,7 @@ import path = require("path")
 import * as fs from "fs"
 import * as vscode from "vscode"
 import * as cheerio from "cheerio"
-import { WEB_HELP_FILE_PATH } from "@trebuchet/web-help-documents"
+import { WEB_HELP_FILE_PATH } from "@tek-engineering/web-help-documents"
 
 /**
  * Responsibility of this class is to create the webview panel
