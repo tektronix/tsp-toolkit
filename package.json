@@ -268,8 +268,17 @@
                 }
             ]
         },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "tsp-toolkit-container",
+                    "icon": "resources/tsp-toolkit-view-container-icon.svg",
+                    "title": "TSP Toolkit"
+                }
+            ]
+        },
         "views": {
-            "explorer": [
+            "tsp-toolkit-container": [
                 {
                     "id": "InstrumentsExplorer",
                     "name": "Instruments"
