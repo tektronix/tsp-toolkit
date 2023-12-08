@@ -1,0 +1,146 @@
+name: Pull Request
+
+on:
+  pull_request:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  style:
+    name: style
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+    steps:
+      - name: Tool Versions
+        run: npx prettier --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: run prettier
+        run: npx prettier --list-different
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+    steps:
+      - name: Tool Versions
+        run: npx eslint --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install
+      - name: Run eslint
+        run: 'npx eslint --rule "{ prettier/prettier: off }" src'
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+    steps:
+      - name: Tool Versions
+        run: npx prettier --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install
+      - name: Run Tests with Coverage
+        run: npx nyc --nycrc-path=.nycrc.json npm run test-ci
+      - name: Generate Coverage Reports
+        run: npx nyc report --reporter=cobertura --reporter=text
+
+  compile:
+    name: compile
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - name: Tool Versions
+        run: npm --version
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install
+
+      - name: Build
+        run: npm run compile
+      - name: npm Package
+        run: |
+          npx vsce package --pre-release
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: package
+          path: "*.vsix"
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - compile
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Tagged Version
+        id: lasttag
+        run: |
+          V="${GITHUB_REF#refs/tags/v}"
+          CL="${V%-*}"
+          echo "version=${V}" >> $GITHUB_OUTPUT
+          echo "cl_version=${CL}" >> $GITHUB_OUTPUT
+      - name: Get Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: package
+          path: extension
+      - name: Get Changelog for this Tag
+        id: changelog
+        uses: coditory/changelog-parser@v1
+        with:
+          version: ${{steps.lasttag.outputs.cl_version}}
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: ${{steps.lasttag.outputs.version}}
+          artifacts: extension/*
+          body: |
+            ## Features Requests / Bugs
+
+            If you find issues or have a feature request, please enter a [new issue on GitHub](https://github.com/TEK-Engineering/tsp-toolkit/issues/new).
+
+            ## Installation
+
+            View the installation instructions in the [README](https://github.com/TEK-Engineering/tsp-toolkit/blob/main/README.md)
+
+            ## Changelog
+
+            ${{steps.changelog.outputs.description}}
+
+          prerelease: true
+          makeLatest: true

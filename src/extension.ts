@@ -1,12 +1,13 @@
 import * as fs from "fs"
 import * as vscode from "vscode"
-import { COMMAND_SETS } from "@trebuchet/keithley_instrument_libraries"
-import { EXECUTABLE } from "@trebuchet/ki-comms"
+import { COMMAND_SETS } from "@tek-engineering/keithley_instrument_libraries"
+import { EXECUTABLE } from "@tek-engineering/kic-cli"
 import { CommunicationManager } from "./communicationmanager"
 import { TerminationManager } from "./terminationManager"
 import { InstrumentsExplorer } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
+    ConnectionDetails,
     ConnectionHelper,
     FriendlyNameMgr,
     IoType,
@@ -39,6 +40,7 @@ export async function createTerminal(
     command_text?: string
 ) {
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
+    let info = ""
     let ip = connection_string
     let name = ""
     let msn
@@ -78,7 +80,7 @@ export async function createTerminal(
         ) {
             return
         }
-        _activeConnectionManager?.createTerminal(
+        info = _activeConnectionManager?.createTerminal(
             undefined,
             connection_string,
             command_text
@@ -106,7 +108,7 @@ export async function createTerminal(
                     " with S/N: " +
                     msn.sn
             )
-            _activeConnectionManager?.createTerminal(
+            info = _activeConnectionManager?.createTerminal(
                 connection_string + msn.port,
                 undefined,
                 command_text
@@ -114,7 +116,7 @@ export async function createTerminal(
         }
         //TODO: Remove this else statement once lxi page is ready for versatest
         else {
-            _activeConnectionManager?.createTerminal(
+            info = _activeConnectionManager?.createTerminal(
                 connection_string,
                 undefined,
                 command_text
@@ -122,8 +124,15 @@ export async function createTerminal(
         }
 
         const instr_to_save: string = "Lan:" + model_serial_no
-        // json RPC to fetch *IDN? response and store it in a package.json file
-        _instrExplorer.saveWhileConnect(instr_to_save, IoType.Lan)
+        info = info.replace("\n", "")
+
+        _instrExplorer.saveWhileConnect(
+            instr_to_save,
+            ip,
+            IoType.Lan,
+            info,
+            msn?.port
+        )
     }
 }
 
@@ -202,6 +211,8 @@ export function activate(context: vscode.ExtensionContext) {
             void processWorkspaceFolders()
         })
     )
+
+    return base_api
 }
 
 // Called when the extension is deactivated.
@@ -410,4 +421,55 @@ function connectCmd(def: object) {
     const [res1, res2, res3] = _instrExplorer.fetchConnectionArgs(def)
     //console.log(res1, res2, res3)
     void connect(res1, res2, res3)
+}
+
+const base_api = {
+    fetchKicTerminals(): vscode.Terminal[] {
+        const kicTerminals = vscode.window.terminals.filter(
+            (t) =>
+                (
+                    t.creationOptions as vscode.TerminalOptions
+                )?.shellPath?.toString() === EXECUTABLE
+        )
+        return kicTerminals
+    },
+
+    async fetchConnDetails(
+        term_pid: Thenable<number | undefined> | undefined
+    ): Promise<ConnectionDetails | undefined> {
+        if (_kicProcessMgr != undefined) {
+            const kicCell = _kicProcessMgr.kicList.find(
+                (x) => x.terminalPid == term_pid
+            )
+
+            const connDetails = kicCell?.fetchConnDetials()
+            kicCell?.sendTextToTerminal(".exit")
+            let found = false
+            await kicCell?.getTerminalState().then(
+                () => {
+                    found = true
+                },
+                () => {
+                    found = false
+                }
+            )
+            if (found) {
+                return Promise.resolve(connDetails)
+            }
+            return Promise.reject(
+                "Couldn't close terminal. Please check instrument state"
+            )
+        }
+    },
+
+    restartConnAfterDbg(instr: ConnectionDetails) {
+        if (instr != undefined) {
+            _kicProcessMgr.createKicCell(
+                instr.Name,
+                instr.ConnAddr,
+                instr.ConnType,
+                instr.Maxerr
+            )
+        }
+    },
 }

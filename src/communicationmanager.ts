@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@trebuchet/ki-comms"
+import { EXECUTABLE } from "@tek-engineering/kic-cli"
 import {
     CONNECTION_RE,
     ConnectionHelper,
@@ -87,7 +87,7 @@ export class CommunicationManager {
      */
     private async fetchAndUpdateInstrumentTspLinkConfiguration(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const text = `.configLang ${uriObject.fsPath}\\config.tsp.json`
+        const text = `.nodes "${uriObject.fsPath}\\config.tsp.json"`
         await this.handleSendTextToTerminal(text)
         void vscode.window.showInformationMessage(
             "Fetching and Updating Instrument tspLink Configuration"
@@ -174,12 +174,13 @@ export class CommunicationManager {
         instrumentIp?: string,
         usb_unique_string?: string,
         filePath?: string
-    ) {
+    ): string {
+        let info = ""
         const maxerr: number =
             vscode.workspace.getConfiguration("kic").get("errorLimit") ?? 0
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
-            if (parts == null) return
+            if (parts == null) return ""
             const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
             const ip_addr = parts[2]
             const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
@@ -205,7 +206,13 @@ export class CommunicationManager {
             //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
             // })
 
-            this._kicProcessMgr.createKicCell(name, ip, "lan", maxerr, filePath)
+            info = this._kicProcessMgr.createKicCell(
+                name,
+                ip,
+                "lan",
+                maxerr,
+                filePath
+            )
         } else if (usb_unique_string != undefined) {
             let unique_string = usb_unique_string
             let name = "KIC"
@@ -214,7 +221,7 @@ export class CommunicationManager {
                 name = string_split[0]
                 unique_string = string_split[1]
             }
-            this._kicProcessMgr.createKicCell(
+            info = this._kicProcessMgr.createKicCell(
                 name,
                 unique_string,
                 "usb",
@@ -229,6 +236,7 @@ export class CommunicationManager {
         //         term.sendText(filePath)
         //     }
         // }
+        return info
     }
 
     private async terminalAction() {
@@ -250,6 +258,7 @@ export class CommunicationManager {
 
         this._kicProcessMgr.kicList.forEach((kicCell, idx) => {
             if (kicCell.terminalPid == e.processId) {
+                kicCell.isTerminalClosed = true
                 //#ToDo: is the next line needed?
                 //kicCell.writeToChild(".exit\n")
                 index_arr.push(idx)
