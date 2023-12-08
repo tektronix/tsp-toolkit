@@ -16,14 +16,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [Unreleased]
+<!-- ## [Unreleased] -->
 
-## [0.11.2]
-
+## [0.12.0]
 ### Added
+- Add message when starting FW upgrade (TSP-455)
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.0...HEAD
 
-[0.11.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.11.2
+[0.12.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.0
+
