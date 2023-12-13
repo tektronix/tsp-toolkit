@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Protocol",
-    "version": "0.12.0",
+    "version": "0.12.1",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/TEK-Engineering/tsp-toolkit.git"
@@ -371,7 +371,7 @@
         "typescript": "^4.6.4"
     },
     "dependencies": {
-        "@tek-engineering/kic-cli": "0.12.0",
+        "@tek-engineering/kic-cli": "0.12.1",
         "@tek-engineering/web-help-documents": "0.10.1",
         "@tek-engineering/keithley_instrument_libraries": "0.11.2",
         "@types/cheerio": "^0.22.31",
