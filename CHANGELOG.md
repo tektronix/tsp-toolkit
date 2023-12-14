@@ -18,13 +18,23 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 <!-- ## [Unreleased] -->
 
+## [0.12.1]
+### Changed
+- Restore password hide feature back after ki-comms refactor (TSP-363)
+- Implement Password prompt (TSP-480)
+### Fixed
+- Extension wants a password when there isn't one (TSP-416)
+
 ## [0.12.0]
 ### Added
 - Add message when starting FW upgrade (TSP-455)
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.1...HEAD
+
+[0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.0...v.12.1
+[0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1
 
 [0.12.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.0
 
