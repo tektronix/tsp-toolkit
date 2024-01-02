@@ -177,8 +177,7 @@ class IONode extends InstrNode {
     public AddInstrument(instr: IInstrInfo, is_saved: boolean) {
         if (instr.io_type != this.supported_type) return
         let found = false
-        const unique_id =
-            instr.io_type + ":" + instr.model + "#" + instr.serial_number
+        const unique_id = DiscoveryHelper.createUniqueID(instr)
 
         //ToDo: extract to method
         for (let i = 0; i < this.saved_list.length; i++) {
@@ -454,15 +453,7 @@ class SavedNodeProvider implements IRootNodeProvider {
 
         let isSaved = false
         this.saved_list.forEach((value) => {
-            if (
-                value.includes(
-                    instr.io_type.toString() +
-                        ":" +
-                        instr.model +
-                        "#" +
-                        instr.serial_number
-                )
-            ) {
+            if (value.includes(DiscoveryHelper.createUniqueID(instr))) {
                 isSaved = true
             }
         })
@@ -520,7 +511,8 @@ class SavedNodeProvider implements IRootNodeProvider {
 
 export class NewTDPModel {
     //#region private variables
-    private main_list: IInstrInfo[] = []
+    private discovery_list: IInstrInfo[] = []
+    private connection_list: IInstrInfo[] = []
     private node_providers: IRootNodeProvider[] = []
     private savedLANNode: LanNode | undefined
     private savedUSBNode: USBNode | undefined
@@ -565,14 +557,14 @@ export class NewTDPModel {
                                             instr
                                         ) as IInstrInfo
                                         if (
-                                            !this.main_list.some(
+                                            !this.discovery_list.some(
                                                 (e) =>
                                                     e.io_type == obj.io_type &&
                                                     e.serial_number ==
                                                         obj.serial_number
                                             )
                                         ) {
-                                            this.main_list.push(obj)
+                                            this.discovery_list.push(obj)
                                         }
                                     }
                                 })
@@ -597,12 +589,25 @@ export class NewTDPModel {
         return this.connect().then(() => {
             return new Promise((c) => {
                 const nodeItems: InstrNode[] = []
-                if (this.main_list.length < 0) {
+                if (
+                    this.discovery_list.length < 0 &&
+                    this.connection_list.length < 0
+                ) {
                     return c(nodeItems)
                 }
 
+                this.connection_list.forEach((instr) => {
+                    const ret =
+                        this._savedNodeProvider?.GetInstrumentNode(instr)
+                    if (ret != undefined) {
+                        if (!nodeItems.includes(ret)) {
+                            nodeItems.push(ret)
+                        }
+                    }
+                })
+
                 for (const node_provider of this.node_providers) {
-                    this.main_list.forEach((instr) => {
+                    this.discovery_list.forEach((instr) => {
                         const ret = node_provider.GetInstrumentNode(
                             instr,
                             false
@@ -629,7 +634,7 @@ export class NewTDPModel {
         if (instr_to_save.length > 0) {
             const instr_info = instr_details as IInstrInfo
             this._savedNodeProvider?.saveInstrToList(instr_to_save)
-            this.main_list.push(instr_info) //check for redundant entries
+            this.connection_list.push(instr_info) //check for redundant entries
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
@@ -661,6 +666,21 @@ export class NewTDPModel {
     public removeSavedList(instr: unknown) {
         const nodeToBeRemoved = instr as IOInstrNode
         if (nodeToBeRemoved != undefined) {
+            let idx = -1
+            for (let i = 0; i < this.connection_list.length; i++) {
+                const uid = DiscoveryHelper.createUniqueID(
+                    this.connection_list[i]
+                )
+                if (uid == nodeToBeRemoved.FetchUniqueID()) {
+                    idx = i
+                    break
+                }
+            }
+
+            if (idx > -1) {
+                this.connection_list.splice(idx, 1)
+            }
+
             this._savedNodeProvider?.removeInstrFromList(
                 nodeToBeRemoved.FetchUniqueID() ?? ""
             )
@@ -1092,5 +1112,18 @@ export class InstrumentsExplorer {
                 }
             }
         }
+    }
+}
+
+class DiscoveryHelper {
+    public static createUniqueID(info: IInstrInfo): string {
+        let res = ""
+        res =
+            info.io_type.toString() +
+            ":" +
+            info.model +
+            "#" +
+            info.serial_number
+        return res
     }
 }
