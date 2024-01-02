@@ -500,15 +500,3 @@ export class DebugHelper {
      */
     public static debuggeeFilePath: string | undefined
 }
-
-export class DiscoveryHelper {
-    public static createUniqueID(
-        ip1: string,
-        ip2: string,
-        ip3: string
-    ): string {
-        let res = ""
-        res = ip1 + ":" + ip2 + "#" + ip3
-        return res
-    }
-}

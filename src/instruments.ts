@@ -10,7 +10,6 @@ import {
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@tek-engineering/kic-cli"
 import fetch from "node-fetch"
 import {
-    DiscoveryHelper,
     FriendlyNameMgr,
     InstrDetails,
     IoType,
@@ -178,11 +177,7 @@ class IONode extends InstrNode {
     public AddInstrument(instr: IInstrInfo, is_saved: boolean) {
         if (instr.io_type != this.supported_type) return
         let found = false
-        const unique_id = DiscoveryHelper.createUniqueID(
-            instr.io_type,
-            instr.model,
-            instr.serial_number
-        )
+        const unique_id = DiscoveryHelper.createUniqueID(instr)
 
         //ToDo: extract to method
         for (let i = 0; i < this.saved_list.length; i++) {
@@ -458,15 +453,7 @@ class SavedNodeProvider implements IRootNodeProvider {
 
         let isSaved = false
         this.saved_list.forEach((value) => {
-            if (
-                value.includes(
-                    DiscoveryHelper.createUniqueID(
-                        instr.io_type.toString(),
-                        instr.model,
-                        instr.serial_number
-                    )
-                )
-            ) {
+            if (value.includes(DiscoveryHelper.createUniqueID(instr))) {
                 isSaved = true
             }
         })
@@ -682,9 +669,7 @@ export class NewTDPModel {
             let idx = -1
             for (let i = 0; i < this.connection_list.length; i++) {
                 const uid = DiscoveryHelper.createUniqueID(
-                    this.connection_list[i].io_type,
-                    this.connection_list[i].model,
-                    this.connection_list[i].serial_number
+                    this.connection_list[i]
                 )
                 if (uid == nodeToBeRemoved.FetchUniqueID()) {
                     idx = i
@@ -1127,5 +1112,18 @@ export class InstrumentsExplorer {
                 }
             }
         }
+    }
+}
+
+class DiscoveryHelper {
+    public static createUniqueID(info: IInstrInfo): string {
+        let res = ""
+        res =
+            info.io_type.toString() +
+            ":" +
+            info.model +
+            "#" +
+            info.serial_number
+        return res
     }
 }
