@@ -18,6 +18,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 <!-- ## [Unreleased] -->
 
+## [0.12.2]
+### Fixed
+- Fix remove saved instrument issue (TSP-483)
+
 ## [0.12.1]
 ### Changed
 - Restore password hide feature back after ki-comms refactor (TSP-363)
@@ -31,9 +35,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.2...HEAD
 
-[0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.0...v.12.1
+[0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.1...v.12.2
+[0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
+
 [0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1
 
 [0.12.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.0
