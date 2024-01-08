@@ -16,7 +16,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Added
+- Added TSP Toolkit Logo (TSP-498)
 
 ## [0.12.2]
 ### Fixed
@@ -37,7 +40,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 <!--Version Comparison Links-->
 [Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.2...HEAD
 
-[0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.1...v.12.2
 [0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
 
 [0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1
