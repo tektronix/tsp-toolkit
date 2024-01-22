@@ -2,6 +2,11 @@ name: Pull Request
 
 on:
   pull_request:
+     types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
   push:
     tags:
       - "*"
@@ -44,6 +49,30 @@ jobs:
           npm install
       - name: Run eslint
         run: 'npx eslint --rule "{ prettier/prettier: off }" src'
+
+  sbom:
+    name: Generate CycloneDX
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tek-engineering/tsp-toolkit-build:latest
+      credentials:
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tools
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm ci --devDependencies
+      - name: Generate NPM BOM
+        run: npx @cyclonedx/cyclonedx-npm --output-format JSON --package-lock-only --output-reproducible --output-file npm.cdx.json
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: software-bom
+          path: |
+            **/*.cdx.json
 
   test:
     name: test
@@ -99,26 +128,52 @@ jobs:
 
   release:
     name: Release
-    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
+      pull-requests: read
     needs:
       - compile
       - test
-    runs-on: ubuntu-latest
+      - sbom
+      - lint
+      - style
+    if: ${{ endsWith(github.base_ref, 'main') && contains(github.head_ref, 'release') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Get Tagged Version
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Get RC Version
         id: lasttag
         run: |
-          V="${GITHUB_REF#refs/tags/v}"
-          CL="${V%-*}"
+          COMMIT="${{github.sha}}"
+          V="${{github.head_ref}}"
+          V="${V#release/}"
+
+          if ${{! github.event.pull_request.merged}}; then
+            V="${V}-$(git tag --list ${V}* | wc -l)"
+          fi
+
+          CL=${V#v}
+          CL=${CL%-*}
+
           echo "version=${V}" >> $GITHUB_OUTPUT
           echo "cl_version=${CL}" >> $GITHUB_OUTPUT
+          echo "commit=${COMMIT}" >> $GITHUB_OUTPUT
+      - run: 'git tag --list ${V}*'
       - name: Get Artifacts
         uses: actions/download-artifact@v3
         with:
           name: package
           path: extension
+      - name: Get SBOM
+        uses: actions/download-artifact@v3
+        with:
+          name: software-bom
+          path: sbom
       - name: Get Changelog for this Tag
         id: changelog
         uses: coditory/changelog-parser@v1
@@ -128,19 +183,22 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           name: ${{steps.lasttag.outputs.version}}
-          artifacts: extension/*
+          artifacts: target/*,sbom/**/*
           body: |
             ## Features Requests / Bugs
 
-            If you find issues or have a feature request, please enter a [new issue on GitHub](https://github.com/TEK-Engineering/tsp-toolkit/issues/new).
+            If you find issues or have a feature request, please enter a [new issue on GitHub](${{github.server_url}}/${{github.repository}}/issues/new).
 
             ## Installation
 
-            View the installation instructions in the [README](https://github.com/TEK-Engineering/tsp-toolkit/blob/main/README.md)
+            View the installation instructions in the [README](${{github.server_url}}/${{github.repository}}/blob/main/README.md)
 
             ## Changelog
 
             ${{steps.changelog.outputs.description}}
 
-          prerelease: true
+          prerelease: ${{! github.event.pull_request.merged}}
+          commit: ${{steps.lasttag.outputs.commit}}
           makeLatest: true
+          tag: ${{steps.lasttag.outputs.version}}
+
