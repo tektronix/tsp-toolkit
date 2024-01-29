@@ -183,7 +183,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           name: ${{steps.lasttag.outputs.version}}
-          artifacts: target/*,sbom/**/*
+          artifacts: "*.vsix,sbom/**/*"
           body: |
             ## Features Requests / Bugs
 
