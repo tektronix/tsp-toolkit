@@ -927,7 +927,7 @@ export class InstrumentsExplorer {
     }
 
     private startDiscovery() {
-        if (this.InstrumentsDiscoveryViewer.description == undefined) {
+        if (this.InstrumentsDiscoveryViewer.message == "") {
             cp.spawn(
                 DISCOVER_EXECUTABLE,
                 ["all", "--timeout", DISCOVERY_TIMEOUT.toString(), "--exit"]
@@ -940,8 +940,8 @@ export class InstrumentsExplorer {
 
             //subprocess.unref()
 
-            this.InstrumentsDiscoveryViewer.description =
-                "Instruments Discovery in progress"
+            this.InstrumentsDiscoveryViewer.message =
+                "Instruments Discovery in progress..."
 
             //this.treeDataProvider?.clear()
 
@@ -950,7 +950,7 @@ export class InstrumentsExplorer {
             }, 1000)
 
             setTimeout(() => {
-                this.InstrumentsDiscoveryViewer.description = undefined
+                this.InstrumentsDiscoveryViewer.message = ""
                 clearInterval(this.intervalID)
                 //void stopDiscovery()
             }, DISCOVERY_TIMEOUT * 1000 + 10000)
