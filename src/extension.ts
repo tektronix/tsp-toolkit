@@ -1,4 +1,5 @@
 import * as fs from "fs"
+import path = require("path")
 import * as vscode from "vscode"
 import { COMMAND_SETS } from "@tek-engineering/keithley_instrument_libraries"
 import { EXECUTABLE } from "@tek-engineering/kic-cli"
@@ -269,6 +270,7 @@ async function onDidChangeTspConfigFile(uri: vscode.Uri) {
  */
 async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
     // Perform actions when a text document is saved
+    const workspace_path = vscode.workspace.getWorkspaceFolder(textDocument.uri)
     const filePath = textDocument.uri.fsPath
     if (
         filePath.endsWith(".tspConfig\\config.tsp.json") &&
@@ -278,18 +280,39 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
         const new_library_settings: string[] = []
         let nodeStr = ""
         for (const [model, nodes] of Object.entries(nodeDetails)) {
-            const lib_base_path = COMMAND_SETS + "\\" + model
-            new_library_settings.push(lib_base_path + "\\Helper")
+            // supported model
+            const supported_models = fs
+                .readdirSync(COMMAND_SETS)
+                .filter((folder) =>
+                    fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory()
+                )
+            if (!supported_models.includes(model.toUpperCase())) {
+                void vscode.window.showInformationMessage(
+                    `${model} model is not supported`
+                )
+                if (workspace_path)
+                    setLuaWorkspaceLibrary(workspace_path, undefined)
+                return
+            }
+            const lib_base_path = path.join(COMMAND_SETS, model.toUpperCase())
+
+            new_library_settings.push(path.join(lib_base_path, "Helper"))
             if (nodes.some((str) => str.includes("self"))) {
-                new_library_settings.push(lib_base_path + "\\AllTspCommands")
+                new_library_settings.push(
+                    path.join(lib_base_path, "AllTspCommands")
+                )
             }
             if (nodes.some((str) => str.includes("node"))) {
                 new_library_settings.push(
-                    lib_base_path + "\\tspLinkSupportedCommands"
+                    path.join(lib_base_path, "tspLinkSupportedCommands")
                 )
             }
             const className = getClassName(
-                lib_base_path + "\\tspLinkSupportedCommands\\nodeTable.lua"
+                path.join(
+                    lib_base_path,
+                    "tspLinkSupportedCommands",
+                    "nodeTable.lua"
+                )
             )
             nodes.forEach((node: string) => {
                 if (node.includes(".")) {
@@ -308,10 +331,6 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
         }
 
         // open workspace nodeTable.lua file and update node details in it
-
-        const workspace_path = vscode.workspace.getWorkspaceFolder(
-            textDocument.uri
-        )
 
         if (workspace_path != undefined) {
             updateNodeDetails(
