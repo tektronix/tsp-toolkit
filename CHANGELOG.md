@@ -16,7 +16,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [Unreleased]
+
+## [0.13.0]
 
 ### Added
 - Added TSP Toolkit Logo (TSP-498)
@@ -38,7 +39,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.13.0...HEAD
+
+
+[0.13.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.0
 
 [0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
 
