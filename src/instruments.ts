@@ -310,7 +310,7 @@ class IOInstrNode extends InstrNode {
 
     public checkForFriendlyName() {
         const connections: Array<InstrDetails> =
-            vscode.workspace.getConfiguration("kic").get("connectionList") ?? []
+            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
 
         let friendly_name = ""
         const res_instr = connections.find(
@@ -432,7 +432,7 @@ class SavedNodeProvider implements IRootNodeProvider {
     constructor() {
         const instruments: string[] =
             vscode.workspace
-                .getConfiguration("kic")
+                .getConfiguration("tsp")
                 .get("savedInstrumentList") ?? []
         //instruments.push("0123789A")
         //instruments.push("7801264")

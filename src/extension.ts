@@ -159,7 +159,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
     const openTerminal = vscode.commands.registerCommand(
-        "kic.openTerminal",
+        "tsp.openTerminal",
         pickConnection
     )
 
@@ -167,20 +167,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     //TODO: connect `.terminate` in ki-comms
     // const terminateAll = vscode.commands.registerCommand(
-    //     "kic.terminateAll",
+    //     "tsp.terminateAll",
     //     startTerminateAllConn
     // )
 
     //TODO add the following back into the package.json file after terminate is added to ki-comms
     /*
             {
-                "command": "kic.terminateAll",
-                "title": "Terminate all existing connections to an instrument",
-                "category": "KIC"
+                "command": "tsp.terminateAll",
+                "title": "Terminate All Existing Connections to an Instrument",
+                "category": "TSP"
             },
     */
 
-    vscode.commands.registerCommand("kic.openTerminalIP", connectCmd)
+    vscode.commands.registerCommand("tsp.openTerminalIP", connectCmd)
     vscode.commands.registerCommand("InstrumentsExplorer.rename", startRename)
 
     context.subscriptions.push(openTerminal)

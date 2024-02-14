@@ -11,20 +11,27 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/TEK-Engineering/tsp-toolkit.git"
+        "url": "https://github.com/TEK-Engineering/tsp-toolkit.git"
     },
     "engines": {
-        "vscode": "^1.66.0"
+        "vscode": "^1.75.0"
     },
     "categories": [
         "Other"
     ],
     "activationEvents": [
-        "onStartupFinished",
-        "onCommand:kic.openTerminal",
-        "onCommand:kic.sendFile",
-        "onCommand:InstrumentsExplorer.refresh"
+        "onStartupFinished"
     ],
+    "pricing": "Free",
+    "bugs": {"url": "https://github.com/tektronix/tsp-toolkit/issues"},
+    "qna": "https://github.com/tektronix/tsp-toolkit/discussions",
+    "contributors": [
+        "esarver"
+    ],
+    "maintainers": [
+        "esarver"
+    ],
+    "license": "Apache-2.0",
     "main": "./out/extension.js",
     "contributes": {
         "breakpoints": [
@@ -34,25 +41,25 @@
         ],
         "commands": [
             {
-                "command": "kic.openTerminal",
+                "command": "tsp.openTerminal",
                 "title": "Open Terminal",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
-                "command": "kic.sendFile",
-                "title": "Send script to terminal",
-                "category": "KIC"
+                "command": "tsp.sendFile",
+                "title": "Send Script to Terminal",
+                "category": "TSP"
             },
             {
-                "command": "kic.sendFileToAllInstr",
-                "title": "send script to all terminals",
+                "command": "tsp.sendFileToAllInstr",
+                "title": "Send Script to All Terminals",
                 "enablement": "isKicTerminalActive",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
-                "command": "kic.openTerminalIP",
-                "title": "Open Terminal IP",
-                "category": "KIC"
+                "command": "tsp.openTerminalIP",
+                "title": "Open Terminal",
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.refresh",
@@ -69,69 +76,59 @@
             {
                 "command": "InstrumentsExplorer.upgradeSlot1",
                 "title": "Upgrade Slot 1",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.upgradeSlot2",
                 "title": "Upgrade Slot 2",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.upgradeSlot3",
                 "title": "Upgrade Slot 3",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.upgradeFirmware",
                 "title": "Upgrade Firmware",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.upgradeMainframe",
                 "title": "Upgrade Mainframe",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
-                "command": "Kic.configureTspLanguage",
-                "title": "Fetch TSP-Link nodes for connected instrument",
-                "category": "KIC"
+                "command": "tsp.configureTspLanguage",
+                "title": "Fetch TSP-Link Nodes for Connected Instrument",
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.save",
                 "title": "Save",
-                "category": "KIC"
+                "category": "TSP"
             },
             {
                 "command": "InstrumentsExplorer.remove",
                 "title": "Remove",
-                "category": "KIC"
+                "category": "TSP"
             }
         ],
         "configuration": {
             "type": "object",
-            "title": "KIC configuration",
+            "title": "TSP Configuration",
             "properties": {
-                "kic.connectionList": {
+                "tsp.connectionList": {
                     "type": "array",
                     "default": [],
                     "description": "A list of previous instrument connections"
                 },
-                "kic.errorLimit": {
+                "tsp.errorLimit": {
                     "type": "number",
                     "default": 3,
                     "description": "Maximum number of consecutive errors to print in the terminal"
                 },
-                "kic.debugInstr": {
-                    "type": "string",
-                    "default": "134.64.245.133",
-                    "description": "Instrument to debug with"
-                },
-                "kic.showFunction": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Whether to show functions in Variables pane or not"
-                },
-                "kic.savedInstrumentList": {
+                "tsp.savedInstrumentList": {
                     "type": "array",
                     "default": [],
                     "description": "A list of saved instrument serial numbers"
@@ -142,41 +139,41 @@
             "editor/context": [
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFile",
+                    "command": "tsp.sendFile",
                     "group": "navigation"
                 },
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFileToAllInstr",
+                    "command": "tsp.sendFileToAllInstr",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
-                    "command": "Kic.configureTspLanguage",
+                    "command": "tsp.configureTspLanguage",
                     "when": "explorerResourceIsFolder && resourceFilename == '.tspConfig'",
                     "group": "navigation"
                 },
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFile",
+                    "command": "tsp.sendFile",
                     "group": "navigation"
                 },
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFileToAllInstr",
+                    "command": "tsp.sendFileToAllInstr",
                     "group": "navigation"
                 }
             ],
             "editor/title/context": [
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFile",
+                    "command": "tsp.sendFile",
                     "group": "navigation"
                 },
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "kic.sendFileToAllInstr",
+                    "command": "tsp.sendFileToAllInstr",
                     "group": "navigation"
                 }
             ],
@@ -189,7 +186,7 @@
             ],
             "commandPalette": [
                 {
-                    "command": "kic.openTerminalIP",
+                    "command": "tsp.openTerminalIP",
                     "when": "false"
                 },
                 {
@@ -213,7 +210,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "Kic.configureTspLanguage",
+                    "command": "tsp.configureTspLanguage",
                     "when": "false"
                 },
                 {
@@ -231,7 +228,7 @@
                     "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
                 },
                 {
-                    "command": "kic.openTerminalIP",
+                    "command": "tsp.openTerminalIP",
                     "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
                 },
                 {

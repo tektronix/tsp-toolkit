@@ -38,7 +38,7 @@ export class FriendlyNameMgr {
         if (model_serial != undefined) {
             const connections: Array<InstrDetails> =
                 vscode.workspace
-                    .getConfiguration("kic")
+                    .getConfiguration("tsp")
                     .get("connectionList") ?? []
             const config = vscode.workspace.getConfiguration("kic")
 
@@ -127,7 +127,7 @@ export class FriendlyNameMgr {
         const conn_output: string[] = []
 
         const connections: Array<InstrDetails> =
-            vscode.workspace.getConfiguration("kic").get("connectionList") ?? []
+            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
 
         connections.forEach((instr) => {
             conn_output.push(instr.friendly_name + "@" + instr.address)
@@ -431,7 +431,7 @@ export class ConnectionHelper {
         filePath?: string
     ) {
         const maxerr: number =
-            vscode.workspace.getConfiguration("kic").get("errorLimit") ?? 0
+            vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
             if (parts == null) return
