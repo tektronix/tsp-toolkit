@@ -16,6 +16,20 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.13.2]
+
+### Changed
+- Change references to `KIC` to be `TSP` instead, add additional Marketplace metadata (TSP-457)
+- Prepare README.md for Marketplace (TSP-509)
+
+### Added
+- Added discovery progress message (TSP-504)
+
+### Fixed
+- Model number in TSP config is no longer case sensitive (TSP-514)
+
+
+
 ## [0.13.0]
 
 ### Added
@@ -38,9 +52,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.13.2...HEAD
 
+
+[0.13.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.2
 [0.13.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.0
+
 [0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
 
 [0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1

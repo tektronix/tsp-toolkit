@@ -1,6 +1,11 @@
 import * as fs from "fs"
 import * as path from "path"
+import { COMMAND_SETS } from "@tek-engineering/keithley_instrument_libraries"
 import * as vscode from "vscode"
+
+const supported_models = fs
+    .readdirSync(COMMAND_SETS)
+    .filter((folder) => fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory())
 
 const tspSchemaContent = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -13,7 +18,8 @@ const tspSchemaContent = `{
               "type": "object",
               "properties": {
                 "model": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": ${JSON.stringify(supported_models)}
                 },
                 "slots": {
                   "type": "object",
@@ -30,7 +36,8 @@ const tspSchemaContent = `{
         }
       },
       "self": {
-        "type": "string"
+        "type": "string",
+        "enum": ${JSON.stringify(supported_models)}
       }
     }
     
