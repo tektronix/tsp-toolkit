@@ -16,6 +16,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+
 ## [0.13.0]
 
 ### Added
@@ -40,7 +41,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 <!--Version Comparison Links-->
 [Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.13.0...HEAD
 
+
 [0.13.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.0
+
 [0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
 
 [0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1
