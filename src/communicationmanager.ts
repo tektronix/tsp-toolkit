@@ -20,13 +20,13 @@ export class CommunicationManager {
         this._connHelper = conneHelper
         this._kicProcessMgr = kicProcessMgr
         const rclick = vscode.commands.registerCommand(
-            "kic.sendFile",
+            "tsp.sendFile",
             async (e) => {
                 await this.sendScript(e)
             }
         )
         const configureTspLanguage = vscode.commands.registerCommand(
-            "Kic.configureTspLanguage",
+            "tsp.configureTspLanguage",
             async (e) => {
                 await this.fetchAndUpdateInstrumentTspLinkConfiguration(e)
             }
@@ -38,7 +38,7 @@ export class CommunicationManager {
             async (e) => await this.handleTerminalCloseAction(e)
         )
         const sendFileToAllInstr = vscode.commands.registerCommand(
-            "kic.sendFileToAllInstr",
+            "tsp.sendFileToAllInstr",
             (e) => {
                 this.sendScriptToAllInstruments(e)
             }
@@ -177,7 +177,7 @@ export class CommunicationManager {
     ): string {
         let info = ""
         const maxerr: number =
-            vscode.workspace.getConfiguration("kic").get("errorLimit") ?? 0
+            vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
             if (parts == null) return ""
