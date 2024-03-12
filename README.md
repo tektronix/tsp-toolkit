@@ -148,6 +148,9 @@ for more information.
   causes tooltips to be closed too quickly and can also cause flickering.
 - Attempting to connect to an instrument multiple times with the different names, the
   second connection will fail, but the name will change.
+- Due to limitations in instrument firmware, script names longer than 27 characters will
+  be truncated to 27 characters. If multiple scripts have names that are the same up to
+  the 27th character, the second script will overwrite the first.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
