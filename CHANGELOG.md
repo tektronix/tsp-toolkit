@@ -16,6 +16,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.14.1]
+
+### Changed
+- **kic-cli:** Prepend `kic_` to scripts loaded by kic_cli to prevent name-collisions (TSP-505)
+
+### Fixed
+- **kic-cli:** Update Dependencies (TSP-576)
+- **keithley-instrument-libraries:** Fix command-set issues for legacy instruments (TSP-569)
+
 ## [0.13.2]
 
 ### Changed
@@ -27,7 +36,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Model number in TSP config is no longer case sensitive (TSP-514)
-
 
 
 ## [0.13.0]
@@ -52,15 +60,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.13.2...HEAD
-
-
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.14.1
 [0.13.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.2
 [0.13.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.0
-
 [0.12.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.2
-
 [0.12.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.1
-
 [0.12.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.12.0
-
