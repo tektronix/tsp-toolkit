@@ -374,7 +374,7 @@
         "typescript": "^4.6.4"
     },
     "dependencies": {
-        "@tek-engineering/keithley_instrument_libraries": "0.14.1",
+        "@tek-engineering/keithley_instrument_libraries": "0.14.2",
         "@tek-engineering/kic-cli": "0.14.1-0",
         "@tek-engineering/web-help-documents": "0.14.1",
         "@types/cheerio": "^0.22.31",
