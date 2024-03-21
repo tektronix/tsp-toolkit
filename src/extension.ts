@@ -20,7 +20,10 @@ import {
     setLuaWorkspaceLibrary,
     updateNodeDetails,
 } from "./tspConfigJsonParser"
-import { processWorkspaceFolders } from "./workspaceManager"
+import {
+    processWorkspaceFolders,
+    RELATIVE_TSP_CONFIG_FILE_PATH,
+} from "./workspaceManager"
 
 let _activeConnectionManager: CommunicationManager
 let _terminationMgr: TerminationManager
@@ -238,7 +241,11 @@ function hookTspConfigFileChange(
 
             void onDidChangeTspConfigFile(
                 vscode.Uri.file(
-                    folder.uri.fsPath + "/.tspConfig/config.tsp.json"
+                    path.join(
+                        folder.uri.fsPath,
+                        RELATIVE_TSP_CONFIG_FILE_PATH,
+                        "config.tsp.json"
+                    )
                 )
             )
             const fileWatcher = vscode.workspace.createFileSystemWatcher(
@@ -254,7 +261,7 @@ function hookTspConfigFileChange(
 }
 
 /**
- * Event listener for "/.tspConfig/config.tsp.json"
+ * Event listener for ".vscode/tspConfig/config.tsp.json"
  * @param uri text file uri
  */
 async function onDidChangeTspConfigFile(uri: vscode.Uri) {
@@ -263,7 +270,7 @@ async function onDidChangeTspConfigFile(uri: vscode.Uri) {
 
 /**
  * Event listener for save text document event
- * check for file path if its ".tspConfig\\config.tsp.json"
+ * check for file path if its ".vscode/tspConfig/config.tsp.json"
  * then read the file and fetch node details form it
  * update the library path in setting.json file of selected workspace folder
  * @param textDocument text document path
@@ -272,10 +279,7 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
     // Perform actions when a text document is saved
     const workspace_path = vscode.workspace.getWorkspaceFolder(textDocument.uri)
     const filePath = textDocument.uri.fsPath
-    if (
-        filePath.endsWith(".tspConfig\\config.tsp.json") &&
-        fs.existsSync(filePath)
-    ) {
+    if (filePath.endsWith("config.tsp.json") && fs.existsSync(filePath)) {
         const nodeDetails = getNodeDetails(filePath)
         const new_library_settings: string[] = []
         let nodeStr = ""
@@ -334,7 +338,11 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
 
         if (workspace_path != undefined) {
             updateNodeDetails(
-                workspace_path.uri.fsPath + "\\.tspConfig\\nodeTable.tsp",
+                path.join(
+                    workspace_path.uri.fsPath,
+                    RELATIVE_TSP_CONFIG_FILE_PATH,
+                    "nodeTable.tsp"
+                ),
                 nodeStr
             )
             setLuaWorkspaceLibrary(workspace_path, undefined)

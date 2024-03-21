@@ -134,6 +134,18 @@ export class HelpDocumentWebView {
         // Find all elements with a `bgcolor` attribute and remove it
         document("[bgcolor]").removeAttr("bgcolor")
 
+        // Disabling Also see section for webhelp file
+        // Find all anchor elements within paragraphs
+        document("p")
+            .find("a")
+            .each((_index, element) => {
+                // Get the text content of the anchor tag
+                const anchorText = document(element).text()
+
+                // Replace the anchor tag with plain text containing the same text
+                document(element).replaceWith(anchorText)
+            })
+
         let html = document.html()
 
         document("img, script").each((index, element) => {
@@ -141,7 +153,13 @@ export class HelpDocumentWebView {
             if (src) {
                 const uri =
                     HelpDocumentWebView.currentPanel?.webview.asWebviewUri(
-                        vscode.Uri.file(path.join(WEB_HELP_FILE_PATH, src))
+                        vscode.Uri.file(
+                            path.join(
+                                WEB_HELP_FILE_PATH,
+                                htmlFileName.split("/")[0],
+                                src
+                            )
+                        )
                     )
                 html = html.replace(src, uri?.toString() || src)
             }

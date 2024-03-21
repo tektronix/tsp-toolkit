@@ -1,0 +1,34 @@
+name: Veracode Scan
+
+on:
+  push:
+    branches:
+      - dev
+  schedule:
+    - cron: 0 0 * * sun
+  workflow_dispatch:
+
+jobs:
+  veracode-sast-task:
+    runs-on: ubuntu-latest
+    name: Veracode SAST policy scan
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: create new package-lock.json
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install
+      - name: ZIP source folder
+        run: zip -r app.zip src package-lock.json
+      - name: Run Veracode Policy scan
+        uses: veracode/veracode-uploadandscan-action@0.2.6
+        with:
+          appname: "tsp-toolkit"
+          createprofile: false
+          version: ${{ github.sha }}
+          filepath: "app.zip"
+          scantimeout: 30
+          vid: ${{ secrets.VERACODE_API_ID }}
+          vkey: ${{ secrets.VERACODE_API_KEY }}

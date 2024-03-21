@@ -40,7 +40,7 @@ export class FriendlyNameMgr {
                 vscode.workspace
                     .getConfiguration("tsp")
                     .get("connectionList") ?? []
-            const config = vscode.workspace.getConfiguration("kic")
+            const config = vscode.workspace.getConfiguration("tsp")
 
             if (connections.length > 0) {
                 let new_name = true

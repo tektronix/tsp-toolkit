@@ -106,8 +106,12 @@ jobs:
         username: ${{github.actor}}
         password: ${{secrets.GITHUB_TOKEN}}
     steps:
+      - name: Update ClamAV
+        run: freshclam
       - name: Tool Versions
-        run: npm --version
+        run: |
+          npm --version
+          clamscan -V
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install dependencies
@@ -120,6 +124,8 @@ jobs:
       - name: npm Package
         run: |
           npx vsce package --pre-release
+      - name: Run ClamAV
+        run: clamscan -v *.vsix
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:

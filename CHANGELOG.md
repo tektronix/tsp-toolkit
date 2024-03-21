@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [Unreleased]
+
+### Fixed
+- Saved instruments persist in the Instruments pane after restarting the extension (TSP-510)
+
+
 ## [0.14.1]
 
 ### Changed

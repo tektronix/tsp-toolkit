@@ -7,6 +7,8 @@ const supported_models = fs
     .readdirSync(COMMAND_SETS)
     .filter((folder) => fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory())
 
+export const RELATIVE_TSP_CONFIG_FILE_PATH = path.join(".vscode", "tspConfig")
+
 const tspSchemaContent = `{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
@@ -40,7 +42,7 @@ const tspSchemaContent = `{
         "enum": ${JSON.stringify(supported_models)}
       }
     }
-    
+
   }`
 
 const tspConfigJsonContent = `{
@@ -51,13 +53,15 @@ const tspConfigJsonContent = `{
 }`
 
 /**
- * Create default ".tspConfig" folder in root level directory of workspace
+ * Create default ".vscode/tspConfig" folder in root level directory of workspace
  * if doesn't exist.
  * @param folderPath root folder path of workspace
  *
  */
 function createTspFileFolder(folderPath: string) {
-    const nodeConfigFolderPath = vscode.Uri.file(`${folderPath}/.tspConfig`)
+    const nodeConfigFolderPath = vscode.Uri.file(
+        path.join(folderPath, RELATIVE_TSP_CONFIG_FILE_PATH)
+    )
 
     vscode.workspace.fs.stat(nodeConfigFolderPath).then(
         () => {
@@ -66,17 +70,29 @@ function createTspFileFolder(folderPath: string) {
         async () => {
             await fs.promises.mkdir(nodeConfigFolderPath.fsPath)
             const tspconfig = vscode.Uri.file(
-                `${folderPath}/.tspConfig/config.tsp.json`
+                path.join(
+                    folderPath,
+                    RELATIVE_TSP_CONFIG_FILE_PATH,
+                    "config.tsp.json"
+                )
             )
             await fs.promises.writeFile(tspconfig.fsPath, tspConfigJsonContent)
 
             const tspSchema = vscode.Uri.file(
-                `${folderPath}/.tspConfig/tspSchema.json`
+                path.join(
+                    folderPath,
+                    RELATIVE_TSP_CONFIG_FILE_PATH,
+                    "tspSchema.json"
+                )
             )
             await fs.promises.writeFile(tspSchema.fsPath, tspSchemaContent)
 
             const nodeTable = vscode.Uri.file(
-                `${folderPath}/.tspConfig/nodeTable.tsp`
+                path.join(
+                    folderPath,
+                    RELATIVE_TSP_CONFIG_FILE_PATH,
+                    "nodeTable.tsp"
+                )
             )
             await fs.promises.writeFile(nodeTable.fsPath, "")
         }
