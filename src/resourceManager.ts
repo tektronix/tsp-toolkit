@@ -408,11 +408,11 @@ export class ConnectionHelper {
             const sn = body
                 .split("</SerialNumber>")[0]
                 .split("<SerialNumber>")[1]
-            const portSplit = body.split("::SOCKET")[0].split("::")
-            let portNumber = ":5025"
-            if (portSplit.length > 0) {
-                portNumber = ":" + portSplit[portSplit.length - 1]
-            }
+            // const portSplit = body.split("::SOCKET")[0].split("::")
+            const portNumber = ":5025"
+            // if (portSplit.length > 0) {
+            //     portNumber = ":" + portSplit[portSplit.length - 1]
+            // }
 
             const st = { model, sn, port: portNumber }
             this.myIPmap.set(ip, st)

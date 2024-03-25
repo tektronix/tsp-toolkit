@@ -68,7 +68,9 @@ function createTspFileFolder(folderPath: string) {
             console.log("Folder already exists:", nodeConfigFolderPath.fsPath)
         },
         async () => {
-            await fs.promises.mkdir(nodeConfigFolderPath.fsPath)
+            await fs.promises.mkdir(nodeConfigFolderPath.fsPath, {
+                recursive: true,
+            })
             const tspconfig = vscode.Uri.file(
                 path.join(
                     folderPath,

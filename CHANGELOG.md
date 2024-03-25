@@ -16,11 +16,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [Unreleased]
+## [0.15.0]
 
 ### Fixed
 - Saved instruments persist in the Instruments pane after restarting the extension (TSP-510)
-
+- **tsp-tookit-kic-cli:** Change language to `TSP` after connection to TTI instrument (TSP-561)
+- **tsp-toolkit-kic-cli:** Fix script name issues if the name contains special characters (TSP-505)
+- **tsp-toolkit-kic-lib:** Use `*TST?` to check login state instead of
+  `print("unlocked")` just in case we are in a SCPI command set mode.
 
 ## [0.14.1]
 
@@ -66,7 +69,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/TEK-Engineering/tsp-toolkit/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.15.0
 [0.14.1]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.14.1
 [0.13.2]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.2
 [0.13.0]: https://github.com/TEK-Engineering/tsp-toolkit/releases/tag/v0.13.0

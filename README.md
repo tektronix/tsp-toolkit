@@ -1,4 +1,8 @@
-# Keithley TSP® Toolkit
+# Keithley TSP® Toolkit Beta
+
+Please note, this extension is still in Beta. We expect there will be issues or
+improvements. We would greatly appreciate any [feedback][tsp-toolkit-issues] on the GitHub repo for this
+project.
 
 The Keithley TSP® Toolkit is a [Visual Studio Code][code] extension that provides rich
 support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
@@ -35,7 +39,7 @@ following commands:
 
 | Command                          | Description                                                                         | Shortcut                                        |
 |:---------------------------------|:------------------------------------------------------------------------------------|:------------------------------------------------|
-| TSP: Open Terminal               | Opens a new terminal session to an instrument                                       |                                                 |
+| TSP: Open Terminal               | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |                                                 |
 | TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |                                                 |
 
 To see all available Keithley TSP Toolkit commands, open the Command Pallette and type `TSP`.
@@ -151,6 +155,10 @@ for more information.
 - Due to limitations in instrument firmware, script names longer than 27 characters will
   be truncated to 27 characters. If multiple scripts have names that are the same up to
   the 27th character, the second script will overwrite the first.
+- If a terminal is closed using the trashcan icon, the instrument connection is not 
+  closed correctly. In order to close the terminal so that the instrument connection 
+  _is_ closed, type `.exit` into the terminal. It will close by itself after it cleans
+  up the connection. 
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)

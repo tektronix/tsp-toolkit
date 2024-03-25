@@ -1,9 +1,9 @@
 {
     "name": "tsp-toolkit",
     "publisher": "Tektronix",
-    "displayName": "Keithley TSP Toolkit",
+    "displayName": "[Beta] Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Protocol",
-    "version": "0.14.1",
+    "version": "0.15.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -377,9 +377,9 @@
         "typescript": "^4.6.4"
     },
     "dependencies": {
-        "@tek-engineering/keithley_instrument_libraries": "0.14.2",
-        "@tek-engineering/kic-cli": "0.14.1",
-        "@tek-engineering/web-help-documents": "0.14.1",
+        "@tek-engineering/keithley_instrument_libraries": "0.15.0",
+        "@tek-engineering/kic-cli": "0.15.0",
+        "@tek-engineering/web-help-documents": "0.15.0",
         "@types/cheerio": "^0.22.31",
         "cheerio": "^1.0.0-rc.12",
         "class-transformer": "^0.5.1",
