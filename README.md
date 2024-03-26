@@ -178,5 +178,5 @@ for more information.
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
 
 <!--Pics-->
-[pic-send-script-to-terminal]: https://github.com/TEK-Engineering/tsp-toolkit/raw/dev/images/SendScriptToTerminal.png
-[pic-open-folder]: https://github.com/TEK-Engineering/tsp-toolkit/raw/dev/images/OpenFolder.png
+[pic-send-script-to-terminal]: https://github.com/tektronix/tsp-toolkit/raw/dev/images/SendScriptToTerminal.png
+[pic-open-folder]: https://github.com/tektronix/tsp-toolkit/raw/dev/images/OpenFolder.png

@@ -7,7 +7,7 @@ import {
     JSONRPCRequest,
     JSONRPCResponse,
 } from "json-rpc-2.0"
-import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@tek-engineering/kic-cli"
+import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@tektronix/kic-cli"
 import fetch from "node-fetch"
 import {
     FriendlyNameMgr,

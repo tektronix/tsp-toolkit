@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@tek-engineering/kic-cli"
+import { EXECUTABLE } from "@tektronix/kic-cli"
 import {
     CONNECTION_RE,
     ConnectionHelper,

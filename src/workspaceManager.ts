@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-import { COMMAND_SETS } from "@tek-engineering/keithley_instrument_libraries"
+import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
 
 const supported_models = fs

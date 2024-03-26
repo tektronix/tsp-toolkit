@@ -1,8 +1,8 @@
 import * as fs from "fs"
 import path = require("path")
 import * as vscode from "vscode"
-import { COMMAND_SETS } from "@tek-engineering/keithley_instrument_libraries"
-import { EXECUTABLE } from "@tek-engineering/kic-cli"
+import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+import { EXECUTABLE } from "@tektronix/kic-cli"
 import { CommunicationManager } from "./communicationmanager"
 import { TerminationManager } from "./terminationManager"
 import { InstrumentsExplorer } from "./instruments"

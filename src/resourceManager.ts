@@ -1,7 +1,7 @@
 import * as child from "child_process"
 import { EventEmitter } from "events"
 import fetch from "node-fetch"
-import { EXECUTABLE } from "@tek-engineering/kic-cli"
+import { EXECUTABLE } from "@tektronix/kic-cli"
 import * as vscode from "vscode"
 
 export const CONNECTION_RE =
