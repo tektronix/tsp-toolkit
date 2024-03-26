@@ -158,7 +158,25 @@ for more information.
 - If a terminal is closed using the trashcan icon, the instrument connection is not 
   closed correctly. In order to close the terminal so that the instrument connection 
   _is_ closed, type `.exit` into the terminal. It will close by itself after it cleans
-  up the connection. 
+  up the connection.
+- The list of instruments that support language features is limited to the following:
+    - 2450
+    - 2460
+    - 2461
+    - 2470
+    - 2601B
+    - 2602B
+    - 2604B
+    - 2611B
+    - 2612B
+    - 2614B
+    - 2634B
+    - 2635B
+    - 2636B
+    - DMM7510
+- Flashing firmware to the 3706A, 707B, 708B, and 2600-series instruments is not
+  successful. This will NOT render the instrument inoperable, but will not complete
+  successfully.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
