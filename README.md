@@ -12,7 +12,7 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 ## Installed Extensions
 
-[Keithley TSP Toolkit][tsp-toolkit] will automatically install the [sumneko.lua][sumneko]
+Keithley TSP Toolkit will automatically install the [sumneko.lua][sumneko]
 extension to use all of the language features it provides.
 
 Extensions installed through the marketplace are subject to the [Marketplace Terms of Use][marketplace-tou].
@@ -83,7 +83,7 @@ then it is possible to have TSP Toolkit automatically configure your project for
 ## Resources and Tutorials
 
 - [TSP Landing Page on Tek.com][tsp]
-- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
+<!-- - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]-->
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [TSP Script Example Repository][tsp-script-examples]
@@ -185,9 +185,9 @@ for more information.
 [sumneko]: https://marketplace.visualstudio.com/items?itemName=sumneko.lua
 [tsp-link]: https://www.tek.com/en/video/product-features/what-is-tsp-link
 [tsp-script-examples]: https://github.com/tektronix/keithley/
-[tsp-toolkit-feature-walkthrough]: https://www.tek.com/
+<!--[tsp-toolkit-feature-walkthrough]: https://www.tek.com/-->
 [tsp-toolkit-marketplace]: https://code.visualstudio.com/docs/editor/extension-gallery
-[tsp-toolkit]: https://www.tek.com/
+<!--[tsp-toolkit]: https://www.tek.com/software/tsp-toolkit-->
 [tsp-toolkit-issues]: https://github.com/tektronix/tsp-toolkit/issues
 [tsp-toolkit-contributing]: ./CONTRIBUTING.md
 [tsp-toolkit-discussions]: https://github.com/tektronix/tsp-toolkit/discussions
