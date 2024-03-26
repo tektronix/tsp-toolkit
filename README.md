@@ -155,8 +155,8 @@ for more information.
 - Due to limitations in instrument firmware, script names longer than 27 characters will
   be truncated to 27 characters. If multiple scripts have names that are the same up to
   the 27th character, the second script will overwrite the first.
-- If a terminal is closed using the trashcan icon, the instrument connection is not 
-  closed correctly. In order to close the terminal so that the instrument connection 
+- If a terminal is closed using the trashcan icon, the instrument connection is not
+  closed correctly. In order to close the terminal so that the instrument connection
   _is_ closed, type `.exit` into the terminal. It will close by itself after it cleans
   up the connection.
 - The list of instruments that support language features is limited to the following:
