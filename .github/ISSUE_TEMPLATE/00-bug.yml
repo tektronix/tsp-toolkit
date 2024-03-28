@@ -40,9 +40,7 @@ body:
       description: The version of `tektronix.tsp-toolkit-develop` that you have installed
       multiple: false
       options:
-        - "None"
         - "0.15.0"
-      default: 0
   - type: textarea
     attributes:
       label: "Steps to Reproduce"

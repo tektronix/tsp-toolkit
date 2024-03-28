@@ -1,6 +1,6 @@
 ---
-name: Bug Report
-description: Create an issue to let us know about a problem.
+name: Feature Request
+description: Let us know about a feature that you think would be a good addition to TSP Toolkit!
 title: "[Feature]: "
 labels:
   - bug
