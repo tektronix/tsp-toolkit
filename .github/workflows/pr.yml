@@ -185,21 +185,6 @@ jobs:
           echo "cl_version=${CL}" >> $GITHUB_OUTPUT
           echo "commit=${COMMIT}" >> $GITHUB_OUTPUT
 
-
-          COMMIT="${{github.sha}}"
-          V="${{github.head_ref}}"
-          V="${V#release/}"
-
-          if ${{! github.event.pull_request.merged}}; then
-            V="${V}-$(git tag --list ${V}* | wc -l)"
-          fi
-
-          CL=${V#v}
-          CL=${CL%-*}
-
-          echo "version=${V}" >> $GITHUB_OUTPUT
-          echo "cl_version=${CL}" >> $GITHUB_OUTPUT
-          echo "commit=${COMMIT}" >> $GITHUB_OUTPUT
       - run: 'git tag --list ${V}*'
       - name: Get Artifacts
         uses: actions/download-artifact@v3
