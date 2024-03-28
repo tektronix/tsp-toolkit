@@ -1,0 +1,71 @@
+---
+name: Bug Report
+description: Create an issue to let us know about a problem.
+title: "[Bug]: "
+labels:
+  - bug
+  - triage
+body:
+  - type: checkboxes
+    attributes:
+      label: Pre-check
+      description: |
+        Please search through existing [issues](https://github.com/tektronix/tsp-toolkit/issues/)
+        and [discussions](https://github.com/tektronix/tsp-toolkit/discussions) before entering a new issue.
+
+        Feel free to 👍 any open issues that match the problem you encountered!
+      options:
+        - label: I have searched the existing issues and discussions to make sure my problem has not already been addressed.
+          required: true
+        - label: I have looked at the "Known Issues" Section of the marketplace page of all TSP Toolkit extensions.
+          required: true
+  - type: textarea
+    attributes:
+      label: Search Terms
+      description: |
+        What terms did you use to search for existing issues? These terms will help others
+        to find this issue later on.
+      placeholder: |
+        e.g. "debugger", "crash", "lost connection"
+  - type: dropdown
+    attributes:
+      label: TSP Toolkit Version
+      description: The version of `tektronix.tsp-toolkit` that you have installed.
+      multiple: false
+      options:
+        - "0.15.0"
+  - type: dropdown
+    attributes:
+      label: TSP Toolkit Develop Version
+      description: The version of `tektronix.tsp-toolkit-develop` that you have installed
+      multiple: false
+      options:
+        - "None"
+        - "0.15.0"
+      default: 0
+  - type: textarea
+    attributes:
+      label: "Steps to Reproduce"
+      description: List the steps you took to exhibit the issue.
+      placeholder: |
+        Example:
+          1. Open Command Pallette and enter "TSP: Open Terminal"
+          2. Select "New Connection"
+          3. Type in IP address for 2450
+          4. After connection, enter `print("some string that breaks the terminal")`
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: Let us know what you expect to happen.
+      placeholder: |
+        Example:
+          The terminal should receive `some string that breaks the terminal` back from
+          from the instrument. Followed by a new prompt.
+  - type: textarea
+    attributes:
+      label: Actual Behavior
+      description: Let us know what actually happened
+      placeholder: |
+        Example:
+          The terminal immediately disappeared with no messages.
+

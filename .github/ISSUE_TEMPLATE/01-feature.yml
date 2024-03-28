@@ -1,0 +1,32 @@
+---
+name: Bug Report
+description: Create an issue to let us know about a problem.
+title: "[Feature]: "
+labels:
+  - bug
+  - triage
+body:
+  - type: checkboxes
+    attributes:
+      label: Pre-check
+      description: |
+        Please search through existing [issues](https://github.com/tektronix/tsp-toolkit/issues/)
+        and [discussions](https://github.com/tektronix/tsp-toolkit/discussions) before entering a new feature request.
+
+        Feel free to 👍 any open issues that match the problem you encountered!
+      options:
+        - label: I have searched the existing issues and discussions to make sure my problem has not already been addressed.
+          required: true
+        - label: I have looked at the "Known Issues" Section of the marketplace page of all TSP Toolkit extensions.
+          required: true
+  - type: textarea
+    attributes:
+      label: Feature Idea
+      description: Let us know in as much detail as you can the feature you would like.
+      placeholder: |
+        Example:
+          As a user, I would like to be able to see my instruments list in a side panel
+          as they are discovered so I can find the instrument I'm looking for quickly.
+
+          This would idealy include the model number, serial number, and connection 
+          information for each instrument.
