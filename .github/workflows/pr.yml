@@ -161,7 +161,9 @@ jobs:
             V="${V#release/}"
           else
             V="$(npm pkg get version)"
-            V=v${V//\"/} #remove '"'s
+            echo "Extracted Version: $V"
+            V="$(echo v"$V" | sed 's/\"//g')"
+            echo "Cleaned up Version: $V"
           fi
 
           # Check to see if the version tag already exists
@@ -176,6 +178,7 @@ jobs:
           # 2) This is a feature branch being merged into the main branch.
           if ${{(! github.event.pull_request.merged && contains(github.head_ref, 'release/')) || (github.event.pull_request.merged && !contains(github.head_ref, 'release/'))}}; then
             V="${V}-$(git tag --list ${V}* | wc -l)"
+            echo "RC Version: $V"
           fi
 
           CL=${V#v}
