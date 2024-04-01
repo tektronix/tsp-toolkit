@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "[Beta] Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Protocol",
-    "version": "0.15.0",
+    "version": "0.15.1",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
