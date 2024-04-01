@@ -31,6 +31,12 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 
     ![Send Script to Terminal][pic-send-script-to-terminal]
 
+### Usage Notes
+
+When running scripts or commands via the terminal, errors are only fetched _after_ the
+requested action completes. No new errors will be printed while the operation is in
+progress.
+
 ## Useful Commands
 
 Open the Command Pallette (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS and
