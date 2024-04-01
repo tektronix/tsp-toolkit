@@ -145,7 +145,7 @@ jobs:
       - sbom
       - lint
       - style
-    if: ${{ endsWith(github.base_ref, 'main') && contains(github.head_ref, 'release') }}
+    if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) || github.event.pull_request.merged ) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -156,11 +156,29 @@ jobs:
         id: lasttag
         run: |
           COMMIT="${{github.sha}}"
-          V="${{github.head_ref}}"
-          V="${V#release/}"
+          if ${{contains(github.head_ref, 'release/')}}; then
+            V="${{github.head_ref}}"
+            V="${V#release/}"
+          else
+            V="$(npm pkg get version)"
+            echo "Extracted Version: $V"
+            V="$(echo v"$V" | sed 's/\"//g')"
+            echo "Cleaned up Version: $V"
+          fi
 
-          if ${{! github.event.pull_request.merged}}; then
+          # Check to see if the version tag already exists
+          # If it does, print a message and exit with an error code
+          if [ $(git tag --list "$V") ]; then
+            echo "Version tag already exists. Did you bump the version number?"
+            exit 1
+          fi
+
+          # Create an RC release if
+          # 1) This PR is a release branch that hasn't been merged to main.
+          # 2) This is a feature branch being merged into the main branch.
+          if ${{(! github.event.pull_request.merged && contains(github.head_ref, 'release/')) || (github.event.pull_request.merged && !contains(github.head_ref, 'release/'))}}; then
             V="${V}-$(git tag --list ${V}* | wc -l)"
+            echo "RC Version: $V"
           fi
 
           CL=${V#v}
@@ -169,6 +187,7 @@ jobs:
           echo "version=${V}" >> $GITHUB_OUTPUT
           echo "cl_version=${CL}" >> $GITHUB_OUTPUT
           echo "commit=${COMMIT}" >> $GITHUB_OUTPUT
+
       - run: 'git tag --list ${V}*'
       - name: Get Artifacts
         uses: actions/download-artifact@v3
@@ -203,7 +222,7 @@ jobs:
 
             ${{steps.changelog.outputs.description}}
 
-          prerelease: ${{! github.event.pull_request.merged}}
+          prerelease: ${{ (! github.event.pull_request.merged) || (github.event.pull_request.merged && ! contains(github.head_ref, 'release/')) }}
           commit: ${{steps.lasttag.outputs.commit}}
           makeLatest: true
           tag: ${{steps.lasttag.outputs.version}}
