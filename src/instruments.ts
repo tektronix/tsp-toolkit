@@ -737,7 +737,7 @@ export class NewTDPModel {
             const instr_info = instr_details as IInstrInfo
 
             this._savedNodeProvider?.saveInstrToList(instr_to_save)
-            this.connection_list.push(instr_info) //check for redundant entries
+            this.addToConnectionList(instr_info)
 
             this.saveInstrInfoToPersist(instr_info)
 
@@ -758,7 +758,7 @@ export class NewTDPModel {
                 nodeToBeSaved.FetchUniqueID() ?? ""
             )
 
-            this.connection_list.push(nodeToBeSaved.fetchIInstrInfo()) //check for redundant entries
+            this.addToConnectionList(nodeToBeSaved.fetchIInstrInfo())
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
             this.saveInstrInfoToPersist(nodeToBeSaved.fetchIInstrInfo())
@@ -768,6 +768,21 @@ export class NewTDPModel {
             } else {
                 this._usbNodeProvider?.updateSavedList(saved_list ?? [], true)
             }
+        }
+    }
+
+    //check for redundant entries
+    public addToConnectionList(instr: IInstrInfo) {
+        const res = this.connection_list.find((item) => {
+            return (
+                item.io_type == instr.io_type &&
+                item.model == instr.model &&
+                item.serial_number == instr.serial_number
+            )
+        })
+
+        if (res == undefined) {
+            this.connection_list.push(instr)
         }
     }
 
@@ -784,13 +799,15 @@ export class NewTDPModel {
                     .get("savedInstrumentList") ?? []
             const config = vscode.workspace.getConfiguration("tsp")
 
-            const found = instrList.find((item) => {
-                item.io_type == instr.io_type &&
+            const res = instrList.find((item) => {
+                return (
+                    item.io_type == instr.io_type &&
                     item.model == instr.model &&
                     item.serial_number == instr.serial_number
+                )
             })
 
-            if (!found) {
+            if (res == undefined) {
                 instrList.push(instr)
 
                 void config.update(
