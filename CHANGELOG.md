@@ -21,6 +21,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Changed
 - Nothing yet
 
+### Fixed
+- Only single entry per instrument in settings.json file, irrespective of number of times it is saved (TSP-616)
+
 ## [0.15.0]
 
 ### Fixed
