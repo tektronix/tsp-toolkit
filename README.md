@@ -88,8 +88,8 @@ then it is possible to have TSP Toolkit automatically configure your project for
 
 ## Resources and Tutorials
 
-- [TSP Landing Page on Tek.com][tsp]
 <!-- - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]-->
+- [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [TSP Script Example Repository][tsp-script-examples]
