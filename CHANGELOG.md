@@ -19,10 +19,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.15.1]
 
 ### Changed
-- Nothing yet
+- **tsp-toolkit-kic-lib:** Clean up instrument connections when an AsyncStream
+  stream is dropped
 
 ### Fixed
 - Only single entry per instrument in settings.json file, irrespective of number of times it is saved (TSP-616)
+- **tsp-toolkit-kic-cli:** Remove errors when fetching nodes with `.nodes` command
+
+### Security
+- **tsp-toolkit-kic-cli:** Bump `h2` crate version
 
 ## [0.15.0]
 
@@ -36,7 +41,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.14.1]
 
 ### Changed
-- **kic-cli:** Prepend `kic_` to scripts loaded by kic_cli to prevent name-collisions (TSP-505)
+- **kic-cli:** Prepend `kic_` to scripts loaded by kic cli to prevent name-collisions (TSP-505)
 
 ### Fixed
 - **kic-cli:** Update Dependencies (TSP-576)
