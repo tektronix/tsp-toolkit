@@ -114,14 +114,16 @@ The extension is currently only available in English.
 
 ## Questions, Issues, Feature Requests, and Contributions
 - If you come across a problem with the extension, please file an [issue][tsp-toolkit-issues]
-- Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
-  for more details.
 - Any and all feedback is appreciated and welcome!
     - If someone has already filed an [issue][tsp-toolkit-issues] that encompasses your
       feedback, please leave a 👍/👎 reaction on the issue. Otherwise please start a new
       [discussion][tsp-toolkit-discussions]
+<!--
+- Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
+  for more details.
 - If you're interested in the development of the extension, your can read about our
   [development process][tsp-toolkit-dev-process]
+-->
 
 
 ## Known Issues
