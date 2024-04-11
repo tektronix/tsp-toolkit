@@ -6,7 +6,7 @@ project.
 
 The Keithley TSP® Toolkit is a [Visual Studio Code][code] extension that provides rich
 support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
-scripts. The extension includes command-set documentation and language features such as
+scripts on TSP-enabled Keithley instruments. The extension includes command-set documentation and language features such as
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
