@@ -6,7 +6,7 @@ project.
 
 The Keithley TSP® Toolkit is a [Visual Studio Code][code] extension that provides rich
 support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
-scripts. The extension includes command-set documentation and language features such as
+scripts on TSP-enabled Keithley instruments. The extension includes command-set documentation and language features such as
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
@@ -88,8 +88,8 @@ then it is possible to have TSP Toolkit automatically configure your project for
 
 ## Resources and Tutorials
 
-- [TSP Landing Page on Tek.com][tsp]
 <!-- - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]-->
+- [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [TSP Script Example Repository][tsp-script-examples]
@@ -114,14 +114,16 @@ The extension is currently only available in English.
 
 ## Questions, Issues, Feature Requests, and Contributions
 - If you come across a problem with the extension, please file an [issue][tsp-toolkit-issues]
-- Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
-  for more details.
 - Any and all feedback is appreciated and welcome!
     - If someone has already filed an [issue][tsp-toolkit-issues] that encompasses your
       feedback, please leave a 👍/👎 reaction on the issue. Otherwise please start a new
       [discussion][tsp-toolkit-discussions]
+<!--
+- Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
+  for more details.
 - If you're interested in the development of the extension, your can read about our
   [development process][tsp-toolkit-dev-process]
+-->
 
 
 ## Known Issues
