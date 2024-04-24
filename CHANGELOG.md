@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [Unreleased]
+
+### Fixed
+- Removed debugger related code from package.json (TSP-436)
+
 ## [0.15.1]
 
 ### Changed
