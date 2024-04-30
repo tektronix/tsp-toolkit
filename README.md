@@ -10,6 +10,10 @@ scripts on TSP-enabled Keithley instruments. The extension includes command-set 
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
+## Demo Video
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/d1jsgy6Dslc?si=oPrUgdM5yp-ykcIh" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Installed Extensions
 
 Keithley TSP Toolkit will automatically install the [sumneko.lua][sumneko]
