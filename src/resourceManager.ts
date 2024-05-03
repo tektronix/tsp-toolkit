@@ -409,7 +409,7 @@ export class ConnectionHelper {
                 .split("</SerialNumber>")[0]
                 .split("<SerialNumber>")[1]
             // const portSplit = body.split("::SOCKET")[0].split("::")
-            const portNumber = ":5025"
+            const portNumber = "5025"
             // if (portSplit.length > 0) {
             //     portNumber = ":" + portSplit[portSplit.length - 1]
             // }
