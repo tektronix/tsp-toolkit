@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - Corrected extension description
+- Remove `:` from port number
 
 ## [0.15.2]
 
