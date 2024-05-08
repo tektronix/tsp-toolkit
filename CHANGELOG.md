@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Corrected extension description
 - Remove `:` from port number
+- Adding tsplink nodes in config.tsp.json file does not load definitions for added node lua table
 
 ## [0.15.2]
 
