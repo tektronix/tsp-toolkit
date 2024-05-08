@@ -303,7 +303,7 @@
         "coverage": "nyc --nycrc-path='.nycrc.json' npm run test"
     },
     "devDependencies": {
-        "@cyclonedx/cyclonedx-npm": "^1.16.2",
+        "@cyclonedx/cyclonedx-npm": "^1.10.0",
         "@istanbuljs/nyc-config-typescript": "^1.0.2",
         "@types/chai": "^4.3.14",
         "@types/mocha": "^9.1.1",
@@ -329,8 +329,8 @@
         "typescript": "^4.9.5"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.15.0",
-        "@tektronix/kic-cli": "0.15.1",
+        "@tektronix/keithley_instrument_libraries": "0.15.1",
+        "@tektronix/kic-cli": "0.15.3-3",
         "@tektronix/web-help-documents": "0.15.0",
         "@types/cheerio": "^0.22.35",
         "cheerio": "^1.0.0-rc.12",
