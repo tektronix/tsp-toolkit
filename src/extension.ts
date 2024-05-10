@@ -113,7 +113,7 @@ export async function createTerminal(
                     msn.sn
             )
             info = _activeConnectionManager?.createTerminal(
-                connection_string + msn.port,
+                `${connection_string}:${msn.port}`,
                 undefined,
                 command_text
             )
