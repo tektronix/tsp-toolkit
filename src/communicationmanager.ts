@@ -1,3 +1,4 @@
+import path = require("node:path")
 import * as vscode from "vscode"
 import { EXECUTABLE } from "@tektronix/kic-cli"
 import {
@@ -87,7 +88,10 @@ export class CommunicationManager {
      */
     private async fetchAndUpdateInstrumentTspLinkConfiguration(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const text = `.nodes "${uriObject.fsPath}\\config.tsp.json"`
+        const text = `.nodes "${path.join(
+            uriObject.fsPath,
+            "config.tsp.json"
+        )}"`
         await this.handleSendTextToTerminal(text)
         void vscode.window.showInformationMessage(
             "Fetching and Updating Instrument tspLink Configuration"
