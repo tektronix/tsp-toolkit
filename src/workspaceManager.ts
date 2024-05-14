@@ -171,6 +171,40 @@ function disableDiagnosticForLibraryFiles(
 }
 
 /**
+ * Configure empty list to Lua.workspace.ignoreDir
+ * @param workspace_path workspace folder path
+ */
+function setEmptyLuaWorkspaceIgnoreDirList(
+    workspace_path: vscode.WorkspaceFolder
+) {
+    const configuration = vscode.workspace.getConfiguration(
+        undefined,
+        workspace_path.uri
+    )
+    configuration
+        .update(
+            "Lua.workspace.ignoreDir",
+            [],
+            vscode.ConfigurationTarget.WorkspaceFolder
+        )
+        .then(
+            () => {
+                // Configuration updated successfully
+                void vscode.window.showInformationMessage(
+                    "Lua.workspace.ignoreDir configuration updated"
+                )
+            },
+            (error) => {
+                // Error occurred while updating the configuration
+                void vscode.window.showInformationMessage(
+                    "Failed to update Lua.workspace.ignoreDir configuration:",
+                    error
+                )
+            }
+        )
+}
+
+/**
  * Iterate over workspace folder to find file with .tsp extension
  */
 export async function processWorkspaceFolders() {
@@ -181,6 +215,7 @@ export async function processWorkspaceFolders() {
             if (await processFiles(folderPath)) {
                 updateFileAssociations()
                 disableDiagnosticForLibraryFiles(folder)
+                setEmptyLuaWorkspaceIgnoreDirList(folder)
                 createTspFileFolder(folderPath)
             }
         }
