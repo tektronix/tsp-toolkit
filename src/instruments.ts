@@ -126,14 +126,14 @@ interface IIDNInfo {
 
 interface IInstrInfo {
     io_type: IoType
-    ip_addr?: string
+    instr_address: string
     manufacturer: string
     model: string
     serial_number: string
     firmware_revision: string
     socket_port?: string
-    unique_string?: string
     instr_categ: string
+    uuid?: string
 }
 
 /**
@@ -196,6 +196,18 @@ class IONode extends InstrNode {
                 found = true
             }
         })
+
+        //if found == true, extract the element and check if ip is same and modify
+        if (found) {
+            this.children.forEach((child) => {
+                const res = child as IOInstrNode
+                if (res.FetchUniqueID() == unique_id) {
+                    res.updateConnectionAddress(instr)
+                    return
+                }
+            })
+        }
+
         if (!found) {
             this.instrInList.push(unique_id)
             this.children.push(new IOInstrNode(instr, false))
@@ -293,10 +305,7 @@ class IOInstrNode extends InstrNode {
     }
 
     public FetchConnectionAddr(): string {
-        if (this._instrInfo.io_type == IoType.Lan) {
-            return this._instrInfo.ip_addr ?? ""
-        }
-        return this._instrInfo.unique_string ?? ""
+        return this._instrInfo.instr_address
     }
 
     public FetchInstrIOType(): IoType {
@@ -319,10 +328,7 @@ class IOInstrNode extends InstrNode {
             //add the instrument to connection list so that user can't enter duplicate names
             const new_name =
                 this._instrInfo.io_type.toString() + ":" + this._modSerial
-            const new_addr =
-                (this._instrInfo.io_type === IoType.Lan
-                    ? this._instrInfo.ip_addr
-                    : this._instrInfo.unique_string) ?? "NA"
+            const new_addr = this._instrInfo.instr_address
             FriendlyNameMgr.handleFriendlyName(
                 this._instrInfo.io_type,
                 this._modSerial,
@@ -347,15 +353,47 @@ class IOInstrNode extends InstrNode {
         return this._instrInfo
     }
 
+    /**
+     * Used to update connection address, _instrInfo object
+     * and the friendly name
+     *
+     * @param instrInfo - latest instrument details
+     */
+    public updateConnectionAddress(instrInfo: IInstrInfo) {
+        if (this._instrInfo.instr_address != instrInfo.instr_address) {
+            //instrInfo also needs to be updated
+            this._instrInfo = instrInfo
+
+            //instrument address needs to be updated
+            this.children[0] = new InstrNode(this._instrInfo.instr_address)
+        }
+
+        //friendly_name needs to be updated
+        const connections: Array<InstrDetails> =
+            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
+        const config = vscode.workspace.getConfiguration("tsp")
+
+        const index = connections.findIndex(
+            (i) =>
+                i.io_type == this._instrInfo.io_type &&
+                i.model_serial == this._modSerial
+        )
+        if (index > -1) {
+            if (connections[index].address != this._instrInfo.instr_address) {
+                //update
+                connections[index].address = this._instrInfo.instr_address
+                void config.update(
+                    "connectionList",
+                    connections,
+                    vscode.ConfigurationTarget.Global
+                )
+            }
+        }
+    }
+
     private addChildNodes() {
         //for loop with child nodes - remaining
-        if (this._instrInfo.io_type == IoType.Lan) {
-            this.children.push(new InstrNode(this._instrInfo.ip_addr ?? "NA"))
-        } else {
-            this.children.push(
-                new InstrNode(this._instrInfo.unique_string ?? "NA")
-            )
-        }
+        this.children.push(new InstrNode(this._instrInfo.instr_address))
 
         this.children.push(new InstrNode("Model: " + this._instrInfo.model))
         this.children.push(
@@ -468,6 +506,17 @@ class SIONode extends InstrNode {
                 found = true
             }
         })
+
+        //if found == true, extract the element and check if ip is same and modify
+        if (found) {
+            this.children.forEach((child) => {
+                const res = child as IOInstrNode
+                if (res.FetchUniqueID() == unique_id) {
+                    res.updateConnectionAddress(instr)
+                    return
+                }
+            })
+        }
 
         if (!found) {
             this.instrInList.push(unique_id)
@@ -623,6 +672,7 @@ export class NewTDPModel {
     private _savedNodeProvider: SavedNodeProvider | undefined
     private _lanNodeProvider: LanNodeProvider | undefined
     private _usbNodeProvider: USBNodeProvider | undefined
+    private new_instr: IInstrInfo | undefined
     //#endregion
 
     //#region constructor
@@ -651,29 +701,7 @@ export class NewTDPModel {
                                 `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`
                             )
                         } else {
-                            const res: unknown = jsonRPCResponse.result
-                            if (typeof res === "string") {
-                                console.log("JSON RPC Instr list: " + res)
-                                const instrList = res.split("\n")
-                                //need to remove the last newline element??
-                                instrList?.forEach((instr) => {
-                                    if (instr.length > 0) {
-                                        const obj = JSON.parse(
-                                            instr
-                                        ) as IInstrInfo
-                                        if (
-                                            !this.discovery_list.some(
-                                                (e) =>
-                                                    e.io_type == obj.io_type &&
-                                                    e.serial_number ==
-                                                        obj.serial_number
-                                            )
-                                        ) {
-                                            this.discovery_list.push(obj)
-                                        }
-                                    }
-                                })
-                            }
+                            this.parseDiscoveredInstruments(jsonRPCResponse)
                         }
                     },
                     () => {
@@ -683,6 +711,55 @@ export class NewTDPModel {
                 //todo
             })
         })
+    }
+
+    private parseDiscoveredInstruments(jsonRPCResponse: JSONRPCResponse) {
+        const res: unknown = jsonRPCResponse.result
+        if (typeof res === "string") {
+            console.log("JSON RPC Instr list: " + res)
+            const instrList = res.split("\n")
+
+            //need to remove the last newline element??
+            instrList?.forEach((instr) => {
+                if (instr.length > 0) {
+                    const obj = JSON.parse(instr) as IInstrInfo
+                    obj.uuid = DiscoveryHelper.createUniqueID(obj)
+
+                    if (this.discovery_list.length == 0) {
+                        this.discovery_list.push(obj)
+                    } else {
+                        let idx = -1
+                        this.new_instr = undefined
+
+                        for (let i = 0; i < this.discovery_list.length; i++) {
+                            this.new_instr = undefined
+                            if (this.discovery_list[i].uuid == obj.uuid) {
+                                if (
+                                    this.discovery_list[i].instr_address !=
+                                    obj.instr_address
+                                ) {
+                                    idx = i
+                                    this.new_instr = obj
+                                    break
+                                } else {
+                                    break
+                                }
+                            } else {
+                                this.new_instr = obj
+                            }
+                        }
+
+                        if (this.new_instr != undefined) {
+                            if (idx > -1) {
+                                this.discovery_list[idx] = this.new_instr
+                            } else {
+                                this.discovery_list.push(this.new_instr)
+                            }
+                        }
+                    }
+                }
+            })
+        }
     }
 
     public getChildren(node: InstrNode): InstrNode[] {
@@ -700,6 +777,10 @@ export class NewTDPModel {
                 ) {
                     return c(nodeItems)
                 }
+
+                // if any saved instrument is discovered and if the instrument address
+                // has changed, we need to update it
+                this.checkForSavedInstrIPChange()
 
                 this.connection_list.forEach((instr) => {
                     const ret =
@@ -735,6 +816,9 @@ export class NewTDPModel {
     ) {
         if (instr_to_save.length > 0) {
             const instr_info = instr_details as IInstrInfo
+
+            //update uuid
+            instr_info.uuid = DiscoveryHelper.createUniqueID(instr_info)
 
             this._savedNodeProvider?.saveInstrToList(instr_to_save)
             this.addToConnectionList(instr_info)
@@ -773,16 +857,35 @@ export class NewTDPModel {
 
     //check for redundant entries
     public addToConnectionList(instr: IInstrInfo) {
-        const res = this.connection_list.find((item) => {
-            return (
-                item.io_type == instr.io_type &&
-                item.model == instr.model &&
-                item.serial_number == instr.serial_number
-            )
-        })
-
-        if (res == undefined) {
+        let res: IInstrInfo | undefined = undefined
+        let idx = -1
+        if (this.connection_list.length == 0) {
             this.connection_list.push(instr)
+        } else {
+            for (let i = 0; i < this.connection_list.length; i++) {
+                if (instr.uuid == this.connection_list[i].uuid) {
+                    if (
+                        this.connection_list[i].instr_address !=
+                        instr.instr_address
+                    ) {
+                        idx = i
+                        res = instr
+                        break
+                    } else {
+                        break
+                    }
+                } else {
+                    res = instr
+                }
+            }
+        }
+
+        if (res != undefined) {
+            if (idx > -1) {
+                this.connection_list[idx] = res
+            } else {
+                this.connection_list.push(res)
+            }
         }
     }
 
@@ -799,7 +902,7 @@ export class NewTDPModel {
                     .get("savedInstrumentList") ?? []
             const config = vscode.workspace.getConfiguration("tsp")
 
-            const res = instrList.find((item) => {
+            const idx = instrList.findIndex((item) => {
                 return (
                     item.io_type == instr.io_type &&
                     item.model == instr.model &&
@@ -807,8 +910,18 @@ export class NewTDPModel {
                 )
             })
 
-            if (res == undefined) {
+            if (idx == -1) {
                 instrList.push(instr)
+
+                void config.update(
+                    "savedInstrumentList",
+                    instrList,
+                    vscode.ConfigurationTarget.Global
+                )
+            } else {
+                //found, check if connection address has changed
+                //update
+                instrList[idx].instr_address = instr.instr_address
 
                 void config.update(
                     "savedInstrumentList",
@@ -939,6 +1052,28 @@ export class NewTDPModel {
                 false
             )
         })
+    }
+
+    /**
+     * Used to update saved instrument details if it is discovered with a
+     * different instrument address
+     */
+    private checkForSavedInstrIPChange() {
+        for (let i = 0; i < this.discovery_list.length; i++) {
+            for (let j = 0; j < this.connection_list.length; j++) {
+                if (
+                    this.discovery_list[i].uuid ==
+                        this.connection_list[j].uuid &&
+                    this.discovery_list[i].instr_address !=
+                        this.connection_list[j].instr_address
+                ) {
+                    this.connection_list[j] = this.discovery_list[i]
+                    //also update persisted list in settings.json
+                    this.saveInstrInfoToPersist(this.connection_list[j])
+                    break
+                }
+            }
+        }
     }
 
     // private updateSavedLanNode(lanInstr: IInstrInfo) {
@@ -1268,7 +1403,7 @@ export class InstrumentsExplorer {
         const _info = <IIDNInfo>JSON.parse(info)
         const __info: IInstrInfo = {
             io_type: ioType,
-            ip_addr: ip,
+            instr_address: ip,
             socket_port: port,
             manufacturer: _info.vendor,
             model: _info.model,
