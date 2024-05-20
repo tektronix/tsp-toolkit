@@ -713,6 +713,12 @@ export class NewTDPModel {
         })
     }
 
+    /**
+     * Used to parse the discovered instrument details and create a list for the same
+     *
+     * @param jsonRPCResponse - json rpc response whose result needs to be parsed
+     * to extract the discovered instrument details
+     */
     private parseDiscoveredInstruments(jsonRPCResponse: JSONRPCResponse) {
         const res: unknown = jsonRPCResponse.result
         if (typeof res === "string") {

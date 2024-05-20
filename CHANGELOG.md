@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [unreleased]
+
+### Fixed
+
+- If instrument connection address changes, it is updated in "Instruments" pane (TSP-634)
+
 ## [0.15.3]
 
 ### Fixed
