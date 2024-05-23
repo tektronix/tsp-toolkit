@@ -21,7 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - If instrument connection address changes, it is updated in "Instruments" pane (TSP-634)
-- **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name
+- **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
 
 ## [0.15.3]
 
