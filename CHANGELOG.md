@@ -16,11 +16,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [unreleased]
+## [0.16.0]
 
 ### Fixed
 
 - If instrument connection address changes, it is updated in "Instruments" pane (TSP-634)
+- **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
+- **tsp-toolkit-webhelp:** display.input.option() command signature has been corrected for all tti models
 
 ## [0.15.3]
 
@@ -106,7 +108,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.15.3...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.0
 [0.15.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.3
 [0.15.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.2
 [0.15.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.1
