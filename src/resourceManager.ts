@@ -24,37 +24,95 @@ export class InstrDetails {
     }
 }
 
+/**
+ * io_type - Lan, Usb etc.
+ * ip_addr - used to connect via Lan
+ * unique_string - used to connect via Usb
+ * instr_categ - versatest, tti, 26xx etc.
+ */
+
+interface IInstrInfo {
+    io_type: IoType
+    instr_address: string
+    manufacturer: string
+    model: string
+    serial_number: string
+    firmware_revision: string
+    instr_categ: string
+    socket_port?: string
+}
+
+export class InstrInfo implements IInstrInfo {
+    io_type = IoType.Lan
+    instr_address = ""
+    manufacturer = ""
+    model = ""
+    serial_number = ""
+    firmware_revision = ""
+    instr_categ = ""
+    friendly_name = ""
+    socket_port?: string | undefined
+
+    public fetch_uid(): string {
+        return (
+            this.io_type.toString() +
+            ":" +
+            this.model +
+            "#" +
+            this.serial_number
+        )
+    }
+}
+
 //name: friendly name
 //ip: address of instrument
 export class FriendlyNameMgr {
-    public static handleFriendlyName(
+    public static fetchConnListForPicker(): string[] {
+        const conn_output: string[] = []
+
+        const connections: Array<InstrInfo> =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
+
+        connections.forEach((instr) => {
+            conn_output.push(instr.friendly_name + "@" + instr.instr_address)
+        })
+
+        return conn_output
+    }
+
+    /**
+     * method checks if connection name entered is duplicate
+     *
+     * @param io_type - Lan, Usb etc.
+     * @param model_serial - model and serial number of instrument
+     * @param name - friendly name of instrument
+     */
+    public static checkForDuplicateFriendlyName(
         io_type: IoType,
         model_serial: string | undefined,
-        name: string,
-        ip: string
+        name: string
     ): boolean {
         //true if duplicate friendly name is not entered
         let handled = true
+
         if (model_serial != undefined) {
-            const connections: Array<InstrDetails> =
+            const connections: Array<InstrInfo> =
                 vscode.workspace
                     .getConfiguration("tsp")
-                    .get("connectionList") ?? []
-            const config = vscode.workspace.getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
 
             if (connections.length > 0) {
-                let new_name = true
                 connections.forEach((instr) => {
                     if (name == instr.friendly_name) {
                         if (
                             io_type === instr.io_type &&
-                            model_serial == instr.model_serial
+                            model_serial ==
+                                instr.model + "#" + instr.serial_number
                         ) {
                             //connecting to same instr with same friendly name, ignore
-                            new_name = false
                             return
                         } else {
-                            new_name = false
                             handled = false
                             void vscode.window.showErrorMessage(
                                 "Duplicate name entered. Cannot proceed."
@@ -63,77 +121,46 @@ export class FriendlyNameMgr {
                         }
                     }
                 })
-                if (new_name) {
-                    const index = connections.findIndex(
-                        (i) =>
-                            i.io_type === io_type &&
-                            model_serial == i.model_serial
-                    )
-                    if (index !== -1) {
-                        //update
-                        connections[index].friendly_name = name
-                        void config.update(
-                            "connectionList",
-                            connections,
-                            vscode.ConfigurationTarget.Global
-                        )
-                    } else {
-                        this.storeNewConnItem(
-                            io_type,
-                            model_serial,
-                            name,
-                            ip,
-                            connections,
-                            config
-                        )
-                    }
-                }
-            } else {
-                this.storeNewConnItem(
-                    io_type,
-                    model_serial,
-                    name,
-                    ip,
-                    connections,
-                    config
-                )
             }
         }
         return handled
     }
 
-    private static storeNewConnItem(
-        type: IoType,
-        model_serial: string,
-        name: string,
-        ip: string,
-        connections: InstrDetails[],
-        config: vscode.WorkspaceConfiguration
+    public static async checkandAddFriendlyName(
+        instr: InstrInfo,
+        new_name: string
     ) {
-        const val = new InstrDetails(type)
-        val.model_serial = model_serial
-        val.friendly_name = name
-        val.address = ip
+        const connections: Array<InstrInfo> =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
+        const config = vscode.workspace.getConfiguration("tsp")
 
-        connections.push(val)
-        void config.update(
-            "connectionList",
-            connections,
-            vscode.ConfigurationTarget.Global
+        const index = connections.findIndex(
+            (i) =>
+                i.io_type === instr.io_type &&
+                instr.model == instr.model &&
+                i.serial_number == i.serial_number
         )
-    }
+        if (index !== -1) {
+            //update
+            if (connections[index].friendly_name != new_name) {
+                connections[index].friendly_name = new_name
+                await config.update(
+                    "savedInstruments",
+                    connections,
+                    vscode.ConfigurationTarget.Global
+                )
+            }
+        } else {
+            connections.push(instr)
+            await config.update(
+                "savedInstruments",
+                connections,
+                vscode.ConfigurationTarget.Global
+            )
+        }
 
-    public static fetchConnListForPicker(): string[] {
-        const conn_output: string[] = []
-
-        const connections: Array<InstrDetails> =
-            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
-
-        connections.forEach((instr) => {
-            conn_output.push(instr.friendly_name + "@" + instr.address)
-        })
-
-        return conn_output
+        vscode.workspace.getConfiguration("tsp").get("savedInstruments")
     }
 }
 

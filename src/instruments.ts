@@ -9,9 +9,11 @@ import {
 } from "json-rpc-2.0"
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@tektronix/kic-cli"
 import fetch from "node-fetch"
+import { plainToInstance } from "class-transformer"
 import {
     FriendlyNameMgr,
     InstrDetails,
+    InstrInfo,
     IoType,
     KicProcessMgr,
 } from "./resourceManager"
@@ -118,25 +120,6 @@ interface IIDNInfo {
 }
 
 /**
- * io_type - Lan, Usb etc.
- * ip_addr - used to connect via Lan
- * unique_string - used to connect via Usb
- * instr_categ - versatest, tti, 26xx etc.
- */
-
-interface IInstrInfo {
-    io_type: IoType
-    instr_address: string
-    manufacturer: string
-    model: string
-    serial_number: string
-    firmware_revision: string
-    socket_port?: string
-    instr_categ: string
-    uuid?: string
-}
-
-/**
  * Each node in treeview is object of this class
  */
 class InstrNode {
@@ -180,7 +163,7 @@ class IONode extends InstrNode {
         return this.supported_type == type
     }
 
-    public AddInstrument(instr: IInstrInfo) {
+    public AddInstrument(instr: InstrInfo) {
         if (instr.io_type != this.supported_type) return
         let found = false
         const unique_id = DiscoveryHelper.createUniqueID(instr)
@@ -212,13 +195,6 @@ class IONode extends InstrNode {
             this.instrInList.push(unique_id)
             this.children.push(new IOInstrNode(instr, false))
         }
-
-        this.children.forEach((child) => {
-            const res = child as IOInstrNode
-            if (res != undefined) {
-                res.checkForFriendlyName()
-            }
-        })
     }
 
     public ClearAll() {
@@ -282,13 +258,13 @@ class SavedNode extends InstrNode {
  * Used to create sub-node for which right-click options are defined
  */
 class IOInstrNode extends InstrNode {
-    private _instrInfo: IInstrInfo
+    private _instrInfo: InstrInfo
     public showNestedMenu = true
     private _modSerial = ""
     private _saveStatus = false
 
-    constructor(instr: IInstrInfo, saveStat: boolean) {
-        super(instr.model + "#" + instr.serial_number)
+    constructor(instr: InstrInfo, saveStat: boolean) {
+        super(DiscoveryHelper.createUniqueID(instr))
         this._modSerial = instr.model + "#" + instr.serial_number
         this._saveStatus = saveStat
 
@@ -312,15 +288,16 @@ class IOInstrNode extends InstrNode {
         return this._instrInfo.io_type
     }
 
-    public checkForFriendlyName() {
-        const connections: Array<InstrDetails> =
-            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
+    public updateFriendlyName() {
+        const connections: Array<InstrInfo> =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
 
         let friendly_name = ""
         const res_instr = connections.find(
-            (x: InstrDetails) =>
+            (x: InstrInfo) =>
                 x.io_type == this._instrInfo.io_type &&
-                x.model_serial == this._modSerial
+                x.model + "#" + x.serial_number == this._modSerial
         )
         if (res_instr != undefined) {
             friendly_name = res_instr.friendly_name
@@ -328,17 +305,16 @@ class IOInstrNode extends InstrNode {
             //add the instrument to connection list so that user can't enter duplicate names
             const new_name =
                 this._instrInfo.io_type.toString() + ":" + this._modSerial
-            const new_addr = this._instrInfo.instr_address
-            FriendlyNameMgr.handleFriendlyName(
-                this._instrInfo.io_type,
-                this._modSerial,
-                new_name,
-                new_addr
-            )
             friendly_name = new_name
         }
 
         super.updateLabelVal(friendly_name)
+    }
+
+    public addDefaultFriendlyName() {
+        this._instrInfo.friendly_name = DiscoveryHelper.createUniqueID(
+            this._instrInfo
+        )
     }
 
     public fetchModelSerial(): string {
@@ -349,7 +325,7 @@ class IOInstrNode extends InstrNode {
         return this._saveStatus
     }
 
-    public fetchIInstrInfo(): IInstrInfo {
+    public fetchInstrInfo(): InstrInfo {
         return this._instrInfo
     }
 
@@ -359,7 +335,7 @@ class IOInstrNode extends InstrNode {
      *
      * @param instrInfo - latest instrument details
      */
-    public updateConnectionAddress(instrInfo: IInstrInfo) {
+    public updateConnectionAddress(instrInfo: InstrInfo) {
         if (this._instrInfo.instr_address != instrInfo.instr_address) {
             //instrInfo also needs to be updated
             this._instrInfo = instrInfo
@@ -406,7 +382,7 @@ class IOInstrNode extends InstrNode {
 }
 
 interface IRootNodeProvider {
-    GetInstrumentNode(info: IInstrInfo): InstrNode | undefined
+    GetInstrumentNode(info: InstrInfo): InstrNode | undefined
 }
 
 class NodeProvider implements IRootNodeProvider {
@@ -414,7 +390,7 @@ class NodeProvider implements IRootNodeProvider {
         this.ioNode = ioNode
     }
     private ioNode: IONode | undefined
-    GetInstrumentNode(instr: IInstrInfo): IONode | undefined {
+    GetInstrumentNode(instr: InstrInfo): IONode | undefined {
         if (!this.ioNode?.IsSupported(instr.io_type)) return undefined
 
         this.updateIONode(instr)
@@ -422,7 +398,7 @@ class NodeProvider implements IRootNodeProvider {
         return this.ioNode
     }
 
-    private updateIONode(instr: IInstrInfo) {
+    private updateIONode(instr: InstrInfo) {
         this.ioNode?.AddInstrument(instr)
     }
 
@@ -458,7 +434,7 @@ class SNodeprovider implements IRootNodeProvider {
         this.ioNode = ioNode
     }
     private ioNode: SIONode | undefined
-    GetInstrumentNode(instr: IInstrInfo): SIONode | undefined {
+    GetInstrumentNode(instr: InstrInfo): SIONode | undefined {
         if (!this.ioNode?.IsSupported(instr.io_type)) return undefined
 
         this.updateIONode(instr)
@@ -466,7 +442,7 @@ class SNodeprovider implements IRootNodeProvider {
         return this.ioNode
     }
 
-    private updateIONode(instr: IInstrInfo) {
+    private updateIONode(instr: InstrInfo) {
         this.ioNode?.AddInstrument(instr)
     }
 
@@ -496,7 +472,7 @@ class SIONode extends InstrNode {
         return this.supported_type == type
     }
 
-    public AddInstrument(instr: IInstrInfo) {
+    public AddInstrument(instr: InstrInfo) {
         if (instr.io_type != this.supported_type) return
         let found = false
         const unique_id = DiscoveryHelper.createUniqueID(instr)
@@ -526,7 +502,7 @@ class SIONode extends InstrNode {
         this.children.forEach((child) => {
             const res = child as IOInstrNode
             if (res != undefined) {
-                res.checkForFriendlyName()
+                res.updateFriendlyName()
             }
         })
     }
@@ -597,7 +573,7 @@ class SavedNodeProvider implements IRootNodeProvider {
         this.node_providers.push(this._susbNodeProvider)
     }
 
-    GetInstrumentNode(instr: IInstrInfo): InstrNode | undefined {
+    GetInstrumentNode(instr: InstrInfo): InstrNode | undefined {
         if (this.savedNode == undefined) {
             this.savedNode = new SavedNode()
         }
@@ -663,16 +639,15 @@ class SavedNodeProvider implements IRootNodeProvider {
 
 export class NewTDPModel {
     //#region private variables
-    private discovery_list: IInstrInfo[] = []
-    private connection_list: IInstrInfo[] = []
+    private discovery_list: InstrInfo[] = []
+    private connection_list: InstrInfo[] = []
     private node_providers: IRootNodeProvider[] = []
-    private savedLANNode: LanNode | undefined
-    private savedUSBNode: USBNode | undefined
-    private savedNode: SavedNode | undefined
     private _savedNodeProvider: SavedNodeProvider | undefined
     private _lanNodeProvider: LanNodeProvider | undefined
     private _usbNodeProvider: USBNodeProvider | undefined
-    private new_instr: IInstrInfo | undefined
+    private new_instr: InstrInfo | undefined
+
+    public is_instr_discovered = false
     //#endregion
 
     //#region constructor
@@ -713,67 +688,12 @@ export class NewTDPModel {
         })
     }
 
-    /**
-     * Used to parse the discovered instrument details and create a list for the same
-     *
-     * @param jsonRPCResponse - json rpc response whose result needs to be parsed
-     * to extract the discovered instrument details
-     */
-    private parseDiscoveredInstruments(jsonRPCResponse: JSONRPCResponse) {
-        const res: unknown = jsonRPCResponse.result
-        if (typeof res === "string") {
-            console.log("JSON RPC Instr list: " + res)
-            const instrList = res.split("\n")
-
-            //need to remove the last newline element??
-            instrList?.forEach((instr) => {
-                if (instr.length > 0) {
-                    const obj = JSON.parse(instr) as IInstrInfo
-                    obj.uuid = DiscoveryHelper.createUniqueID(obj)
-
-                    if (this.discovery_list.length == 0) {
-                        this.discovery_list.push(obj)
-                    } else {
-                        let idx = -1
-                        this.new_instr = undefined
-
-                        for (let i = 0; i < this.discovery_list.length; i++) {
-                            this.new_instr = undefined
-                            if (this.discovery_list[i].uuid == obj.uuid) {
-                                if (
-                                    this.discovery_list[i].instr_address !=
-                                    obj.instr_address
-                                ) {
-                                    idx = i
-                                    this.new_instr = obj
-                                    break
-                                } else {
-                                    break
-                                }
-                            } else {
-                                this.new_instr = obj
-                            }
-                        }
-
-                        if (this.new_instr != undefined) {
-                            if (idx > -1) {
-                                this.discovery_list[idx] = this.new_instr
-                            } else {
-                                this.discovery_list.push(this.new_instr)
-                            }
-                        }
-                    }
-                }
-            })
-        }
-    }
-
     public getChildren(node: InstrNode): InstrNode[] {
         return node.children
     }
 
     public roots(): Thenable<InstrNode[]> {
-        //dynamic tree creation
+        // dynamic tree creation
         return this.connect().then(() => {
             return new Promise((c) => {
                 const nodeItems: InstrNode[] = []
@@ -821,10 +741,7 @@ export class NewTDPModel {
         instr_details: unknown
     ) {
         if (instr_to_save.length > 0) {
-            const instr_info = instr_details as IInstrInfo
-
-            //update uuid
-            instr_info.uuid = DiscoveryHelper.createUniqueID(instr_info)
+            const instr_info = instr_details as InstrInfo
 
             this._savedNodeProvider?.saveInstrToList(instr_to_save)
             this.addToConnectionList(instr_info)
@@ -848,10 +765,11 @@ export class NewTDPModel {
                 nodeToBeSaved.FetchUniqueID() ?? ""
             )
 
-            this.addToConnectionList(nodeToBeSaved.fetchIInstrInfo())
+            nodeToBeSaved.addDefaultFriendlyName()
+            this.addToConnectionList(nodeToBeSaved.fetchInstrInfo())
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
-            this.saveInstrInfoToPersist(nodeToBeSaved.fetchIInstrInfo())
+            this.saveInstrInfoToPersist(nodeToBeSaved.fetchInstrInfo())
 
             if (nodeToBeSaved.FetchInstrIOType() == IoType.Lan) {
                 this._lanNodeProvider?.updateSavedList(saved_list ?? [], true)
@@ -862,14 +780,17 @@ export class NewTDPModel {
     }
 
     //check for redundant entries
-    public addToConnectionList(instr: IInstrInfo) {
-        let res: IInstrInfo | undefined = undefined
+    public addToConnectionList(instr: InstrInfo) {
+        let res: InstrInfo | undefined = undefined
         let idx = -1
         if (this.connection_list.length == 0) {
             this.connection_list.push(instr)
         } else {
             for (let i = 0; i < this.connection_list.length; i++) {
-                if (instr.uuid == this.connection_list[i].uuid) {
+                if (
+                    DiscoveryHelper.createUniqueID(instr) ==
+                    DiscoveryHelper.createUniqueID(this.connection_list[i])
+                ) {
                     if (
                         this.connection_list[i].instr_address !=
                         instr.instr_address
@@ -892,52 +813,6 @@ export class NewTDPModel {
             } else {
                 this.connection_list.push(res)
             }
-        }
-    }
-
-    /**
-     * Used to persist saved instrument when extension is restarted
-     *
-     * @param instr - saved instrument that needs to stored and recalled
-     */
-    private saveInstrInfoToPersist(instr: IInstrInfo) {
-        try {
-            const instrList: Array<IInstrInfo> =
-                vscode.workspace
-                    .getConfiguration("tsp")
-                    .get("savedInstrumentList") ?? []
-            const config = vscode.workspace.getConfiguration("tsp")
-
-            const idx = instrList.findIndex((item) => {
-                return (
-                    item.io_type == instr.io_type &&
-                    item.model == instr.model &&
-                    item.serial_number == instr.serial_number
-                )
-            })
-
-            if (idx == -1) {
-                instrList.push(instr)
-
-                void config.update(
-                    "savedInstrumentList",
-                    instrList,
-                    vscode.ConfigurationTarget.Global
-                )
-            } else {
-                //found, check if connection address has changed
-                //update
-                instrList[idx].instr_address = instr.instr_address
-
-                void config.update(
-                    "savedInstrumentList",
-                    instrList,
-                    vscode.ConfigurationTarget.Global
-                )
-            }
-        } catch (err_msg) {
-            void vscode.window.showErrorMessage(String(err_msg))
-            return
         }
     }
 
@@ -965,54 +840,12 @@ export class NewTDPModel {
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
-            this.removeInstrFromPersistedList(nodeToBeRemoved.fetchIInstrInfo())
+            this.removeInstrFromPersistedList(nodeToBeRemoved.fetchInstrInfo())
             if (nodeToBeRemoved.FetchInstrIOType() == IoType.Lan) {
                 this._lanNodeProvider?.updateSavedList(saved_list ?? [], false)
             } else {
                 this._usbNodeProvider?.updateSavedList(saved_list ?? [], false)
             }
-        }
-    }
-
-    /**
-     * Used to remove saved instrument stored in settings.json file when user
-     * tries to remove it using right-click option
-     *
-     * @param instr - saved instrument that needs to be removed from settings.json file
-     */
-    private removeInstrFromPersistedList(instr: IInstrInfo) {
-        try {
-            const instrList: Array<IInstrInfo> =
-                vscode.workspace
-                    .getConfiguration("tsp")
-                    .get("savedInstrumentList") ?? []
-            const config = vscode.workspace.getConfiguration("tsp")
-
-            let idx = -1
-
-            for (let i = 0; i < instrList.length; i++) {
-                if (
-                    instrList[i].io_type == instr.io_type &&
-                    instrList[i].model == instr.model &&
-                    instrList[i].serial_number == instr.serial_number
-                ) {
-                    idx = i
-                    break
-                }
-            }
-
-            if (idx > -1) {
-                instrList.splice(idx, 1)
-
-                void config.update(
-                    "savedInstrumentList",
-                    instrList,
-                    vscode.ConfigurationTarget.Global
-                )
-            }
-        } catch (err_msg) {
-            void vscode.window.showErrorMessage(String(err_msg))
-            return
         }
     }
     //#endregion
@@ -1025,10 +858,9 @@ export class NewTDPModel {
     }
 
     private fetchPersistedInstrList() {
-        const temp_list: IInstrInfo[] =
-            vscode.workspace
-                .getConfiguration("tsp")
-                .get("savedInstrumentList") ?? []
+        const temp_list: InstrInfo[] =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
 
         this.connection_list = temp_list
 
@@ -1045,7 +877,7 @@ export class NewTDPModel {
 
         //this.connection_list.push(__info)
 
-        this.connection_list.forEach((item) => {
+        this.connection_list.forEach((item: InstrInfo) => {
             this._savedNodeProvider?.saveInstrToList(
                 DiscoveryHelper.createUniqueID(item)
             )
@@ -1068,8 +900,10 @@ export class NewTDPModel {
         for (let i = 0; i < this.discovery_list.length; i++) {
             for (let j = 0; j < this.connection_list.length; j++) {
                 if (
-                    this.discovery_list[i].uuid ==
-                        this.connection_list[j].uuid &&
+                    DiscoveryHelper.createUniqueID(this.discovery_list[i]) ==
+                        DiscoveryHelper.createUniqueID(
+                            this.connection_list[j]
+                        ) &&
                     this.discovery_list[i].instr_address !=
                         this.connection_list[j].instr_address
                 ) {
@@ -1082,31 +916,157 @@ export class NewTDPModel {
         }
     }
 
-    // private updateSavedLanNode(lanInstr: IInstrInfo) {
-    //     //this.savedLANNode?.AddInstrument(lanInstr)
-    // }
+    /**
+     * Used to remove saved instrument stored in settings.json file when user
+     * tries to remove it using right-click option
+     *
+     * @param instr - saved instrument that needs to be removed from settings.json file
+     */
+    private removeInstrFromPersistedList(instr: InstrInfo) {
+        try {
+            const instrList: Array<InstrInfo> =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+            const config = vscode.workspace.getConfiguration("tsp")
 
-    // private getSavedLanNode(lanInstr: IInstrInfo): LanNode {
-    //     if (this.savedLANNode == undefined) {
-    //         this.savedLANNode = new LanNode()
-    //     }
-    //     //this.savedLANNode.AddInstrument(lanInstr)
+            let idx = -1
 
-    //     return this.savedLANNode
-    // }
+            for (let i = 0; i < instrList.length; i++) {
+                if (
+                    instrList[i].io_type == instr.io_type &&
+                    instrList[i].model == instr.model &&
+                    instrList[i].serial_number == instr.serial_number
+                ) {
+                    idx = i
+                    break
+                }
+            }
 
-    // private updateSavedUSBNode(usbInstr: IInstrInfo) {
-    //     //this.savedUSBNode?.AddInstrument(usbInstr)
-    // }
+            if (idx > -1) {
+                instrList.splice(idx, 1)
 
-    // private getsavedUSBNode(usbInstr: IInstrInfo): USBNode {
-    //     if (this.savedUSBNode == undefined) {
-    //         this.savedUSBNode = new USBNode()
-    //     }
-    //     //this.savedUSBNode.AddInstrument(usbInstr)
+                void config.update(
+                    "savedInstruments",
+                    instrList,
+                    vscode.ConfigurationTarget.Global
+                )
+            }
+        } catch (err_msg) {
+            void vscode.window.showErrorMessage(String(err_msg))
+            return
+        }
+    }
 
-    //     return this.savedUSBNode
-    // }
+    /**
+     * Used to persist saved instrument when extension is restarted
+     *
+     * @param instr - saved instrument that needs to stored and recalled
+     */
+    private saveInstrInfoToPersist(instr: InstrInfo) {
+        try {
+            const instrList: Array<InstrInfo> =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+            const config = vscode.workspace.getConfiguration("tsp")
+
+            const idx = instrList.findIndex((item) => {
+                return (
+                    item.io_type == instr.io_type &&
+                    item.model == instr.model &&
+                    item.serial_number == instr.serial_number
+                )
+            })
+
+            if (idx == -1) {
+                instrList.push(instr)
+
+                void config.update(
+                    "savedInstruments",
+                    instrList,
+                    vscode.ConfigurationTarget.Global
+                )
+            } else {
+                //found, check if connection address has changed
+                //update
+                if (instrList[idx].instr_address != instr.instr_address) {
+                    instrList[idx].instr_address = instr.instr_address
+                    //instrList[idx].friendly_name = instr.friendly_name
+
+                    void config.update(
+                        "savedInstruments",
+                        instrList,
+                        vscode.ConfigurationTarget.Global
+                    )
+                }
+            }
+        } catch (err_msg) {
+            void vscode.window.showErrorMessage(String(err_msg))
+            return
+        }
+    }
+
+    /**
+     * Used to parse the discovered instrument details and create a list for the same
+     *
+     * @param jsonRPCResponse - json rpc response whose result needs to be parsed
+     * to extract the discovered instrument details
+     */
+    private parseDiscoveredInstruments(jsonRPCResponse: JSONRPCResponse) {
+        const res: unknown = jsonRPCResponse.result
+        if (typeof res === "string") {
+            console.log("JSON RPC Instr list: " + res)
+            const instrList = res.split("\n")
+
+            //need to remove the last newline element??
+            instrList?.forEach((instr) => {
+                if (instr.length > 0) {
+                    const obj = plainToInstance(InstrInfo, JSON.parse(instr))
+                    //console.log(obj.fetch_uid())
+
+                    if (this.discovery_list.length == 0) {
+                        this.discovery_list.push(obj)
+                        this.is_instr_discovered = true
+                    } else {
+                        let idx = -1
+                        this.new_instr = undefined
+
+                        for (let i = 0; i < this.discovery_list.length; i++) {
+                            this.new_instr = undefined
+                            if (
+                                DiscoveryHelper.createUniqueID(
+                                    this.discovery_list[i]
+                                ) == DiscoveryHelper.createUniqueID(obj)
+                            ) {
+                                if (
+                                    this.discovery_list[i].instr_address !=
+                                    obj.instr_address
+                                ) {
+                                    idx = i
+                                    this.new_instr = obj
+                                    break
+                                } else {
+                                    break
+                                }
+                            } else {
+                                this.new_instr = obj
+                            }
+                        }
+
+                        if (this.new_instr != undefined) {
+                            if (idx > -1) {
+                                this.discovery_list[idx] = this.new_instr
+                            } else {
+                                this.discovery_list.push(this.new_instr)
+                            }
+                            this.is_instr_discovered = true
+                        }
+                    }
+                }
+            })
+        }
+    }
     //#endregion
 }
 
@@ -1179,8 +1139,13 @@ export class InstrTDP implements newTDP {
     }
 
     public refresh(): void {
-        void this.instrModel?.getContent()
-        this.reloadTreeData()
+        if (this.instrModel != undefined) {
+            void this.instrModel.getContent()
+            if (this.instrModel.is_instr_discovered) {
+                this.reloadTreeData()
+                this.instrModel.is_instr_discovered = false
+            }
+        }
     }
 
     /**
@@ -1348,7 +1313,7 @@ export class InstrumentsExplorer {
         }
     }
 
-    public async rename(item: object) {
+    public async rename(item: unknown) {
         //if (typeof item === typeof InstrDiscoveryNode) {
         const input_item = item as IOInstrNode
         const ip_str = await vscode.window.showInputBox({
@@ -1361,14 +1326,16 @@ export class InstrumentsExplorer {
             input_item != undefined
         ) {
             if (
-                FriendlyNameMgr.handleFriendlyName(
+                FriendlyNameMgr.checkForDuplicateFriendlyName(
                     input_item.FetchInstrIOType(),
                     input_item.fetchModelSerial(),
-                    ip_str,
-                    input_item.FetchConnectionAddr()
+                    ip_str
                 )
             ) {
-                input_item.checkForFriendlyName()
+                await FriendlyNameMgr.checkandAddFriendlyName(
+                    input_item.fetchInstrInfo(),
+                    ip_str
+                )
                 this.treeDataProvider?.reloadTreeData()
             }
         }
@@ -1397,6 +1364,7 @@ export class InstrumentsExplorer {
         ip: string,
         ioType: IoType,
         info: string,
+        friendly_name: string,
         port: string | undefined
     ) {
         if (info == "") {
@@ -1407,19 +1375,21 @@ export class InstrumentsExplorer {
         }
 
         const _info = <IIDNInfo>JSON.parse(info)
-        const __info: IInstrInfo = {
-            io_type: ioType,
-            instr_address: ip,
-            socket_port: port,
-            manufacturer: _info.vendor,
-            model: _info.model,
-            serial_number: _info.serial_number,
-            firmware_revision: _info.firmware_rev,
-            instr_categ: "",
-        }
+        const __info = new InstrInfo()
+        __info.io_type = ioType
+        __info.instr_address = ip
+        __info.socket_port = port
+        __info.manufacturer = _info.vendor
+        __info.model = _info.model
+        __info.serial_number = _info.serial_number
+        __info.firmware_revision = _info.firmware_rev
+        __info.friendly_name = friendly_name
+        __info.instr_categ = ""
 
         const categ = instr_map.get(_info.model)
         if (categ != undefined) __info.instr_categ = categ
+
+        //FriendlyNameMgr.checkandAddFriendlyName(__info, friendly_name)
 
         this.treeDataProvider?.saveInstrumentFromConnect(
             instr_to_save,
@@ -1506,13 +1476,8 @@ export class InstrumentsExplorer {
     }
 }
 
-/**
- * Used to generate unique ID from instrument details
- *
- * @param info - instrument details such as connection address, model, serial number etc.
- */
 class DiscoveryHelper {
-    public static createUniqueID(info: IInstrInfo): string {
+    public static createUniqueID(info: InstrInfo): string {
         let res = ""
         res =
             info.io_type.toString() +
