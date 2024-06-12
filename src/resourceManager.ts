@@ -26,8 +26,7 @@ export class InstrDetails {
 
 /**
  * io_type - Lan, Usb etc.
- * ip_addr - used to connect via Lan
- * unique_string - used to connect via Usb
+ * instr_address - connection address of instrument
  * instr_categ - versatest, tti, 26xx etc.
  */
 
@@ -52,16 +51,6 @@ export class InstrInfo implements IInstrInfo {
     instr_categ = ""
     friendly_name = ""
     socket_port?: string | undefined
-
-    public fetch_uid(): string {
-        return (
-            this.io_type.toString() +
-            ":" +
-            this.model +
-            "#" +
-            this.serial_number
-        )
-    }
 }
 
 //name: friendly name
@@ -126,6 +115,12 @@ export class FriendlyNameMgr {
         return handled
     }
 
+    /**
+     * method checks and adds/updates new friendly name
+     *
+     * @param instr - instrument whose friendly name needs to be added/updated
+     * @param new_name - friendly name of instrument
+     */
     public static async checkandAddFriendlyName(
         instr: InstrInfo,
         new_name: string
