@@ -235,11 +235,11 @@ function updateExtensionSettings() {
             void vscode.window
                 .showInformationMessage(
                     setting +
-                        ' is deprecated. Select "Ok" to remove it from settings.json',
-                    ...["Ok", "Cancel"]
+                        ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
+                    ...["Remove", "Ignore"]
                 )
                 .then((selection) => {
-                    if (selection == "Ok") {
+                    if (selection == "Remove") {
                         void vscode.workspace
                             .getConfiguration("tsp")
                             .update(setting, undefined, true)
