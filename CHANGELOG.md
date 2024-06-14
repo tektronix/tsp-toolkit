@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - If instrument connection address changes, it is updated in "Instruments" pane (TSP-634)
+- Instrument tree is updated only when new instrument is discovered/saved/removed (TSP-634)
 - **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
 - **tsp-toolkit-webhelp:** display.input.option() command signature has been corrected for all tti models
 

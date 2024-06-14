@@ -75,11 +75,10 @@ export async function createTerminal(
         //USB
         //This only works if selected from Instrument discovery
         if (
-            !FriendlyNameMgr.handleFriendlyName(
+            !FriendlyNameMgr.checkForDuplicateFriendlyName(
                 IoType.Usb,
                 model_serial,
-                name,
-                ip
+                name
             )
         ) {
             return
@@ -95,11 +94,10 @@ export async function createTerminal(
         if (msn != undefined) {
             model_serial_no = msn.model + "#" + msn.sn //const to let
             if (
-                !FriendlyNameMgr.handleFriendlyName(
+                !FriendlyNameMgr.checkForDuplicateFriendlyName(
                     IoType.Lan,
                     model_serial_no,
-                    name,
-                    ip
+                    name
                 )
             ) {
                 return
@@ -135,6 +133,7 @@ export async function createTerminal(
             ip,
             IoType.Lan,
             info,
+            name,
             msn?.port
         )
     }
@@ -146,6 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "tspcomms" is now active!')
 
+    updateExtensionSettings()
     _connHelper = new ConnectionHelper()
     _kicProcessMgr = new KicProcessMgr(_connHelper)
 
@@ -184,9 +184,12 @@ export function activate(context: vscode.ExtensionContext) {
     */
 
     vscode.commands.registerCommand("tsp.openTerminalIP", connectCmd)
-    vscode.commands.registerCommand("InstrumentsExplorer.rename", startRename)
+    vscode.commands.registerCommand("InstrumentsExplorer.rename", async (e) => {
+        await startRename(e)
+    })
 
     context.subscriptions.push(openTerminal)
+
     //TODO: Connect `.terminate` in ki-comms
     //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
     //context.subscriptions.push(rclick)
@@ -222,6 +225,33 @@ export function activate(context: vscode.ExtensionContext) {
 // Called when the extension is deactivated.
 export function deactivate() {
     /* empty */
+}
+
+function updateExtensionSettings() {
+    const settingsList = ["connectionList", "savedInstrumentList"]
+    settingsList.forEach((setting) => {
+        if (vscode.workspace.getConfiguration("tsp").get(setting)) {
+            console.log(setting)
+            void vscode.window
+                .showInformationMessage(
+                    setting +
+                        ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
+                    ...["Remove", "Ignore"]
+                )
+                .then((selection) => {
+                    if (selection == "Remove") {
+                        void vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(setting, undefined, true)
+                            .then(() => {
+                                void vscode.window.showInformationMessage(
+                                    "removed setting: " + setting
+                                )
+                            })
+                    }
+                })
+        }
+    })
 }
 
 /**
@@ -440,8 +470,8 @@ function startTerminateAllConn() {
     void _terminationMgr.terminateAllConn()
 }
 
-function startRename(def: object) {
-    void _instrExplorer.rename(def)
+async function startRename(def: unknown): Promise<void> {
+    await _instrExplorer.rename(def)
 }
 
 function connectCmd(def: object) {

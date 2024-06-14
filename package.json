@@ -115,17 +115,12 @@
             "type": "object",
             "title": "TSP Configuration",
             "properties": {
-                "tsp.connectionList": {
-                    "type": "array",
-                    "default": [],
-                    "description": "A list of previous instrument connections"
-                },
                 "tsp.errorLimit": {
                     "type": "number",
                     "default": 3,
                     "description": "Maximum number of consecutive errors to print in the terminal"
                 },
-                "tsp.savedInstrumentList": {
+                "tsp.savedInstruments": {
                     "type": "array",
                     "default": [],
                     "description": "A list of saved instrument serial numbers"
@@ -222,7 +217,7 @@
             "view/item/context": [
                 {
                     "command": "InstrumentsExplorer.rename",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
                 },
                 {
                     "command": "tsp.openTerminalIP",
