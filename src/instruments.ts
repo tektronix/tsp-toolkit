@@ -1464,7 +1464,7 @@ export class InstrumentsExplorer {
                         } else {
                             // .update "path" --slot {number}
                             kicCell.sendTextToTerminal(
-                                `.update "${fw_file[0].fsPath}" --slot ${slot}\n
+                                `.upgrade "${fw_file[0].fsPath}" --slot ${slot}\n
                                 `
                             )
                         }

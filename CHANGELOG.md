@@ -24,6 +24,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Instrument tree is updated only when new instrument is discovered/saved/removed (TSP-634)
 - **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
 - **tsp-toolkit-webhelp:** display.input.option() command signature has been corrected for all tti models
+- Renamed update to upgrade for firmware upgrade (TSP-463)
+- **tsp-toolkit-kic-cli:** renamed update to upgrade (TSP-463)
 
 ## [0.15.3]
 
