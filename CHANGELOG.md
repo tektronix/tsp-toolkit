@@ -16,16 +16,18 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [0.16.0]
+## [0.16.1]
 
 ### Fixed
 
 - If instrument connection address changes, it is updated in "Instruments" pane (TSP-634)
 - Instrument tree is updated only when new instrument is discovered/saved/removed (TSP-634)
-- **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
-- **tsp-toolkit-webhelp:** display.input.option() command signature has been corrected for all tti models
 - Renamed update to upgrade for firmware upgrade (TSP-463)
 - **tsp-toolkit-kic-cli:** renamed update to upgrade (TSP-463)
+- **tsp-toolkit-kic-cli:** changed lxi and usb device info struct's instrument address field to same name (TSP-634)
+- **tsp-toolkit-kic-cli:** Fix Support for FW flash on the 3706B and 70xB (_Open Source Contribution: c3charvat_)
+- **tsp-toolkit-webhelp:** display.input.option() command signature has been corrected for all tti models
+
 
 ## [0.15.3]
 
@@ -111,8 +113,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!--Version Comparison Links-->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.16.0...HEAD
-[0.16.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.0
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.1
 [0.15.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.3
 [0.15.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.2
 [0.15.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.1
