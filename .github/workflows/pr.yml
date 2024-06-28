@@ -140,7 +140,11 @@ jobs:
       checks: write
       pull-requests: read
     needs:
-      - package
+      - compile
+      - test
+      - sbom
+      - lint
+      - style
     if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) || github.event.pull_request.merged ) }}
     steps:
       - name: Checkout
