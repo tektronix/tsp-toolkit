@@ -162,7 +162,7 @@ jobs:
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
           npm install --devDependencies
-          npx vcse publish --packagePath extension/*.vsix
+          npx vsce publish --packagePath extension/*.vsix
         env:
           VSCE_PAT: ${{secrets.VSCE_PAT}}
 
