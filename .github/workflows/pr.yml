@@ -152,6 +152,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - name: Install dependencies
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install
       - name: Get Artifacts
         uses: actions/download-artifact@v3
         with:
