@@ -123,7 +123,7 @@ jobs:
         run: npm run compile
       - name: npm Package
         run: |
-          npx vsce package --pre-release
+          npx vsce package
       - name: Run ClamAV
         run: clamscan -v *.vsix
       - name: Upload Artifacts
@@ -131,6 +131,40 @@ jobs:
         with:
           name: package
           path: "*.vsix"
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
+      pull-requests: read
+      packages: read
+    needs:
+      - compile
+      - test
+      - sbom
+      - lint
+      - style
+    if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) && github.event.pull_request.merged ) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Get Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: package
+          path: extension
+      - name: Publish to VSCode Marketplace
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm install --devDependencies
+          # npx vsce publish --packagePath extension/*.vsix
+        env:
+          VSCE_PAT: ${{secrets.VSCE_PAT}}
 
   release:
     name: Release
