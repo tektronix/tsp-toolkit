@@ -139,6 +139,7 @@ jobs:
       contents: write
       checks: write
       pull-requests: read
+      packages: read
     needs:
       - compile
       - test
