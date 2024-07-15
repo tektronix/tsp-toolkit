@@ -55,7 +55,7 @@
             },
             {
                 "command": "tsp.openTerminalIP",
-                "title": "Open Terminal",
+                "title": "Connect",
                 "category": "TSP"
             },
             {

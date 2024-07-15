@@ -477,7 +477,13 @@ async function startRename(def: unknown): Promise<void> {
 function connectCmd(def: object) {
     const [res1, res2, res3] = _instrExplorer.fetchConnectionArgs(def)
     //console.log(res1, res2, res3)
-    void connect(res1, res2, res3)
+    //void connect(res1, res2, res3)
+
+    if (_activeConnectionManager?.connectionRE.test(res1)) {
+        void createTerminal(res1, res3)
+    } else {
+        void vscode.window.showErrorMessage("Unable to connect.")
+    }
 }
 
 const base_api = {
