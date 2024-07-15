@@ -47,7 +47,7 @@ body:
       description: List the steps you took to exhibit the issue.
       placeholder: |
         Example:
-          1. Open Command Pallette and enter "TSP: Open Terminal"
+          1. Open Command Pallette and enter "TSP: Connect"
           2. Select "New Connection"
           3. Type in IP address for 2450
           4. After connection, enter `print("some string that breaks the terminal")`

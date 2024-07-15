@@ -39,7 +39,7 @@
         "commands": [
             {
                 "command": "tsp.openTerminal",
-                "title": "Open Terminal",
+                "title": "Connect",
                 "category": "TSP"
             },
             {
