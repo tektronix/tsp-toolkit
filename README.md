@@ -49,7 +49,7 @@ following commands:
 
 | Command                          | Description                                                                         | Shortcut                                        |
 |:---------------------------------|:------------------------------------------------------------------------------------|:------------------------------------------------|
-| TSP: Open Terminal               | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |                                                 |
+| TSP: Connect               | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |                                                 |
 | TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |                                                 |
 
 To see all available Keithley TSP Toolkit commands, open the Command Pallette and type `TSP`.
@@ -76,7 +76,7 @@ then it is possible to have TSP Toolkit automatically configure your project for
 
 1. Open any workspace folder in VSCode
 2. If your workspace folder does not already contain one, create a .tsp (for example `my-tsp-file.tsp`)
-3. Connect to your instrument using the discovery pane or the `TSP: Open Terminal` command.
+3. Connect to your instrument using the discovery pane or the `TSP: Connect` command.
 4. Right-click on the `.vscode/tspConfig` folder
 5. Select "Fetch TSP-Link Nodes for Connected Instrument"
 
