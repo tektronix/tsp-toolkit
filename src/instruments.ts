@@ -1341,18 +1341,20 @@ export class InstrumentsExplorer {
         }
     }
 
-    public fetchConnectionArgs(item: object): [string, boolean, string?] {
+    public fetchConnectionArgs(
+        item: object
+    ): [connection_str: string, model_serial?: string] {
         const resNode = item as IOInstrNode
         if (resNode != undefined) {
             const conn_name =
                 resNode.label + "@" + resNode.FetchConnectionAddr()
             if (resNode.FetchInstrIOType() == IoType.Lan) {
-                return [conn_name, true]
+                return [conn_name]
             } else {
-                return [conn_name, true, resNode.fetchModelSerial()]
+                return [conn_name, resNode.fetchModelSerial()]
             }
         }
-        return ["", false]
+        return [""]
     }
 
     private async upgradeFirmware(_e: unknown) {

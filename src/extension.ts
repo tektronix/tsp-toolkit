@@ -475,12 +475,11 @@ async function startRename(def: unknown): Promise<void> {
 }
 
 function connectCmd(def: object) {
-    const [res1, res2, res3] = _instrExplorer.fetchConnectionArgs(def)
-    //console.log(res1, res2, res3)
-    //void connect(res1, res2, res3)
+    const [connection_str, model_serial] =
+        _instrExplorer.fetchConnectionArgs(def)
 
-    if (_activeConnectionManager?.connectionRE.test(res1)) {
-        void createTerminal(res1, res3)
+    if (_activeConnectionManager?.connectionRE.test(connection_str)) {
+        void createTerminal(connection_str, model_serial)
     } else {
         void vscode.window.showErrorMessage("Unable to connect.")
     }
