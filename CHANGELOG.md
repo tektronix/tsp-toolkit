@@ -16,6 +16,16 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.16.4]
+
+### Changed
+- "TSP: Open Terminal" command has been renamed to "TSP: Connect"
+- "Open Terminal" should just open the terminal, not just in the command palette (TSP-464)
+
+### Fixed
+
+- **tsp-toolkit-kic-cli:** Renamed update to upgrade for firmware upgrade in CLI arguments (TSP-741)
+
 ## [0.16.1]
 
 ### Fixed
@@ -113,7 +123,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.4
 [0.16.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.1
 [0.15.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.3
 [0.15.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.2
