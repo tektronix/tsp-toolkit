@@ -23,7 +23,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - "Open Terminal" should just open the terminal, not just in the command palette (TSP-464)
 
 ### Fixed
-
+- Send script to all terminals is failing(TSP-598)
 - **tsp-toolkit-kic-cli:** Renamed update to upgrade for firmware upgrade in CLI arguments (TSP-741)
 
 ## [0.16.1]
