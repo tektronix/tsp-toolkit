@@ -54,9 +54,8 @@ export class CommunicationManager {
     // Sends script to terminal
     private async sendScript(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const filePath = '"' + uriObject.fsPath + '"'
-        const text = ".script " + filePath
-        await this.handleSendTextToTerminal(text).then(() => {
+        const filePath = `.script "${uriObject.fsPath}"`
+        await this.handleSendTextToTerminal(filePath).then(() => {
             void vscode.window.showInformationMessage(
                 "Sending script to terminal"
             )
@@ -70,7 +69,7 @@ export class CommunicationManager {
      */
     private sendScriptToAllInstruments(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const filePath = `.script ${uriObject.fsPath}`
+        const filePath = `.script "${uriObject.fsPath}"`
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
