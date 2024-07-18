@@ -17,6 +17,7 @@ import {
     IoType,
     KicProcessMgr,
 } from "./resourceManager"
+import path = require("path")
 
 const DISCOVERY_TIMEOUT = 300
 
@@ -1283,10 +1284,23 @@ export class InstrumentsExplorer {
     }
 
     private startDiscovery() {
+        const LOG_LOCATION = "./"
         if (this.InstrumentsDiscoveryViewer.message == "") {
             cp.spawn(
                 DISCOVER_EXECUTABLE,
-                ["all", "--timeout", DISCOVERY_TIMEOUT.toString(), "--exit"]
+                [
+                    "--log-file",
+                    path.join(
+                        LOG_LOCATION,
+                        `${new Date()
+                            .toISOString()
+                            .substring(0, 10)}-kic-discover.log`
+                    ),
+                    "all",
+                    "--timeout",
+                    DISCOVERY_TIMEOUT.toString(),
+                    "--exit",
+                ]
                 //,
                 // {
                 //     detached: true,

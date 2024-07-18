@@ -3,6 +3,7 @@ import { EventEmitter } from "events"
 import fetch from "node-fetch"
 import { EXECUTABLE } from "@tektronix/kic-cli"
 import * as vscode from "vscode"
+import path = require("path")
 
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
@@ -284,6 +285,7 @@ export class KicCell extends EventEmitter {
         maxerr?: number,
         filePath?: string
     ) {
+        const LOG_LOCATION = "./"
         //#ToDo: need to verify if maxerr is required
         this._uniqueID = unique_id
         let info = ""
@@ -298,23 +300,57 @@ export class KicCell extends EventEmitter {
             //getting instr info before we do the actual connection.
 
             info = child
-                .spawnSync(EXECUTABLE, ["info", "lan", "--json", unique_id], {
-                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                })
+                .spawnSync(
+                    EXECUTABLE,
+                    [
+                        "--log-file",
+                        path.join(
+                            LOG_LOCATION,
+                            `${new Date()
+                                .toISOString()
+                                .substring(0, 10)}-kic.log`
+                        ),
+                        "info",
+                        "lan",
+                        "--json",
+                        unique_id,
+                    ],
+                    {
+                        env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                    }
+                )
                 .stdout.toString()
             if (info == "") return info
 
             this._term = vscode.window.createTerminal({
                 name: name,
                 shellPath: EXECUTABLE,
-                shellArgs: ["connect", "lan", unique_id],
+                shellArgs: [
+                    "--log-file",
+                    path.join(
+                        LOG_LOCATION,
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`
+                    ),
+                    "connect",
+                    "lan",
+                    unique_id,
+                ],
                 iconPath: vscode.Uri.file("/keithley-logo.ico"),
             })
         } else {
             this._term = vscode.window.createTerminal({
                 name: name,
                 shellPath: EXECUTABLE,
-                shellArgs: ["connect", "usb", unique_id],
+                shellArgs: [
+                    "--log-file",
+                    path.join(
+                        LOG_LOCATION,
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`
+                    ),
+                    "connect",
+                    "usb",
+                    unique_id,
+                ],
                 iconPath: vscode.Uri.file("/keithley-logo.ico"),
             })
         }

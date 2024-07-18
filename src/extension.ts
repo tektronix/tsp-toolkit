@@ -447,6 +447,7 @@ async function connect(
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startInstrDiscovery(): Promise<void> {
+    const LOG_LOCATION = "./"
     const wait_time = await vscode.window.showInputBox({
         prompt: "Input how long to wait for instrument responses",
         value: "15",
@@ -459,7 +460,17 @@ async function startInstrDiscovery(): Promise<void> {
         const term = vscode.window.createTerminal({
             name: "Discovery",
             shellPath: EXECUTABLE,
-            shellArgs: ["discover", "all", "--timeout", wait_time],
+            shellArgs: [
+                "--log-file",
+                path.join(
+                    LOG_LOCATION,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`
+                ),
+                "discover",
+                "all",
+                "--timeout",
+                wait_time,
+            ],
             iconPath: vscode.Uri.file("/keithley-logo.ico"),
         })
         term.show()

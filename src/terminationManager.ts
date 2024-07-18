@@ -55,6 +55,7 @@ export class TerminationManager {
     }
 
     createTerminal(instrumentIp: string) {
+        const LOG_LOCATION = "./"
         const parts = instrumentIp.match(CONNECTION_RE)
         if (parts == null) return
         const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
@@ -63,7 +64,16 @@ export class TerminationManager {
         const term = vscode.window.createTerminal({
             name: name,
             shellPath: EXECUTABLE,
-            shellArgs: ["terminate", "lan", ip],
+            shellArgs: [
+                "--log-file",
+                path.join(
+                    LOG_LOCATION,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`
+                ),
+                "terminate",
+                "lan",
+                ip,
+            ],
             iconPath: vscode.Uri.file("/keithley-logo.ico"),
         })
         term.show()
