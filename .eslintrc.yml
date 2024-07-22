@@ -40,8 +40,9 @@ settings:
 rules:
   # eslint
   indent:
-    - error
+    - "error"
     - 4
+    - SwitchCase: 1
   linebreak-style:
     - error
     - unix
