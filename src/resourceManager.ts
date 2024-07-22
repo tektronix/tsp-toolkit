@@ -1,9 +1,10 @@
 import * as child from "child_process"
+import path = require("path")
 import { EventEmitter } from "events"
 import fetch from "node-fetch"
 import { EXECUTABLE } from "@tektronix/kic-cli"
 import * as vscode from "vscode"
-import path = require("path")
+import { LOG_DIR } from "./utility"
 
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
@@ -285,7 +286,6 @@ export class KicCell extends EventEmitter {
         maxerr?: number,
         filePath?: string
     ) {
-        const LOG_LOCATION = "./"
         //#ToDo: need to verify if maxerr is required
         this._uniqueID = unique_id
         let info = ""
@@ -305,7 +305,7 @@ export class KicCell extends EventEmitter {
                     [
                         "--log-file",
                         path.join(
-                            LOG_LOCATION,
+                            LOG_DIR,
                             `${new Date()
                                 .toISOString()
                                 .substring(0, 10)}-kic.log`
@@ -328,7 +328,7 @@ export class KicCell extends EventEmitter {
                 shellArgs: [
                     "--log-file",
                     path.join(
-                        LOG_LOCATION,
+                        LOG_DIR,
                         `${new Date().toISOString().substring(0, 10)}-kic.log`
                     ),
                     "connect",
@@ -344,7 +344,7 @@ export class KicCell extends EventEmitter {
                 shellArgs: [
                     "--log-file",
                     path.join(
-                        LOG_LOCATION,
+                        LOG_DIR,
                         `${new Date().toISOString().substring(0, 10)}-kic.log`
                     ),
                     "connect",

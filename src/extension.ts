@@ -24,6 +24,7 @@ import {
     processWorkspaceFolders,
     RELATIVE_TSP_CONFIG_FILE_PATH,
 } from "./workspaceManager"
+import { LOG_DIR } from "./utility"
 
 let _activeConnectionManager: CommunicationManager
 let _terminationMgr: TerminationManager
@@ -447,7 +448,6 @@ async function connect(
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startInstrDiscovery(): Promise<void> {
-    const LOG_LOCATION = "./"
     const wait_time = await vscode.window.showInputBox({
         prompt: "Input how long to wait for instrument responses",
         value: "15",
@@ -463,7 +463,7 @@ async function startInstrDiscovery(): Promise<void> {
             shellArgs: [
                 "--log-file",
                 path.join(
-                    LOG_LOCATION,
+                    LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`
                 ),
                 "discover",

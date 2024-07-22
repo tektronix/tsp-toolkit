@@ -1,4 +1,5 @@
 import * as cp from "node:child_process"
+import path = require("path")
 
 import * as vscode from "vscode"
 import {
@@ -17,7 +18,7 @@ import {
     IoType,
     KicProcessMgr,
 } from "./resourceManager"
-import path = require("path")
+import { LOG_DIR } from "./utility"
 
 const DISCOVERY_TIMEOUT = 300
 
@@ -1284,14 +1285,13 @@ export class InstrumentsExplorer {
     }
 
     private startDiscovery() {
-        const LOG_LOCATION = "./"
         if (this.InstrumentsDiscoveryViewer.message == "") {
             cp.spawn(
                 DISCOVER_EXECUTABLE,
                 [
                     "--log-file",
                     path.join(
-                        LOG_LOCATION,
+                        LOG_DIR,
                         `${new Date()
                             .toISOString()
                             .substring(0, 10)}-kic-discover.log`

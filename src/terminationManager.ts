@@ -1,6 +1,9 @@
+import path = require("node:path")
 import * as vscode from "vscode"
 import { EXECUTABLE } from "@tektronix/kic-cli"
+
 import { CONNECTION_RE } from "./resourceManager"
+import { LOG_DIR } from "./utility"
 
 export class TerminationManager {
     async terminateAllConn() {
@@ -55,7 +58,6 @@ export class TerminationManager {
     }
 
     createTerminal(instrumentIp: string) {
-        const LOG_LOCATION = "./"
         const parts = instrumentIp.match(CONNECTION_RE)
         if (parts == null) return
         const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
@@ -67,7 +69,7 @@ export class TerminationManager {
             shellArgs: [
                 "--log-file",
                 path.join(
-                    LOG_LOCATION,
+                    LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`
                 ),
                 "terminate",
