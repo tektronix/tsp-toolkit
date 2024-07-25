@@ -319,6 +319,19 @@ export class KicCell extends EventEmitter {
             })
         }
 
+        vscode.window.onDidCloseTerminal((t) => {
+            if (
+                t.creationOptions.iconPath !== undefined &&
+                t.creationOptions.iconPath.toString().search("keithley-logo") &&
+                t.exitStatus !== undefined &&
+                t.exitStatus.reason !== vscode.TerminalExitReason.Process
+            ) {
+                console.log(
+                    "Closed terminal without .exit, instrument needs cleanup"
+                )
+            }
+        })
+
         this.terminalPid = this._term.processId
 
         if (this._term != undefined) {
