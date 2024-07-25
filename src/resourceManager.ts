@@ -327,8 +327,17 @@ export class KicCell extends EventEmitter {
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {
                 console.log(
-                    "Closed terminal without .exit, instrument needs cleanup"
+                    `Terminal unexpectedly closed. Resetting with ${connType} ${unique_id}`
                 )
+                setTimeout(() => {
+                    const output = child.spawnSync(EXECUTABLE, [
+                        "-v",
+                        "reset",
+                        connType,
+                        unique_id,
+                    ])
+                    console.log(`Reset output: ${output.stderr}`)
+                }, 500)
             }
         })
 
