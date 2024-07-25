@@ -5,6 +5,7 @@ import fetch from "node-fetch"
 import { EXECUTABLE } from "@tektronix/kic-cli"
 import * as vscode from "vscode"
 import { LOG_DIR } from "./utility"
+import { LoggerManager } from "./logging"
 
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
@@ -295,6 +296,7 @@ export class KicCell extends EventEmitter {
             connType,
             maxerr
         )
+        const logger = LoggerManager.instance().add_logger("TSP Terminal")
 
         if (connType == "lan" && maxerr != undefined) {
             //getting instr info before we do the actual connection.
@@ -310,6 +312,8 @@ export class KicCell extends EventEmitter {
                                 .toISOString()
                                 .substring(0, 10)}-kic.log`
                         ),
+                        "--log-socket",
+                        `${logger.host}:${logger.port}`,
                         "info",
                         "lan",
                         "--json",
@@ -331,6 +335,8 @@ export class KicCell extends EventEmitter {
                         LOG_DIR,
                         `${new Date().toISOString().substring(0, 10)}-kic.log`
                     ),
+                    "--log-socket",
+                    `${logger.host}:${logger.port}`,
                     "connect",
                     "lan",
                     unique_id,
@@ -347,6 +353,8 @@ export class KicCell extends EventEmitter {
                         LOG_DIR,
                         `${new Date().toISOString().substring(0, 10)}-kic.log`
                     ),
+                    "--log-socket",
+                    `${logger.host}:${logger.port}`,
                     "connect",
                     "usb",
                     unique_id,

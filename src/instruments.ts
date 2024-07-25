@@ -19,6 +19,7 @@ import {
     KicProcessMgr,
 } from "./resourceManager"
 import { LOG_DIR } from "./utility"
+import { LoggerManager } from "./logging"
 
 const DISCOVERY_TIMEOUT = 300
 
@@ -1285,6 +1286,7 @@ export class InstrumentsExplorer {
     }
 
     private startDiscovery() {
+        const logger = LoggerManager.instance().add_logger("TSP Discovery")
         if (this.InstrumentsDiscoveryViewer.message == "") {
             cp.spawn(
                 DISCOVER_EXECUTABLE,
@@ -1296,6 +1298,8 @@ export class InstrumentsExplorer {
                             .toISOString()
                             .substring(0, 10)}-kic-discover.log`
                     ),
+                    "--log-socket",
+                    `${logger.host}:${logger.port}`,
                     "all",
                     "--timeout",
                     DISCOVERY_TIMEOUT.toString(),

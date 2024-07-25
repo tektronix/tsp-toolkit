@@ -25,6 +25,7 @@ import {
     RELATIVE_TSP_CONFIG_FILE_PATH,
 } from "./workspaceManager"
 import { LOG_DIR } from "./utility"
+import { LoggerManager } from "./logging"
 
 let _activeConnectionManager: CommunicationManager
 let _terminationMgr: TerminationManager
@@ -455,6 +456,7 @@ async function startInstrDiscovery(): Promise<void> {
     if (wait_time === undefined) {
         return
     }
+    const logger = LoggerManager.instance().add_logger("TSP Discovery")
 
     if (parseInt(wait_time)) {
         const term = vscode.window.createTerminal({
@@ -466,6 +468,8 @@ async function startInstrDiscovery(): Promise<void> {
                     LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`
                 ),
+                "--log-socket",
+                `${logger.host}:${logger.port}`,
                 "discover",
                 "all",
                 "--timeout",
