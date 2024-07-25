@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.17.0]
+
+### Added
+- Reset instrument if closed unexpectedly using the trashcan on the terminal (TSP-730)
+
 ## [0.16.4]
 
 ### Changed
