@@ -4,6 +4,9 @@ import { LogOutputChannel, window } from "vscode"
 const PORT_MAX = 49150
 const PORT_MIN = 48620
 
+/**
+ * The log levels from KIC applications.
+ */
 enum KicLogLevels {
     TRACE = "TRACE",
     DEBUG = "DEBUG",
@@ -12,18 +15,36 @@ enum KicLogLevels {
     ERROR = "ERROR",
 }
 
+/**
+ * This type is used in type-intersections to allow for more keys to be present in a
+ * type.
+ */
 type OtherKeys = {
     [key: string]: string | number | boolean | object
 }
 
+/**
+ * A span should always include a `name`, but there could be other keys that are
+ * included as well. This type-intersection allows us to include other keys if they
+ * exist.
+ */
 type Span = OtherKeys & {
     name: string
 }
 
+/**
+ * Fields will likely include a `message`, though it is not guaranteed. There could be
+ * other keys that are included as well. This type-intersection allows us to include
+ * other keys if they exist.
+ */
 type Fields = OtherKeys & {
     message?: string
 }
 
+/**
+ * KicLogMessage defines the JSON object we expect to get from the KIC application over
+ * the logging socket.
+ */
 interface KicLogMessage {
     timestamp: string
     level: KicLogLevels
@@ -33,6 +54,10 @@ interface KicLogMessage {
     spans: Span[]
 }
 
+/**
+ * A logger will create a socket server that listens for kic log messages and prints
+ * them to the appropriate Output Channel.
+ */
 export class Logger {
     private _manager?: LoggerManager
     private _server: Server
@@ -162,25 +187,41 @@ export class Logger {
     }
 }
 
-let LOGGER_MANAGER_INSTANCE: LoggerManager | undefined
-
+/**
+ * A LoggerManager creates Loggers for the expected external applications (in this case
+ * `kic` and `kic-discover`).
+ */
 export class LoggerManager {
     private _loggers: Map<string, Logger>
     private _next_port = PORT_MIN
 
+    /**
+     * The global singleton instance of LoggerManager.
+     */
+    private static INSTANCE: LoggerManager | undefined
+
+    /**
+     * Get the singleton instance of the LoggerManager.
+     */
     static instance(): LoggerManager {
-        if (!LOGGER_MANAGER_INSTANCE) {
-            LOGGER_MANAGER_INSTANCE = new LoggerManager()
+        if (!LoggerManager.INSTANCE) {
+            LoggerManager.INSTANCE = new LoggerManager()
         }
-        return LOGGER_MANAGER_INSTANCE
+        return LoggerManager.INSTANCE
     }
 
-    constructor() {
+    private constructor() {
         this._loggers = new Map<string, Logger>()
         this.add_logger("TSP Discovery")
         this.add_logger("TSP Terminal")
     }
 
+    /**
+     * Add a new Logger with the given name. All Loggers created here will use a host IP
+     * of `127.0.0.1`. The port will be incremented between each added logger, so always
+     * get the port number programmatically. There is no guarantees on the final port
+     * number of any Logger.
+     */
     add_logger(name: string): Logger {
         if (this._loggers.has(name) && this._loggers.get(name) !== undefined) {
             return this._loggers.get(name) ?? process.exit(1) // should not be able to get here because of the if statement
@@ -195,6 +236,9 @@ export class LoggerManager {
         return logger
     }
 
+    /**
+     * Remove a Logger by name or by object.
+     */
     remove_logger(logger: Logger | string) {
         if (typeof logger === "string") {
             this._loggers.delete(logger)
