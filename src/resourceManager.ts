@@ -118,6 +118,14 @@ export class FriendlyNameMgr {
         return handled
     }
 
+    /**
+     * method generates unique friendly name for instrument if user
+     * does not provide one
+     *
+     * @param io_type - Lan, Usb etc.
+     * @param model_serial - model and serial number of instrument
+     * @returns - unique friendly name for given instrument
+     */
     public static generateUniqueName(
         io_type: IoType,
         model_serial: string | undefined
