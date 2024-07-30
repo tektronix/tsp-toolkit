@@ -54,28 +54,14 @@ export async function createTerminal(
     if (connection_string.split("@").length > 1) {
         name = connection_string.split("@")[0]
         ip = connection_string.split("@")[1]
-    } else {
-        const name_entered = await vscode.window.showInputBox({
-            placeHolder: "Enter friendly name to proceed",
-        })
-        if (
-            //ToDo: need to add a common regex for all friendly name inputs
-            name_entered === undefined ||
-            name_entered === null ||
-            name_entered.length === 0
-        ) {
-            void vscode.window.showErrorMessage(
-                "Cannot proceed with empty friendly name"
-            )
-            return
-        } else {
-            name = name_entered
-        }
     }
 
     if (_connHelper.IPTest(ip) == false) {
         //USB
         //This only works if selected from Instrument discovery
+        if (name == "") {
+            name = FriendlyNameMgr.generateUniqueName(IoType.Usb, model_serial)
+        }
         if (
             !FriendlyNameMgr.checkForDuplicateFriendlyName(
                 IoType.Usb,
@@ -86,6 +72,7 @@ export async function createTerminal(
             return
         }
         info = _activeConnectionManager?.createTerminal(
+            name,
             undefined,
             connection_string,
             command_text
@@ -95,6 +82,12 @@ export async function createTerminal(
         msn = await _connHelper.getModelAndSerialNumber(ip) //const to let
         if (msn != undefined) {
             model_serial_no = msn.model + "#" + msn.sn //const to let
+            if (name == "") {
+                name = FriendlyNameMgr.generateUniqueName(
+                    IoType.Lan,
+                    model_serial_no
+                )
+            }
             if (
                 !FriendlyNameMgr.checkForDuplicateFriendlyName(
                     IoType.Lan,
@@ -113,6 +106,7 @@ export async function createTerminal(
                     msn.sn
             )
             info = _activeConnectionManager?.createTerminal(
+                name,
                 `${connection_string}:${msn.port}`,
                 undefined,
                 command_text
@@ -121,6 +115,7 @@ export async function createTerminal(
         //TODO: Remove this else statement once lxi page is ready for versatest
         else {
             info = _activeConnectionManager?.createTerminal(
+                name,
                 connection_string,
                 undefined,
                 command_text
