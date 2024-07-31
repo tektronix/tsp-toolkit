@@ -19,6 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.17.0]
 
 ### Added
+- Reset instrument if closed unexpectedly using the trashcan on the terminal (TSP-730)
 - Add logging for terminal and discover
 - Default friendly name if user doesn't provide one (TSP-757)
 
