@@ -119,6 +119,51 @@ export class FriendlyNameMgr {
     }
 
     /**
+     * method generates unique friendly name for instrument if user
+     * does not provide one
+     *
+     * @param io_type - Lan, Usb etc.
+     * @param model_serial - model and serial number of instrument
+     * @returns - unique friendly name for given instrument
+     */
+    public static generateUniqueName(
+        io_type: IoType,
+        model_serial: string | undefined
+    ): string {
+        let unique_name = ""
+        let found = false
+        const connections: Array<InstrInfo> =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
+
+        if (connections.length > 0) {
+            connections.forEach((instr) => {
+                if (
+                    io_type === instr.io_type &&
+                    model_serial == instr.model + "#" + instr.serial_number
+                ) {
+                    unique_name = instr.friendly_name
+                    found = true
+                    return
+                }
+            })
+        }
+
+        if (!found) {
+            const baseString = model_serial ?? "instrument"
+            let counter = 1
+            let uniqueString = baseString
+
+            while (connections.some((i) => i.friendly_name == uniqueString)) {
+                uniqueString = baseString + "_" + String(counter)
+                counter++
+            }
+            unique_name = uniqueString
+        }
+        return unique_name
+    }
+
+    /**
      * method checks and adds/updates new friendly name
      *
      * @param instr - instrument whose friendly name needs to be added/updated

@@ -174,6 +174,7 @@ export class CommunicationManager {
     //this is the main create
     //create a KIC terminal
     public createTerminal(
+        term_name: string,
         instrumentIp?: string,
         usb_unique_string?: string,
         filePath?: string
@@ -184,7 +185,6 @@ export class CommunicationManager {
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
             if (parts == null) return ""
-            const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
             const ip_addr = parts[2]
             const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
 
@@ -210,7 +210,7 @@ export class CommunicationManager {
             // })
 
             info = this._kicProcessMgr.createKicCell(
-                name,
+                term_name,
                 ip,
                 "lan",
                 maxerr,
@@ -218,14 +218,12 @@ export class CommunicationManager {
             )
         } else if (usb_unique_string != undefined) {
             let unique_string = usb_unique_string
-            let name = "KIC"
             const string_split = usb_unique_string.split("@")
             if (string_split.length > 1) {
-                name = string_split[0]
                 unique_string = string_split[1]
             }
             info = this._kicProcessMgr.createKicCell(
-                name,
+                term_name,
                 unique_string,
                 "usb",
                 undefined,
