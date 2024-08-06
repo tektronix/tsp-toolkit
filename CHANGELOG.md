@@ -19,7 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.17.1]
 
 ### Fixed
-- Succesful connection to tspop adds the instrument details to Instruments pane (TSP-773)
+- Successful connection to tspop adds the instrument details to Instruments pane (TSP-773)
 
 ## [0.17.0]
 
