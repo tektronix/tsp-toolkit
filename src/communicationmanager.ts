@@ -178,13 +178,13 @@ export class CommunicationManager {
         instrumentIp?: string,
         usb_unique_string?: string,
         filePath?: string
-    ): string {
-        let info = ""
+    ): [info: string, verified_name?: string] {
+        let res: [string, string?] = ["", undefined]
         const maxerr: number =
             vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
-            if (parts == null) return ""
+            if (parts == null) return ["", undefined]
             const ip_addr = parts[2]
             const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
 
@@ -209,7 +209,7 @@ export class CommunicationManager {
             //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
             // })
 
-            info = this._kicProcessMgr.createKicCell(
+            res = this._kicProcessMgr.createKicCell(
                 term_name,
                 ip,
                 "lan",
@@ -222,7 +222,7 @@ export class CommunicationManager {
             if (string_split.length > 1) {
                 unique_string = string_split[1]
             }
-            info = this._kicProcessMgr.createKicCell(
+            res = this._kicProcessMgr.createKicCell(
                 term_name,
                 unique_string,
                 "usb",
@@ -237,7 +237,7 @@ export class CommunicationManager {
         //         term.sendText(filePath)
         //     }
         // }
-        return info
+        return res
     }
 
     private async terminalAction() {
