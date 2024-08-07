@@ -325,15 +325,15 @@ export class KicCell extends EventEmitter {
 
             if (name == "") {
                 const _info = <IIDNInfo>JSON.parse(info)
-                //instrument is tspop
-                if (_info.serial_number == "0") {
-                    verified_name = FriendlyNameMgr.generateUniqueName(
-                        IoType.Lan,
-                        _info.model + "#" + _info.serial_number
-                    )
-                    name = verified_name
-                    this._connDetails.Name = name
-                }
+                //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
+                //we generate a unique name based on *idn? info
+
+                verified_name = FriendlyNameMgr.generateUniqueName(
+                    IoType.Lan,
+                    _info.model + "#" + _info.serial_number
+                )
+                name = verified_name
+                this._connDetails.Name = name
             }
 
             this._term = vscode.window.createTerminal({

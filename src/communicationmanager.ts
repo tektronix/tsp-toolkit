@@ -172,7 +172,16 @@ export class CommunicationManager {
     }
 
     //this is the main create
-    //create a KIC terminal
+
+    /**
+     * Creates a kic terminal for given instrument connection details
+     * @param term_name - terminal/connection name
+     * @param instrumentIp - instrument IP address (Lan only)
+     * @param usb_unique_string - unique string for USB connection (USB only)
+     * @param filePath - file path to send to terminal
+     * @returns A tuple where the first element (string) is the *idn? info
+     * and the second element (string | undefined) is system generated unique connection name if term_name is empty
+     */
     public createTerminal(
         term_name: string,
         instrumentIp?: string,

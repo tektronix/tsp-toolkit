@@ -337,28 +337,6 @@ class IOInstrNode extends InstrNode {
             //instrument address needs to be updated
             this.children[0] = new InstrNode(this._instrInfo.instr_address)
         }
-
-        //friendly_name needs to be updated
-        // const connections: Array<InstrDetails> =
-        //     vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
-        // const config = vscode.workspace.getConfiguration("tsp")
-
-        // const index = connections.findIndex(
-        //     (i) =>
-        //         i.io_type == this._instrInfo.io_type &&
-        //         i.model_serial == this._modSerial
-        // )
-        // if (index > -1) {
-        //     if (connections[index].address != this._instrInfo.instr_address) {
-        //         //update
-        //         connections[index].address = this._instrInfo.instr_address
-        //         void config.update(
-        //             "connectionList",
-        //             connections,
-        //             vscode.ConfigurationTarget.Global
-        //         )
-        //     }
-        // }
     }
 
     private addChildNodes() {
