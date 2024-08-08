@@ -11,20 +11,17 @@ export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 //export const IPV4_ADDR_RE = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/
 
+//interface for *idn? response
+export interface IIDNInfo {
+    vendor: string
+    model: string
+    serial_number: string
+    firmware_rev: string
+}
+
 export enum IoType {
     Lan = "Lan",
     Usb = "Usb",
-}
-
-export class InstrDetails {
-    io_type: IoType
-    friendly_name = ""
-    model_serial = ""
-    address = ""
-
-    constructor(io_type: IoType) {
-        this.io_type = io_type
-    }
 }
 
 /**
@@ -71,51 +68,6 @@ export class FriendlyNameMgr {
         })
 
         return conn_output
-    }
-
-    /**
-     * method checks if connection name entered is duplicate
-     *
-     * @param io_type - Lan, Usb etc.
-     * @param model_serial - model and serial number of instrument
-     * @param name - friendly name of instrument
-     */
-    public static checkForDuplicateFriendlyName(
-        io_type: IoType,
-        model_serial: string | undefined,
-        name: string
-    ): boolean {
-        //true if duplicate friendly name is not entered
-        let handled = true
-
-        if (model_serial != undefined) {
-            const connections: Array<InstrInfo> =
-                vscode.workspace
-                    .getConfiguration("tsp")
-                    .get("savedInstruments") ?? []
-
-            if (connections.length > 0) {
-                connections.forEach((instr) => {
-                    if (name == instr.friendly_name) {
-                        if (
-                            io_type === instr.io_type &&
-                            model_serial ==
-                                instr.model + "#" + instr.serial_number
-                        ) {
-                            //connecting to same instr with same friendly name, ignore
-                            return
-                        } else {
-                            handled = false
-                            void vscode.window.showErrorMessage(
-                                "Duplicate name entered. Cannot proceed."
-                            )
-                            return
-                        }
-                    }
-                })
-            }
-        }
-        return handled
     }
 
     /**
@@ -181,19 +133,17 @@ export class FriendlyNameMgr {
         const index = connections.findIndex(
             (i) =>
                 i.io_type === instr.io_type &&
-                instr.model == instr.model &&
-                i.serial_number == i.serial_number
+                i.model == instr.model &&
+                i.serial_number == instr.serial_number
         )
         if (index !== -1) {
             //update
-            if (connections[index].friendly_name != new_name) {
-                connections[index].friendly_name = new_name
-                await config.update(
-                    "savedInstruments",
-                    connections,
-                    vscode.ConfigurationTarget.Global
-                )
-            }
+            connections[index].friendly_name = new_name
+            await config.update(
+                "savedInstruments",
+                connections,
+                vscode.ConfigurationTarget.Global
+            )
         } else {
             connections.push(instr)
             await config.update(
@@ -257,9 +207,9 @@ export class KicProcessMgr {
         connType: string,
         maxerr?: number,
         filePath?: string
-    ): string {
+    ): [info: string, verified_name?: string] {
         const newCell = new KicCell()
-        const info = newCell.initialiseComponents(
+        const [info, verified_name] = newCell.initialiseComponents(
             name,
             unique_id,
             connType,
@@ -276,7 +226,7 @@ export class KicProcessMgr {
         //     )
         //     this.kicList.splice(idx)
         // })
-        return info
+        return [info, verified_name]
     }
 
     public restartConnectionAfterDebug() {
@@ -331,10 +281,11 @@ export class KicCell extends EventEmitter {
         connType: string,
         maxerr?: number,
         filePath?: string
-    ) {
+    ): [info: string, verified_name?: string] {
         //#ToDo: need to verify if maxerr is required
         this._uniqueID = unique_id
         let info = ""
+        let verified_name: string | undefined = undefined
         this._connDetails = new ConnectionDetails(
             name,
             unique_id,
@@ -369,7 +320,21 @@ export class KicCell extends EventEmitter {
                     }
                 )
                 .stdout.toString()
-            if (info == "") return info
+
+            if (info == "") return [info]
+
+            if (name == "") {
+                const _info = <IIDNInfo>JSON.parse(info)
+                //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
+                //we generate a unique name based on *idn? info
+
+                verified_name = FriendlyNameMgr.generateUniqueName(
+                    IoType.Lan,
+                    _info.model + "#" + _info.serial_number
+                )
+                name = verified_name
+                this._connDetails.Name = name
+            }
 
             this._term = vscode.window.createTerminal({
                 name: name,
@@ -436,7 +401,7 @@ export class KicCell extends EventEmitter {
         }
 
         console.log(info)
-        return info
+        return [info, verified_name]
     }
 
     public async getTerminalState(): Promise<string> {

@@ -13,7 +13,7 @@ import fetch from "node-fetch"
 import { plainToInstance } from "class-transformer"
 import {
     FriendlyNameMgr,
-    InstrDetails,
+    IIDNInfo,
     InstrInfo,
     IoType,
     KicProcessMgr,
@@ -112,14 +112,6 @@ const jsonRPCRequest: JSONRPCRequest = {
     jsonrpc: JSONRPC,
     id: createID(),
     method: "get_instr_list",
-}
-
-//interface for *idn? response
-interface IIDNInfo {
-    vendor: string
-    model: string
-    serial_number: string
-    firmware_rev: string
 }
 
 /**
@@ -267,7 +259,7 @@ class IOInstrNode extends InstrNode {
     private _saveStatus = false
 
     constructor(instr: InstrInfo, saveStat: boolean) {
-        super(DiscoveryHelper.createUniqueID(instr))
+        super(DiscoveryHelper.createModelSerial(instr))
         this._modSerial = instr.model + "#" + instr.serial_number
         this._saveStatus = saveStat
 
@@ -305,17 +297,15 @@ class IOInstrNode extends InstrNode {
         if (res_instr != undefined) {
             friendly_name = res_instr.friendly_name
         } else {
-            //add the instrument to connection list so that user can't enter duplicate names
-            const new_name =
-                this._instrInfo.io_type.toString() + ":" + this._modSerial
-            friendly_name = new_name
+            //default friendly name
+            friendly_name = this._modSerial
         }
 
         super.updateLabelVal(friendly_name)
     }
 
     public addDefaultFriendlyName() {
-        this._instrInfo.friendly_name = DiscoveryHelper.createUniqueID(
+        this._instrInfo.friendly_name = DiscoveryHelper.createModelSerial(
             this._instrInfo
         )
     }
@@ -334,7 +324,6 @@ class IOInstrNode extends InstrNode {
 
     /**
      * Used to update connection address, _instrInfo object
-     * and the friendly name
      *
      * @param instrInfo - latest instrument details
      */
@@ -342,31 +331,11 @@ class IOInstrNode extends InstrNode {
         if (this._instrInfo.instr_address != instrInfo.instr_address) {
             //instrInfo also needs to be updated
             this._instrInfo = instrInfo
-
-            //instrument address needs to be updated
-            this.children[0] = new InstrNode(this._instrInfo.instr_address)
         }
 
-        //friendly_name needs to be updated
-        const connections: Array<InstrDetails> =
-            vscode.workspace.getConfiguration("tsp").get("connectionList") ?? []
-        const config = vscode.workspace.getConfiguration("tsp")
-
-        const index = connections.findIndex(
-            (i) =>
-                i.io_type == this._instrInfo.io_type &&
-                i.model_serial == this._modSerial
-        )
-        if (index > -1) {
-            if (connections[index].address != this._instrInfo.instr_address) {
-                //update
-                connections[index].address = this._instrInfo.instr_address
-                void config.update(
-                    "connectionList",
-                    connections,
-                    vscode.ConfigurationTarget.Global
-                )
-            }
+        if (this._instrInfo.instr_address != this.children[0].label) {
+            //instrument address needs to be updated
+            this.children[0] = new InstrNode(this._instrInfo.instr_address)
         }
     }
 
@@ -738,18 +707,14 @@ export class NewTDPModel {
     }
 
     //add from connect
-    public addFromConnectToSavedList(
-        instr_to_save: string,
-        ioType: IoType,
-        instr_details: unknown
-    ) {
-        if (instr_to_save.length > 0) {
-            const instr_info = instr_details as InstrInfo
+    public addFromConnectToSavedList(ioType: IoType, instr_details: InstrInfo) {
+        if (instr_details != undefined) {
+            this._savedNodeProvider?.saveInstrToList(
+                DiscoveryHelper.createUniqueID(instr_details)
+            )
+            this.addToConnectionList(instr_details)
 
-            this._savedNodeProvider?.saveInstrToList(instr_to_save)
-            this.addToConnectionList(instr_info)
-
-            this.saveInstrInfoToPersist(instr_info)
+            this.saveInstrInfoToPersist(instr_details)
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
@@ -867,15 +832,16 @@ export class NewTDPModel {
 
         this.connection_list = temp_list
 
-        // const __info: IInstrInfo = {
+        // const __info: InstrInfo = {
         //     io_type: IoType.Lan,
-        //     ip_addr: "134.63.78.75",
-        //     socket_port: "5025",
-        //     manufacturer: "Keithley Instruments",
-        //     model: "2450",
-        //     serial_number: "0987321B",
-        //     firmware_revision: "1.0.0",
-        //     instr_categ: "24xx",
+        //     instr_address: "192.168.0.1",
+        //     socket_port: "NA",
+        //     manufacturer: "KEITHLEY INSTRUMENTS LLC",
+        //     model: "VERSATEST-600",
+        //     serial_number: "TM-PQ2-23",
+        //     firmware_revision: "0.0.1",
+        //     instr_categ: "versatest",
+        //     friendly_name: "VERSATEST-600#TM-PQ2-23",
         // }
 
         //this.connection_list.push(__info)
@@ -910,7 +876,9 @@ export class NewTDPModel {
                     this.discovery_list[i].instr_address !=
                         this.connection_list[j].instr_address
                 ) {
-                    this.connection_list[j] = this.discovery_list[i]
+                    this.connection_list[j].instr_address =
+                        this.discovery_list[i].instr_address
+
                     //also update persisted list in settings.json
                     this.saveInstrInfoToPersist(this.connection_list[j])
                     break
@@ -993,10 +961,16 @@ export class NewTDPModel {
             } else {
                 //found, check if connection address has changed
                 //update
+                let doUpdate = false
                 if (instrList[idx].instr_address != instr.instr_address) {
                     instrList[idx].instr_address = instr.instr_address
-                    //instrList[idx].friendly_name = instr.friendly_name
-
+                    doUpdate = true
+                }
+                if (instrList[idx].friendly_name != instr.friendly_name) {
+                    instrList[idx].friendly_name = instr.friendly_name
+                    doUpdate = true
+                }
+                if (doUpdate) {
                     void config.update(
                         "savedInstruments",
                         instrList,
@@ -1004,6 +978,7 @@ export class NewTDPModel {
                     )
                 }
             }
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments")
         } catch (err_msg) {
             void vscode.window.showErrorMessage(String(err_msg))
             return
@@ -1169,15 +1144,10 @@ export class InstrTDP implements newTDP {
      * @param instr_details - additional info of instrument to be saved
      */
     public saveInstrumentFromConnect(
-        instr_to_save: string,
         ioType: IoType,
-        instr_details: unknown
+        instr_details: InstrInfo
     ): void {
-        this.instrModel?.addFromConnectToSavedList(
-            instr_to_save,
-            ioType,
-            instr_details
-        )
+        this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
         this.reloadTreeData()
     }
 
@@ -1343,19 +1313,11 @@ export class InstrumentsExplorer {
             ip_str.length > 0 &&
             input_item != undefined
         ) {
-            if (
-                FriendlyNameMgr.checkForDuplicateFriendlyName(
-                    input_item.FetchInstrIOType(),
-                    input_item.fetchModelSerial(),
-                    ip_str
-                )
-            ) {
-                await FriendlyNameMgr.checkandAddFriendlyName(
-                    input_item.fetchInstrInfo(),
-                    ip_str
-                )
-                this.treeDataProvider?.reloadTreeData()
-            }
+            await FriendlyNameMgr.checkandAddFriendlyName(
+                input_item.fetchInstrInfo(),
+                ip_str
+            )
+            this.treeDataProvider?.reloadTreeData()
         }
     }
 
@@ -1380,7 +1342,6 @@ export class InstrumentsExplorer {
     }
 
     public saveWhileConnect(
-        instr_to_save: string,
         ip: string,
         ioType: IoType,
         info: string,
@@ -1411,11 +1372,7 @@ export class InstrumentsExplorer {
 
         //FriendlyNameMgr.checkandAddFriendlyName(__info, friendly_name)
 
-        this.treeDataProvider?.saveInstrumentFromConnect(
-            instr_to_save,
-            ioType,
-            __info
-        )
+        this.treeDataProvider?.saveInstrumentFromConnect(ioType, __info)
     }
 
     private saveInstrument(instr: unknown) {
@@ -1499,12 +1456,13 @@ export class InstrumentsExplorer {
 class DiscoveryHelper {
     public static createUniqueID(info: InstrInfo): string {
         let res = ""
-        res =
-            info.io_type.toString() +
-            ":" +
-            info.model +
-            "#" +
-            info.serial_number
+        res = info.io_type.toString() + ":" + this.createModelSerial(info)
+        return res
+    }
+
+    public static createModelSerial(info: InstrInfo): string {
+        let res = ""
+        res = info.model + "#" + info.serial_number
         return res
     }
 }

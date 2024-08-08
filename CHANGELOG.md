@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.17.1]
+
+### Fixed
+- Successful connection to tspop adds the instrument details to Instruments pane (TSP-773)
+
 ## [0.17.0]
 
 ### Added
@@ -130,8 +135,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.17.0...HEAD
-[0.17.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.4
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.1
+[0.17.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.0
 [0.16.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.4
 [0.16.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.1
 [0.15.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.15.3

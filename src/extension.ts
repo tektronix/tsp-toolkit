@@ -46,7 +46,7 @@ export async function createTerminal(
     command_text?: string
 ) {
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
-    let info = ""
+    let res: [string, string?] = ["", undefined]
     let ip = connection_string
     let name = ""
     let msn
@@ -62,16 +62,7 @@ export async function createTerminal(
         if (name == "") {
             name = FriendlyNameMgr.generateUniqueName(IoType.Usb, model_serial)
         }
-        if (
-            !FriendlyNameMgr.checkForDuplicateFriendlyName(
-                IoType.Usb,
-                model_serial,
-                name
-            )
-        ) {
-            return
-        }
-        info = _activeConnectionManager?.createTerminal(
+        res = _activeConnectionManager?.createTerminal(
             name,
             undefined,
             connection_string,
@@ -81,40 +72,33 @@ export async function createTerminal(
         //LAN
         msn = await _connHelper.getModelAndSerialNumber(ip) //const to let
         if (msn != undefined) {
-            model_serial_no = msn.model + "#" + msn.sn //const to let
-            if (name == "") {
-                name = FriendlyNameMgr.generateUniqueName(
-                    IoType.Lan,
-                    model_serial_no
-                )
-            }
-            if (
-                !FriendlyNameMgr.checkForDuplicateFriendlyName(
-                    IoType.Lan,
-                    model_serial_no,
-                    name
-                )
-            ) {
-                return
-            }
+            if (msn.model != undefined || msn.sn != undefined) {
+                model_serial_no = msn.model + "#" + msn.sn //const to let
+                if (name == "") {
+                    name = FriendlyNameMgr.generateUniqueName(
+                        IoType.Lan,
+                        model_serial_no
+                    )
+                }
 
-            void vscode.window.showInformationMessage(
-                connection_string +
-                    ": Found instrument model " +
-                    msn.model +
-                    " with S/N: " +
-                    msn.sn
-            )
-            info = _activeConnectionManager?.createTerminal(
-                name,
-                `${connection_string}:${msn.port}`,
-                undefined,
-                command_text
-            )
+                void vscode.window.showInformationMessage(
+                    connection_string +
+                        ": Found instrument model " +
+                        msn.model +
+                        " with S/N: " +
+                        msn.sn
+                )
+                res = _activeConnectionManager?.createTerminal(
+                    name,
+                    `${connection_string}:${msn.port}`,
+                    undefined,
+                    command_text
+                )
+            }
         }
         //TODO: Remove this else statement once lxi page is ready for versatest
         else {
-            info = _activeConnectionManager?.createTerminal(
+            res = _activeConnectionManager?.createTerminal(
                 name,
                 connection_string,
                 undefined,
@@ -122,17 +106,11 @@ export async function createTerminal(
             )
         }
 
-        const instr_to_save: string = "Lan:" + model_serial_no
-        info = info.replace("\n", "")
+        //const instr_to_save: string = "Lan:" + model_serial_no
+        const info = res[0].replace("\n", "")
+        name = res[1] == undefined ? name : res[1]
 
-        _instrExplorer.saveWhileConnect(
-            instr_to_save,
-            ip,
-            IoType.Lan,
-            info,
-            name,
-            msn?.port
-        )
+        _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, msn?.port)
     }
 }
 

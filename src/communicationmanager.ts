@@ -172,19 +172,28 @@ export class CommunicationManager {
     }
 
     //this is the main create
-    //create a KIC terminal
+
+    /**
+     * Creates a kic terminal for given instrument connection details
+     * @param term_name - terminal/connection name
+     * @param instrumentIp - instrument IP address (Lan only)
+     * @param usb_unique_string - unique string for USB connection (USB only)
+     * @param filePath - file path to send to terminal
+     * @returns A tuple where the first element (string) is the *idn? info
+     * and the second element (string | undefined) is system generated unique connection name if term_name is empty
+     */
     public createTerminal(
         term_name: string,
         instrumentIp?: string,
         usb_unique_string?: string,
         filePath?: string
-    ): string {
-        let info = ""
+    ): [info: string, verified_name?: string] {
+        let res: [string, string?] = ["", undefined]
         const maxerr: number =
             vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
         if (instrumentIp != undefined) {
             const parts = instrumentIp.match(CONNECTION_RE)
-            if (parts == null) return ""
+            if (parts == null) return ["", undefined]
             const ip_addr = parts[2]
             const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
 
@@ -209,7 +218,7 @@ export class CommunicationManager {
             //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
             // })
 
-            info = this._kicProcessMgr.createKicCell(
+            res = this._kicProcessMgr.createKicCell(
                 term_name,
                 ip,
                 "lan",
@@ -222,7 +231,7 @@ export class CommunicationManager {
             if (string_split.length > 1) {
                 unique_string = string_split[1]
             }
-            info = this._kicProcessMgr.createKicCell(
+            res = this._kicProcessMgr.createKicCell(
                 term_name,
                 unique_string,
                 "usb",
@@ -237,7 +246,7 @@ export class CommunicationManager {
         //         term.sendText(filePath)
         //     }
         // }
-        return info
+        return res
     }
 
     private async terminalAction() {
