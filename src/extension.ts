@@ -72,29 +72,28 @@ export async function createTerminal(
         //LAN
         msn = await _connHelper.getModelAndSerialNumber(ip) //const to let
         if (msn != undefined) {
-            if (msn.model != undefined || msn.sn != undefined) {
-                model_serial_no = msn.model + "#" + msn.sn //const to let
-                if (name == "") {
-                    name = FriendlyNameMgr.generateUniqueName(
-                        IoType.Lan,
-                        model_serial_no
-                    )
-                }
-
-                void vscode.window.showInformationMessage(
-                    connection_string +
-                        ": Found instrument model " +
-                        msn.model +
-                        " with S/N: " +
-                        msn.sn
-                )
-                res = _activeConnectionManager?.createTerminal(
-                    name,
-                    `${connection_string}:${msn.port}`,
-                    undefined,
-                    command_text
+            model_serial_no =
+                (msn.model ?? "undefined") + "#" + (msn.sn ?? "undefined") //const to let
+            if (name == "") {
+                name = FriendlyNameMgr.generateUniqueName(
+                    IoType.Lan,
+                    model_serial_no
                 )
             }
+
+            void vscode.window.showInformationMessage(
+                connection_string +
+                    ": Found instrument model " +
+                    msn.model +
+                    " with S/N: " +
+                    msn.sn
+            )
+            res = _activeConnectionManager?.createTerminal(
+                name,
+                `${connection_string}:${msn.port}`,
+                undefined,
+                command_text
+            )
         }
         //TODO: Remove this else statement once lxi page is ready for versatest
         else {
