@@ -325,7 +325,7 @@
     },
     "dependencies": {
         "@tektronix/keithley_instrument_libraries": "0.16.0",
-        "@tektronix/kic-cli": "0.17.0-3",
+        "@tektronix/kic-cli": "0.17.0",
         "@tektronix/web-help-documents": "0.15.3",
         "@types/cheerio": "^0.22.35",
         "cheerio": "^1.0.0-rc.12",
