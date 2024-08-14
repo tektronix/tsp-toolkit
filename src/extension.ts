@@ -169,8 +169,15 @@ export function activate(context: vscode.ExtensionContext) {
     //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
     //context.subscriptions.push(rclick)
 
-    // call function which is required to call first time while activiting the plugin
+    // call function which is required to call first time while activating the plugin
     hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
+    void updateConfiguration(
+        "files.associations",
+        {
+            "*.tsp": "lua",
+        },
+        vscode.ConfigurationTarget.Global
+    )
     void processWorkspaceFolders()
 
     // Register a handler to process files whenever file is saved
