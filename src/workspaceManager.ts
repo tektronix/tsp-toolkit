@@ -101,107 +101,36 @@ function createTspFileFolder(folderPath: string) {
     )
 }
 
-/**
- * Update filesAssociations settings { "*.tsp": "lua" }
- */
-function updateFileAssociations() {
-    const newAssociations = { "*.tsp": "lua" }
-    // Get the workspace folder configuration
-    const config = vscode.workspace.getConfiguration()
-    const currentAssociations = config.get("files.associations")
-    const updatedAssociations = Object.assign(
-        {},
-        currentAssociations,
-        newAssociations
-    )
-    config
-        .update(
-            "files.associations",
-            updatedAssociations,
-            vscode.ConfigurationTarget.Workspace
-        )
-        .then(
-            () => {
-                // Configuration updated successfully
-                void vscode.window.showInformationMessage(
-                    "files.associations configuration updated"
-                )
-            },
-            (error) => {
-                // Error occurred while updating the configuration
-                void vscode.window.showInformationMessage(
-                    "Failed to update files.associations configuration:",
-                    error
-                )
-            }
-        )
-}
-/**
- * Disable Lua.diagnostics.libraryFiles for library files
- * @param workspace_path workspace folder path
- */
-function disableDiagnosticForLibraryFiles(
-    workspace_path: vscode.WorkspaceFolder
+export async function updateConfiguration(
+    config_name: string,
+    value: unknown,
+    target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
+    workspace_path?: vscode.WorkspaceFolder,
+    notification?: boolean
 ) {
-    const configuration = vscode.workspace.getConfiguration(
-        undefined,
-        workspace_path.uri
-    )
-    configuration
-        .update(
-            "Lua.diagnostics.libraryFiles",
-            "Disable",
-            vscode.ConfigurationTarget.WorkspaceFolder
-        )
-        .then(
-            () => {
-                // Configuration updated successfully
-                void vscode.window.showInformationMessage(
-                    "Lua.diagnostics.libraryFiles configuration updated"
-                )
-            },
-            (error) => {
-                // Error occurred while updating the configuration
-                void vscode.window.showInformationMessage(
-                    "Failed to update Lua.diagnostics.libraryFiles configuration:",
-                    error
-                )
-            }
-        )
-}
+    const config = workspace_path
+        ? vscode.workspace.getConfiguration(undefined, workspace_path.uri)
+        : vscode.workspace.getConfiguration()
 
-/**
- * Configure empty list to Lua.workspace.ignoreDir
- * @param workspace_path workspace folder path
- */
-function setEmptyLuaWorkspaceIgnoreDirList(
-    workspace_path: vscode.WorkspaceFolder
-) {
-    const configuration = vscode.workspace.getConfiguration(
-        undefined,
-        workspace_path.uri
-    )
-    configuration
-        .update(
-            "Lua.workspace.ignoreDir",
-            [],
-            vscode.ConfigurationTarget.WorkspaceFolder
+    const currentConfiguration = config.get(config_name, {})
+    const updatedConfiguration =
+        typeof currentConfiguration === "object" &&
+        !Array.isArray(currentConfiguration)
+            ? { ...currentConfiguration, ...(value as object) }
+            : value
+
+    try {
+        await config.update(config_name, updatedConfiguration, target)
+        if (notification) {
+            void vscode.window.showInformationMessage(
+                `${config_name} configuration updated successfully.`
+            )
+        }
+    } catch (error) {
+        void vscode.window.showErrorMessage(
+            `Failed to update ${config_name} configuration`
         )
-        .then(
-            () => {
-                // Configuration updated successfully
-                void vscode.window.showInformationMessage(
-                    "Lua.workspace.ignoreDir configuration updated"
-                )
-            },
-            (error) => {
-                // Error occurred while updating the configuration
-                void vscode.window.showInformationMessage(
-                    "Failed to update Lua.workspace.ignoreDir configuration:",
-                    error
-                )
-            }
-        )
+    }
 }
 
 /**
@@ -213,9 +142,21 @@ export async function processWorkspaceFolders() {
         for (const folder of workspaceFolders) {
             const folderPath = folder.uri.fsPath
             if (await processFiles(folderPath)) {
-                updateFileAssociations()
-                disableDiagnosticForLibraryFiles(folder)
-                setEmptyLuaWorkspaceIgnoreDirList(folder)
+                await updateConfiguration("files.associations", {
+                    "*.tsp": "lua",
+                })
+                await updateConfiguration(
+                    "Lua.workspace.ignoreDir",
+                    [],
+                    vscode.ConfigurationTarget.WorkspaceFolder,
+                    folder
+                )
+                await updateConfiguration(
+                    "Lua.diagnostics.libraryFiles",
+                    "Disable",
+                    vscode.ConfigurationTarget.WorkspaceFolder,
+                    folder
+                )
                 createTspFileFolder(folderPath)
             }
         }

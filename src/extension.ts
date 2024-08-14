@@ -23,6 +23,7 @@ import {
 import {
     processWorkspaceFolders,
     RELATIVE_TSP_CONFIG_FILE_PATH,
+    updateConfiguration,
 } from "./workspaceManager"
 import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
@@ -243,15 +244,6 @@ function hookTspConfigFileChange(
         for (const folder of workspace_folders) {
             const folderPath = folder.uri
 
-            void onDidChangeTspConfigFile(
-                vscode.Uri.file(
-                    path.join(
-                        folder.uri.fsPath,
-                        RELATIVE_TSP_CONFIG_FILE_PATH,
-                        "config.tsp.json"
-                    )
-                )
-            )
             const fileWatcher = vscode.workspace.createFileSystemWatcher(
                 new vscode.RelativePattern(folderPath, "**/*.tsp.json")
             )
@@ -299,7 +291,13 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                     `${model} model is not supported`
                 )
                 if (workspace_path)
-                    setLuaWorkspaceLibrary(workspace_path, undefined)
+                    await updateConfiguration(
+                        "Lua.workspace.library",
+                        undefined,
+                        vscode.ConfigurationTarget.WorkspaceFolder,
+                        workspace_path,
+                        false
+                    )
                 return
             }
             const lib_base_path = path.join(COMMAND_SETS, model.toUpperCase())
@@ -349,24 +347,15 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                 ),
                 nodeStr
             )
-            setLuaWorkspaceLibrary(workspace_path, undefined)
-            await sleep(1)
-            setLuaWorkspaceLibrary(workspace_path, new_library_settings)
+            await updateConfiguration(
+                "Lua.workspace.library",
+                new_library_settings,
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                workspace_path,
+                true
+            )
         }
     }
-}
-
-/**
- * Sleep execution
- * @param seconds number of seconds to sleep
- * @returns promise after timeout
- */
-function sleep(seconds: number): Promise<void> {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            resolve()
-        }, seconds * 1000)
-    })
 }
 
 async function pickConnection(): Promise<void> {
