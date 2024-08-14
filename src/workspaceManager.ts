@@ -142,9 +142,13 @@ export async function processWorkspaceFolders() {
         for (const folder of workspaceFolders) {
             const folderPath = folder.uri.fsPath
             if (await processFiles(folderPath)) {
-                await updateConfiguration("files.associations", {
-                    "*.tsp": "lua",
-                })
+                await updateConfiguration(
+                    "files.associations",
+                    {
+                        "*.tsp": "lua",
+                    },
+                    vscode.ConfigurationTarget.Global
+                )
                 await updateConfiguration(
                     "Lua.workspace.ignoreDir",
                     [],
