@@ -17,7 +17,6 @@ import {
 import {
     getClassName,
     getNodeDetails,
-    setLuaWorkspaceLibrary,
     updateNodeDetails,
 } from "./tspConfigJsonParser"
 import {
