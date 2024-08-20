@@ -1,5 +1,4 @@
 import * as fs from "fs"
-import * as vscode from "vscode"
 
 interface Slot {
     [slotNumber: string]: string
@@ -99,42 +98,4 @@ export function compareLists<T>(list1: T[], list2: T[]): boolean {
         return false
     }
     return list1.every((item, index) => item === list2[index])
-}
-/**
- * update the library settings in workspace settings.json file
- * @param workspace_path workspace path
- * @param new_library_settings array of settings
- */
-export function setLuaWorkspaceLibrary(
-    workspace_path: vscode.WorkspaceFolder,
-    new_library_settings: string[] | undefined
-) {
-    // Get the workspace folder configuration
-    const configuration = vscode.workspace.getConfiguration(
-        undefined,
-        workspace_path.uri
-    )
-
-    // Update the workspace folder configuration with the new value
-    configuration
-        .update(
-            "Lua.workspace.library",
-            new_library_settings,
-            vscode.ConfigurationTarget.WorkspaceFolder
-        )
-        .then(
-            () => {
-                // Configuration updated successfully
-                void vscode.window.showInformationMessage(
-                    "Workspace folder configuration updated"
-                )
-            },
-            (error) => {
-                // Error occurred while updating the configuration
-                void vscode.window.showInformationMessage(
-                    "Failed to update workspace folder configuration:",
-                    error
-                )
-            }
-        )
 }
