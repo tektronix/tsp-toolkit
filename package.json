@@ -67,6 +67,14 @@
                 }
             },
             {
+                "command": "InstrumentsExplorer.connect",
+                "title": "Connect",
+                "icon": {
+                    "light": "resources/light/connect.svg",
+                    "dark": "resources/dark/connect.svg"
+                }
+            },
+            {
                 "command": "InstrumentsExplorer.rename",
                 "title": "Rename"
             },
@@ -172,6 +180,11 @@
             "view/title": [
                 {
                     "command": "InstrumentsExplorer.refresh",
+                    "when": "view == InstrumentsExplorer",
+                    "group": "navigation"
+                },
+                {
+                    "command": "InstrumentsExplorer.connect",
                     "when": "view == InstrumentsExplorer",
                     "group": "navigation"
                 }
