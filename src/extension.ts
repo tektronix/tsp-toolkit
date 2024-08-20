@@ -17,12 +17,12 @@ import {
 import {
     getClassName,
     getNodeDetails,
-    setLuaWorkspaceLibrary,
     updateNodeDetails,
 } from "./tspConfigJsonParser"
 import {
     processWorkspaceFolders,
     RELATIVE_TSP_CONFIG_FILE_PATH,
+    updateConfiguration,
 } from "./workspaceManager"
 import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
@@ -140,14 +140,6 @@ export function activate(context: vscode.ExtensionContext) {
         pickConnection
     )
 
-    const add_new_connection = vscode.commands.registerCommand(
-        "InstrumentsExplorer.connect",
-        async () => {
-            await pickConnection("New Connection")
-        }
-    )
-    context.subscriptions.push(add_new_connection)
-
     HelpDocumentWebView.createOrShow(context)
 
     //TODO: connect `.terminate` in ki-comms
@@ -176,8 +168,15 @@ export function activate(context: vscode.ExtensionContext) {
     //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
     //context.subscriptions.push(rclick)
 
-    // call function which is required to call first time while activiting the plugin
+    // call function which is required to call first time while activating the plugin
     hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
+    void updateConfiguration(
+        "files.associations",
+        {
+            "*.tsp": "lua",
+        },
+        vscode.ConfigurationTarget.Global
+    )
     void processWorkspaceFolders()
 
     // Register a handler to process files whenever file is saved
@@ -251,15 +250,6 @@ function hookTspConfigFileChange(
         for (const folder of workspace_folders) {
             const folderPath = folder.uri
 
-            void onDidChangeTspConfigFile(
-                vscode.Uri.file(
-                    path.join(
-                        folder.uri.fsPath,
-                        RELATIVE_TSP_CONFIG_FILE_PATH,
-                        "config.tsp.json"
-                    )
-                )
-            )
             const fileWatcher = vscode.workspace.createFileSystemWatcher(
                 new vscode.RelativePattern(folderPath, "**/*.tsp.json")
             )
@@ -307,7 +297,13 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                     `${model} model is not supported`
                 )
                 if (workspace_path)
-                    setLuaWorkspaceLibrary(workspace_path, undefined)
+                    await updateConfiguration(
+                        "Lua.workspace.library",
+                        undefined,
+                        vscode.ConfigurationTarget.WorkspaceFolder,
+                        workspace_path,
+                        false
+                    )
                 return
             }
             const lib_base_path = path.join(COMMAND_SETS, model.toUpperCase())
@@ -357,49 +353,29 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                 ),
                 nodeStr
             )
-            setLuaWorkspaceLibrary(workspace_path, undefined)
-            await sleep(1)
-            setLuaWorkspaceLibrary(workspace_path, new_library_settings)
+            await updateConfiguration(
+                "Lua.workspace.library",
+                new_library_settings,
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                workspace_path,
+                true
+            )
         }
     }
 }
 
-<<<<<<< Updated upstream
-/**
- * Sleep execution
- * @param seconds number of seconds to sleep
- * @returns promise after timeout
- */
-function sleep(seconds: number): Promise<void> {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            resolve()
-        }, seconds * 1000)
-    })
-}
-
 async function pickConnection(): Promise<void> {
-=======
-async function pickConnection(connection_info?: string): Promise<void> {
->>>>>>> Stashed changes
     const connections: string[] = FriendlyNameMgr.fetchConnListForPicker()
-    let selection = ""
-    if (connection_info != undefined) {
-        selection = connection_info
-    } else {
-        selection =
-            (await vscode.window.showQuickPick(
-                ["New Connection"].concat(connections),
-                { placeHolder: "Select a connection" }
-            )) || ""
+    const selection = await vscode.window.showQuickPick(
+        ["New Connection"].concat(connections)
+    )
 
-        if (selection === undefined) {
-            return
-        }
-        if (selection !== "New Connection") {
-            await createTerminal(selection)
-            return
-        }
+    if (selection === undefined) {
+        return
+    }
+    if (selection !== "New Connection") {
+        await createTerminal(selection)
+        return
     }
 
     const options: vscode.InputBoxOptions = {
