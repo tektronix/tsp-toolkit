@@ -140,6 +140,14 @@ export function activate(context: vscode.ExtensionContext) {
         pickConnection
     )
 
+    const add_new_connection = vscode.commands.registerCommand(
+        "InstrumentsExplorer.connect",
+        async () => {
+            await pickConnection("New Connection")
+        }
+    )
+    context.subscriptions.push(add_new_connection)
+
     HelpDocumentWebView.createOrShow(context)
 
     //TODO: connect `.terminate` in ki-comms
@@ -364,18 +372,25 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
     }
 }
 
-async function pickConnection(): Promise<void> {
+async function pickConnection(connection_info?: string): Promise<void> {
     const connections: string[] = FriendlyNameMgr.fetchConnListForPicker()
-    const selection = await vscode.window.showQuickPick(
-        ["New Connection"].concat(connections)
-    )
+    let selection = ""
+    if (connection_info != undefined) {
+        selection = connection_info
+    } else {
+        selection =
+            (await vscode.window.showQuickPick(
+                ["New Connection"].concat(connections),
+                { placeHolder: "Select a connection" }
+            )) || ""
 
-    if (selection === undefined) {
-        return
-    }
-    if (selection !== "New Connection") {
-        await createTerminal(selection)
-        return
+        if (selection === undefined) {
+            return
+        }
+        if (selection !== "New Connection") {
+            await createTerminal(selection)
+            return
+        }
     }
 
     const options: vscode.InputBoxOptions = {
