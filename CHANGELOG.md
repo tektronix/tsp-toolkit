@@ -16,6 +16,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.17.2]
+
+### Fixed
+- Many notification at TSP Toolkit Activation (TSP-779)
+- Make *.tsp=lua file association a User-level setting instead of a workspace setting (TSP-624)
+### Added
+-Add a + button to the Instruments pane title bar(TSP-792)
+
 ## [0.17.0]
 
 ### Fixed
@@ -134,7 +142,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.17.2...HEAD
+[0.17.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.2
 [0.17.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.0
 [0.16.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.4
 [0.16.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.1
