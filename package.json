@@ -338,10 +338,9 @@
     },
     "dependencies": {
         "@tektronix/keithley_instrument_libraries": "0.16.0",
-        "@tektronix/kic-cli": "0.17.0",
         "@tektronix/web-help-documents": "0.15.3",
         "@types/cheerio": "^0.22.35",
-        "cheerio": "^1.0.0-rc.12",
+        "cheerio": "^1.0.0",
         "class-transformer": "^0.5.1",
         "json-rpc-2.0": "^1.7.0",
         "node-fetch": "^2.7.0",
@@ -349,6 +348,10 @@
         "portfinder": "^1.0.32",
         "sax-ts": "^1.2.13",
         "xml-js": "^1.6.11"
+    },
+    "optionalDependencies": {
+        "@tektronix/kic-cli-win32-x64": "0.17.2",
+        "@tektronix/kic-cli-linux-x64": "0.17.2"
     },
     "extensionDependencies": [
         "sumneko.lua"
