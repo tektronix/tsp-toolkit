@@ -60,7 +60,7 @@ const tspConfigJsonContent = `{
  */
 function createTspFileFolder(folderPath: string) {
     const nodeConfigFolderPath = vscode.Uri.file(
-        path.join(folderPath, RELATIVE_TSP_CONFIG_FILE_PATH)
+        path.join(folderPath, RELATIVE_TSP_CONFIG_FILE_PATH),
     )
 
     vscode.workspace.fs.stat(nodeConfigFolderPath).then(
@@ -75,8 +75,8 @@ function createTspFileFolder(folderPath: string) {
                 path.join(
                     folderPath,
                     RELATIVE_TSP_CONFIG_FILE_PATH,
-                    "config.tsp.json"
-                )
+                    "config.tsp.json",
+                ),
             )
             await fs.promises.writeFile(tspconfig.fsPath, tspConfigJsonContent)
 
@@ -84,8 +84,8 @@ function createTspFileFolder(folderPath: string) {
                 path.join(
                     folderPath,
                     RELATIVE_TSP_CONFIG_FILE_PATH,
-                    "tspSchema.json"
-                )
+                    "tspSchema.json",
+                ),
             )
             await fs.promises.writeFile(tspSchema.fsPath, tspSchemaContent)
 
@@ -93,11 +93,11 @@ function createTspFileFolder(folderPath: string) {
                 path.join(
                     folderPath,
                     RELATIVE_TSP_CONFIG_FILE_PATH,
-                    "nodeTable.tsp"
-                )
+                    "nodeTable.tsp",
+                ),
             )
             await fs.promises.writeFile(nodeTable.fsPath, "")
-        }
+        },
     )
 }
 
@@ -106,7 +106,7 @@ export async function updateConfiguration(
     value: unknown,
     target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
     workspace_path?: vscode.WorkspaceFolder,
-    notification?: boolean
+    notification?: boolean,
 ) {
     const config = workspace_path
         ? vscode.workspace.getConfiguration(undefined, workspace_path.uri)
@@ -123,12 +123,12 @@ export async function updateConfiguration(
         await config.update(config_name, updatedConfiguration, target)
         if (notification) {
             void vscode.window.showInformationMessage(
-                `${config_name} configuration updated successfully.`
+                `${config_name} configuration updated successfully.`,
             )
         }
-    } catch (error) {
+    } catch {
         void vscode.window.showErrorMessage(
-            `Failed to update ${config_name} configuration`
+            `Failed to update ${config_name} configuration`,
         )
     }
 }
@@ -146,13 +146,13 @@ export async function processWorkspaceFolders() {
                     "Lua.workspace.ignoreDir",
                     [],
                     vscode.ConfigurationTarget.WorkspaceFolder,
-                    folder
+                    folder,
                 )
                 await updateConfiguration(
                     "Lua.diagnostics.libraryFiles",
                     "Disable",
                     vscode.ConfigurationTarget.WorkspaceFolder,
-                    folder
+                    folder,
                 )
                 createTspFileFolder(folderPath)
             }

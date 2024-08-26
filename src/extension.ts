@@ -1,10 +1,10 @@
 import * as fs from "fs"
-import path = require("path")
+import { join } from "path"
 import * as vscode from "vscode"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
 import { CommunicationManager } from "./communicationmanager"
-import { TerminationManager } from "./terminationManager"
+//import { TerminationManager } from "./terminationManager"
 import { InstrumentsExplorer } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
@@ -28,7 +28,7 @@ import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
 
 let _activeConnectionManager: CommunicationManager
-let _terminationMgr: TerminationManager
+//let _terminationMgr: TerminationManager
 let _instrExplorer: InstrumentsExplorer
 let _kicProcessMgr: KicProcessMgr
 let _connHelper: ConnectionHelper
@@ -43,7 +43,7 @@ let _connHelper: ConnectionHelper
 export async function createTerminal(
     connection_string: string,
     model_serial?: string,
-    command_text?: string
+    command_text?: string,
 ) {
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
     let res: [string, string?] = ["", undefined]
@@ -66,7 +66,7 @@ export async function createTerminal(
             name,
             undefined,
             connection_string,
-            command_text
+            command_text,
         )
     } else {
         //LAN
@@ -77,7 +77,7 @@ export async function createTerminal(
             if (name == "") {
                 name = FriendlyNameMgr.generateUniqueName(
                     IoType.Lan,
-                    model_serial_no
+                    model_serial_no,
                 )
             }
 
@@ -86,13 +86,13 @@ export async function createTerminal(
                     ": Found instrument model " +
                     msn.model +
                     " with S/N: " +
-                    msn.sn
+                    msn.sn,
             )
             res = _activeConnectionManager?.createTerminal(
                 name,
                 `${connection_string}:${msn.port}`,
                 undefined,
-                command_text
+                command_text,
             )
         }
         //TODO: Remove this else statement once lxi page is ready for versatest
@@ -101,7 +101,7 @@ export async function createTerminal(
                 name,
                 connection_string,
                 undefined,
-                command_text
+                command_text,
             )
         }
 
@@ -127,9 +127,9 @@ export function activate(context: vscode.ExtensionContext) {
     _activeConnectionManager = new CommunicationManager(
         context,
         _kicProcessMgr,
-        _connHelper
+        _connHelper,
     )
-    _terminationMgr = new TerminationManager()
+    //_terminationMgr = new TerminationManager()
     _instrExplorer = new InstrumentsExplorer(context, _kicProcessMgr)
 
     // The command has been defined in the package.json file
@@ -137,14 +137,14 @@ export function activate(context: vscode.ExtensionContext) {
     // The commandId parameter must match the command field in package.json
     const openTerminal = vscode.commands.registerCommand(
         "tsp.openTerminal",
-        pickConnection
+        pickConnection,
     )
 
     const add_new_connection = vscode.commands.registerCommand(
         "InstrumentsExplorer.connect",
         async () => {
             await pickConnection("New Connection")
-        }
+        },
     )
     context.subscriptions.push(add_new_connection)
 
@@ -183,7 +183,7 @@ export function activate(context: vscode.ExtensionContext) {
         {
             "*.tsp": "lua",
         },
-        vscode.ConfigurationTarget.Global
+        vscode.ConfigurationTarget.Global,
     )
     void processWorkspaceFolders()
 
@@ -191,21 +191,21 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument((textFilePath) => {
             void onDidSaveTextDocument(textFilePath)
-        })
+        }),
     )
     // Register a handler to process files whenever a new workspace folder is added
     context.subscriptions.push(
         vscode.workspace.onDidChangeWorkspaceFolders((event) => {
             hookTspConfigFileChange(context, event.added.slice())
             void processWorkspaceFolders()
-        })
+        }),
     )
 
     // Register a handler to process files whenever a file is created is added
     context.subscriptions.push(
         vscode.workspace.onDidCreateFiles(() => {
             void processWorkspaceFolders()
-        })
+        }),
     )
 
     return base_api
@@ -225,7 +225,7 @@ function updateExtensionSettings() {
                 .showInformationMessage(
                     setting +
                         ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
-                    ...["Remove", "Ignore"]
+                    ...["Remove", "Ignore"],
                 )
                 .then((selection) => {
                     if (selection == "Remove") {
@@ -234,7 +234,7 @@ function updateExtensionSettings() {
                             .update(setting, undefined, true)
                             .then(() => {
                                 void vscode.window.showInformationMessage(
-                                    "removed setting: " + setting
+                                    "removed setting: " + setting,
                                 )
                             })
                     }
@@ -252,14 +252,14 @@ function updateExtensionSettings() {
  */
 function hookTspConfigFileChange(
     context: vscode.ExtensionContext,
-    workspace_folders: vscode.WorkspaceFolder[] | undefined
+    workspace_folders: vscode.WorkspaceFolder[] | undefined,
 ) {
     if (workspace_folders) {
         for (const folder of workspace_folders) {
             const folderPath = folder.uri
 
             const fileWatcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(folderPath, "**/*.tsp.json")
+                new vscode.RelativePattern(folderPath, "**/*.tsp.json"),
             )
             // Event listener for file changes
             fileWatcher.onDidChange(onDidChangeTspConfigFile)
@@ -298,11 +298,11 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
             const supported_models = fs
                 .readdirSync(COMMAND_SETS)
                 .filter((folder) =>
-                    fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory()
+                    fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory(),
                 )
             if (!supported_models.includes(model.toUpperCase())) {
                 void vscode.window.showInformationMessage(
-                    `${model} model is not supported`
+                    `${model} model is not supported`,
                 )
                 if (workspace_path)
                     await updateConfiguration(
@@ -310,29 +310,27 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                         undefined,
                         vscode.ConfigurationTarget.WorkspaceFolder,
                         workspace_path,
-                        false
+                        false,
                     )
                 return
             }
-            const lib_base_path = path.join(COMMAND_SETS, model.toUpperCase())
+            const lib_base_path = join(COMMAND_SETS, model.toUpperCase())
 
-            new_library_settings.push(path.join(lib_base_path, "Helper"))
+            new_library_settings.push(join(lib_base_path, "Helper"))
             if (nodes.some((str) => str.includes("self"))) {
-                new_library_settings.push(
-                    path.join(lib_base_path, "AllTspCommands")
-                )
+                new_library_settings.push(join(lib_base_path, "AllTspCommands"))
             }
             if (nodes.some((str) => str.includes("node"))) {
                 new_library_settings.push(
-                    path.join(lib_base_path, "tspLinkSupportedCommands")
+                    join(lib_base_path, "tspLinkSupportedCommands"),
                 )
             }
             const className = getClassName(
-                path.join(
+                join(
                     lib_base_path,
                     "tspLinkSupportedCommands",
-                    "nodeTable.lua"
-                )
+                    "nodeTable.lua",
+                ),
             )
             nodes.forEach((node: string) => {
                 if (node.includes(".")) {
@@ -341,7 +339,7 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                     if (node.includes("node")) {
                         const node_num = parseInt(
                             node.match(/\d+/)?.[0] || "",
-                            10
+                            10,
                         )
                         nodeStr =
                             nodeStr + `node[${node_num}] =  ${className}\n`
@@ -354,19 +352,19 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
 
         if (workspace_path != undefined) {
             updateNodeDetails(
-                path.join(
+                join(
                     workspace_path.uri.fsPath,
                     RELATIVE_TSP_CONFIG_FILE_PATH,
-                    "nodeTable.tsp"
+                    "nodeTable.tsp",
                 ),
-                nodeStr
+                nodeStr,
             )
             await updateConfiguration(
                 "Lua.workspace.library",
                 new_library_settings,
                 vscode.ConfigurationTarget.WorkspaceFolder,
                 workspace_path,
-                true
+                true,
             )
         }
     }
@@ -381,7 +379,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
         selection =
             (await vscode.window.showQuickPick(
                 ["New Connection"].concat(connections),
-                { placeHolder: "Select a connection" }
+                { placeHolder: "Select a connection" },
             )) || ""
 
         if (selection === undefined) {
@@ -407,7 +405,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
 async function connect(
     inIp: string,
     shouldPrompt?: boolean,
-    model_serial?: string
+    model_serial?: string,
 ): Promise<void> {
     let Ip: string | undefined = inIp
     if (shouldPrompt == true) {
@@ -446,9 +444,9 @@ async function startInstrDiscovery(): Promise<void> {
             shellPath: EXECUTABLE,
             shellArgs: [
                 "--log-file",
-                path.join(
+                join(
                     LOG_DIR,
-                    `${new Date().toISOString().substring(0, 10)}-kic.log`
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
                 "--log-socket",
                 `${logger.host}:${logger.port}`,
@@ -463,9 +461,9 @@ async function startInstrDiscovery(): Promise<void> {
     }
 }
 
-function startTerminateAllConn() {
-    void _terminationMgr.terminateAllConn()
-}
+//function startTerminateAllConn() {
+//    void _terminationMgr.terminateAllConn()
+//}
 
 async function startRename(def: unknown): Promise<void> {
     await _instrExplorer.rename(def)
@@ -488,17 +486,17 @@ const base_api = {
             (t) =>
                 (
                     t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE
+                )?.shellPath?.toString() === EXECUTABLE,
         )
         return kicTerminals
     },
 
     async fetchConnDetails(
-        term_pid: Thenable<number | undefined> | undefined
+        term_pid: Thenable<number | undefined> | undefined,
     ): Promise<ConnectionDetails | undefined> {
         if (_kicProcessMgr != undefined) {
             const kicCell = _kicProcessMgr.kicList.find(
-                (x) => x.terminalPid == term_pid
+                (x) => x.terminalPid == term_pid,
             )
 
             const connDetails = kicCell?.fetchConnDetials()
@@ -510,13 +508,15 @@ const base_api = {
                 },
                 () => {
                     found = false
-                }
+                },
             )
             if (found) {
                 return Promise.resolve(connDetails)
             }
             return Promise.reject(
-                "Couldn't close terminal. Please check instrument state"
+                new Error(
+                    "Couldn't close terminal. Please check instrument state",
+                ),
             )
         }
     },
@@ -527,7 +527,7 @@ const base_api = {
                 instr.Name,
                 instr.ConnAddr,
                 instr.ConnType,
-                instr.Maxerr
+                instr.Maxerr,
             )
         }
     },

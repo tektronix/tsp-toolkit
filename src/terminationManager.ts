@@ -1,4 +1,4 @@
-import path = require("node:path")
+import { join } from "node:path"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 
@@ -12,7 +12,7 @@ export class TerminationManager {
             (t) =>
                 (
                     t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE
+                )?.shellPath?.toString() === EXECUTABLE,
         )
         if (kicTerminals.length == 0) {
             const options: vscode.InputBoxOptions = {
@@ -49,7 +49,7 @@ export class TerminationManager {
             })
             if ((await vscode.window.showInputBox(options)) != undefined) {
                 const selectedTerm = await vscode.window.showQuickPick(
-                    Object.keys(kicDict)
+                    Object.keys(kicDict),
                 )
                 if (selectedTerm != undefined) {
                     kicDict[selectedTerm]?.sendText(".terminate")
@@ -71,9 +71,9 @@ export class TerminationManager {
             shellPath: EXECUTABLE,
             shellArgs: [
                 "--log-file",
-                path.join(
+                join(
                     LOG_DIR,
-                    `${new Date().toISOString().substring(0, 10)}-kic.log`
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
                 "--log-socket",
                 `${logger.host}:${logger.port}`,

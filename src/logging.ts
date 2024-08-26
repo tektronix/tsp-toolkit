@@ -71,7 +71,7 @@ export class Logger {
         name: string,
         host: string,
         port: number,
-        manager?: LoggerManager
+        manager?: LoggerManager,
     ) {
         this._name = name
         this._host = host
@@ -163,7 +163,7 @@ export class Logger {
                     this._port++
                     if (this._port > PORT_MAX) {
                         this._outputChannel.appendLine(
-                            "Unable to find a usable port number for logger."
+                            "Unable to find a usable port number for logger.",
                         )
                         return
                     }
@@ -173,7 +173,7 @@ export class Logger {
 
         this._server.listen(this._port, this._host, () => {
             console.log(
-                `Logger for ${this._name} listening on ${this._host}:${this._port}`
+                `Logger for ${this._name} listening on ${this._host}:${this._port}`,
             )
         })
     }

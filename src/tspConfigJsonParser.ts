@@ -69,7 +69,7 @@ export function getNodeDetails(filePath: string): Record<string, string[]> {
  */
 export function updateNodeDetails(
     file_path: string,
-    node_details: string
+    node_details: string,
 ): void {
     // Read the file content
     // Write the updated content back to the file

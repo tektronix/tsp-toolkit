@@ -1,5 +1,5 @@
 import * as cp from "node:child_process"
-import path = require("path")
+import { join } from "path"
 
 import * as vscode from "vscode"
 import {
@@ -98,14 +98,14 @@ const rpcClient: JSONRPCClient = new JSONRPCClient(
                 return response
                     .json()
                     .then((jsonRPCResponse) =>
-                        rpcClient.receive(jsonRPCResponse as JSONRPCResponse)
+                        rpcClient.receive(jsonRPCResponse as JSONRPCResponse),
                     )
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             } else if (jsonRPCRequest.id !== undefined) {
                 return Promise.reject(new Error(response.statusText))
             }
         }),
-    createID
+    createID,
 )
 
 const jsonRPCRequest: JSONRPCRequest = {
@@ -292,7 +292,7 @@ class IOInstrNode extends InstrNode {
         const res_instr = connections.find(
             (x: InstrInfo) =>
                 x.io_type == this._instrInfo.io_type &&
-                x.model + "#" + x.serial_number == this._modSerial
+                x.model + "#" + x.serial_number == this._modSerial,
         )
         if (res_instr != undefined) {
             friendly_name = res_instr.friendly_name
@@ -306,7 +306,7 @@ class IOInstrNode extends InstrNode {
 
     public addDefaultFriendlyName() {
         this._instrInfo.friendly_name = DiscoveryHelper.createModelSerial(
-            this._instrInfo
+            this._instrInfo,
         )
     }
 
@@ -345,10 +345,10 @@ class IOInstrNode extends InstrNode {
 
         this.children.push(new InstrNode("Model: " + this._instrInfo.model))
         this.children.push(
-            new InstrNode("Port: " + (this._instrInfo.socket_port ?? "NA"))
+            new InstrNode("Port: " + (this._instrInfo.socket_port ?? "NA")),
         )
         this.children.push(
-            new InstrNode("Serial No: " + this._instrInfo.serial_number)
+            new InstrNode("Serial No: " + this._instrInfo.serial_number),
         )
     }
 }
@@ -645,7 +645,7 @@ export class NewTDPModel {
                     (jsonRPCResponse: JSONRPCResponse) => {
                         if (jsonRPCResponse.error) {
                             console.log(
-                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`
+                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
                             )
                         } else {
                             this.parseDiscoveredInstruments(jsonRPCResponse)
@@ -653,7 +653,7 @@ export class NewTDPModel {
                     },
                     () => {
                         console.log("RPC Instr List Fetch failed!")
-                    }
+                    },
                 )
                 //todo
             })
@@ -710,7 +710,7 @@ export class NewTDPModel {
     public addFromConnectToSavedList(ioType: IoType, instr_details: InstrInfo) {
         if (instr_details != undefined) {
             this._savedNodeProvider?.saveInstrToList(
-                DiscoveryHelper.createUniqueID(instr_details)
+                DiscoveryHelper.createUniqueID(instr_details),
             )
             this.addToConnectionList(instr_details)
 
@@ -730,7 +730,7 @@ export class NewTDPModel {
         const nodeToBeSaved = instr as IOInstrNode
         if (nodeToBeSaved != undefined) {
             this._savedNodeProvider?.saveInstrToList(
-                nodeToBeSaved.FetchUniqueID() ?? ""
+                nodeToBeSaved.FetchUniqueID() ?? "",
             )
 
             nodeToBeSaved.addDefaultFriendlyName()
@@ -790,7 +790,7 @@ export class NewTDPModel {
             let idx = -1
             for (let i = 0; i < this.connection_list.length; i++) {
                 const uid = DiscoveryHelper.createUniqueID(
-                    this.connection_list[i]
+                    this.connection_list[i],
                 )
                 if (uid == nodeToBeRemoved.FetchUniqueID()) {
                     idx = i
@@ -803,7 +803,7 @@ export class NewTDPModel {
             }
 
             this._savedNodeProvider?.removeInstrFromList(
-                nodeToBeRemoved.FetchUniqueID() ?? ""
+                nodeToBeRemoved.FetchUniqueID() ?? "",
             )
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
@@ -848,7 +848,7 @@ export class NewTDPModel {
 
         this.connection_list.forEach((item: InstrInfo) => {
             this._savedNodeProvider?.saveInstrToList(
-                DiscoveryHelper.createUniqueID(item)
+                DiscoveryHelper.createUniqueID(item),
             )
         })
 
@@ -856,7 +856,7 @@ export class NewTDPModel {
             const res_node = disc_node_provider as NodeProvider
             res_node.updateSavedList(
                 this._savedNodeProvider?.getSavedInstrList() ?? [],
-                false
+                false,
             )
         })
     }
@@ -871,7 +871,7 @@ export class NewTDPModel {
                 if (
                     DiscoveryHelper.createUniqueID(this.discovery_list[i]) ==
                         DiscoveryHelper.createUniqueID(
-                            this.connection_list[j]
+                            this.connection_list[j],
                         ) &&
                     this.discovery_list[i].instr_address !=
                         this.connection_list[j].instr_address
@@ -920,7 +920,7 @@ export class NewTDPModel {
                 void config.update(
                     "savedInstruments",
                     instrList,
-                    vscode.ConfigurationTarget.Global
+                    vscode.ConfigurationTarget.Global,
                 )
             }
         } catch (err_msg) {
@@ -956,7 +956,7 @@ export class NewTDPModel {
                 void config.update(
                     "savedInstruments",
                     instrList,
-                    vscode.ConfigurationTarget.Global
+                    vscode.ConfigurationTarget.Global,
                 )
             } else {
                 //found, check if connection address has changed
@@ -974,7 +974,7 @@ export class NewTDPModel {
                     void config.update(
                         "savedInstruments",
                         instrList,
-                        vscode.ConfigurationTarget.Global
+                        vscode.ConfigurationTarget.Global,
                     )
                 }
             }
@@ -1014,7 +1014,7 @@ export class NewTDPModel {
                             this.new_instr = undefined
                             if (
                                 DiscoveryHelper.createUniqueID(
-                                    this.discovery_list[i]
+                                    this.discovery_list[i],
                                 ) == DiscoveryHelper.createUniqueID(obj)
                             ) {
                                 if (
@@ -1064,7 +1064,7 @@ export class InstrTDP implements newTDP {
         this.instrModel = model
     }
     getTreeItem(
-        element: InstrNode
+        element: InstrNode,
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
         let expandableState = vscode.TreeItemCollapsibleState.None
 
@@ -1109,7 +1109,7 @@ export class InstrTDP implements newTDP {
     }
 
     getChildren(
-        element?: InstrNode | undefined
+        element?: InstrNode | undefined,
     ): vscode.ProviderResult<InstrNode[]> {
         return element
             ? this.instrModel?.getChildren(element)
@@ -1145,7 +1145,7 @@ export class InstrTDP implements newTDP {
      */
     public saveInstrumentFromConnect(
         ioType: IoType,
-        instr_details: InstrInfo
+        instr_details: InstrInfo,
     ): void {
         this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
         this.reloadTreeData()
@@ -1171,7 +1171,7 @@ export class InstrumentsExplorer {
 
     constructor(
         context: vscode.ExtensionContext,
-        kicProcessMgr: KicProcessMgr
+        kicProcessMgr: KicProcessMgr,
     ) {
         this._kicProcessMgr = kicProcessMgr
         const tdpModel = new NewTDPModel()
@@ -1188,60 +1188,60 @@ export class InstrumentsExplorer {
         })
         vscode.commands.registerCommand(
             "InstrumentsExplorer.openInstrumentsDiscoveryResource",
-            () => void 0
+            () => void 0,
         )
         vscode.commands.registerCommand(
             "InstrumentsExplorer.revealResource",
-            () => void 0
+            () => void 0,
         )
 
         const upgradefw = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeFirmware",
             async (e) => {
                 await this.upgradeFirmware(e)
-            }
+            },
         )
 
         const upgradeMainframe = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeMainframe",
             async (e) => {
                 await this.upgradeMainframe(e)
-            }
+            },
         )
 
         const upgradeSlot1 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot1",
             async (e) => {
                 await this.upgradeSlot1(e)
-            }
+            },
         )
 
         const upgradeSlot2 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot2",
             async (e) => {
                 await this.upgradeSlot2(e)
-            }
+            },
         )
 
         const upgradeSlot3 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot3",
             async (e) => {
                 await this.upgradeSlot3(e)
-            }
+            },
         )
 
         const saveInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.save",
             (e) => {
                 this.saveInstrument(e)
-            }
+            },
         )
 
         const removeInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.remove",
             (e) => {
                 this.removeInstrument(e)
-            }
+            },
         )
 
         context.subscriptions.push(upgradefw)
@@ -1262,11 +1262,11 @@ export class InstrumentsExplorer {
                 DISCOVER_EXECUTABLE,
                 [
                     "--log-file",
-                    path.join(
+                    join(
                         LOG_DIR,
                         `${new Date()
                             .toISOString()
-                            .substring(0, 10)}-kic-discover.log`
+                            .substring(0, 10)}-kic-discover.log`,
                     ),
                     "--log-socket",
                     `${logger.host}:${logger.port}`,
@@ -1274,7 +1274,7 @@ export class InstrumentsExplorer {
                     "--timeout",
                     DISCOVERY_TIMEOUT.toString(),
                     "--exit",
-                ]
+                ],
                 //,
                 // {
                 //     detached: true,
@@ -1293,11 +1293,14 @@ export class InstrumentsExplorer {
                 this.treeDataProvider?.refresh()
             }, 1000)
 
-            setTimeout(() => {
-                this.InstrumentsDiscoveryViewer.message = ""
-                clearInterval(this.intervalID)
-                //void stopDiscovery()
-            }, DISCOVERY_TIMEOUT * 1000 + 10000)
+            setTimeout(
+                () => {
+                    this.InstrumentsDiscoveryViewer.message = ""
+                    clearInterval(this.intervalID)
+                    //void stopDiscovery()
+                },
+                DISCOVERY_TIMEOUT * 1000 + 10000,
+            )
         }
     }
 
@@ -1315,14 +1318,14 @@ export class InstrumentsExplorer {
         ) {
             await FriendlyNameMgr.checkandAddFriendlyName(
                 input_item.fetchInstrInfo(),
-                ip_str
+                ip_str,
             )
             this.treeDataProvider?.reloadTreeData()
         }
     }
 
     public fetchConnectionArgs(
-        item: object
+        item: object,
     ): [connection_str: string, model_serial?: string] {
         const resNode = item as IOInstrNode
         if (resNode != undefined) {
@@ -1346,11 +1349,11 @@ export class InstrumentsExplorer {
         ioType: IoType,
         info: string,
         friendly_name: string,
-        port: string | undefined
+        port: string | undefined,
     ) {
         if (info == "") {
             void vscode.window.showErrorMessage(
-                "Unable to connect to instrument"
+                "Unable to connect to instrument",
             )
             return
         }
@@ -1414,7 +1417,7 @@ export class InstrumentsExplorer {
         })
         if (kicTerminals.length == 0) {
             void vscode.window.showInformationMessage(
-                "Not connected to any instrument. Cannot proceed."
+                "Not connected to any instrument. Cannot proceed.",
             )
             return
         } else {
@@ -1442,7 +1445,7 @@ export class InstrumentsExplorer {
                             // .update "path" --slot {number}
                             kicCell.sendTextToTerminal(
                                 `.upgrade "${fw_file[0].fsPath}" --slot ${slot}\n
-                                `
+                                `,
                             )
                         }
                         return
