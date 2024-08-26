@@ -1,6 +1,6 @@
 import path = require("node:path")
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@tektronix/kic-cli"
+import { EXECUTABLE } from "./kic-cli"
 import {
     CONNECTION_RE,
     ConnectionHelper,

@@ -8,9 +8,9 @@ import {
     JSONRPCRequest,
     JSONRPCResponse,
 } from "json-rpc-2.0"
-import { DISCOVER_EXECUTABLE, EXECUTABLE } from "@tektronix/kic-cli"
 import fetch from "node-fetch"
 import { plainToInstance } from "class-transformer"
+import { DISCOVER_EXECUTABLE, EXECUTABLE } from "./kic-cli"
 import {
     FriendlyNameMgr,
     IIDNInfo,
@@ -97,8 +97,8 @@ const rpcClient: JSONRPCClient = new JSONRPCClient(
                 // Use client.receive when you received a JSON-RPC response.
                 return response
                     .json()
-                    .then((jsonRPCResponse: JSONRPCResponse) =>
-                        rpcClient.receive(jsonRPCResponse)
+                    .then((jsonRPCResponse) =>
+                        rpcClient.receive(jsonRPCResponse as JSONRPCResponse)
                     )
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             } else if (jsonRPCRequest.id !== undefined) {

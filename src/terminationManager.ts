@@ -1,6 +1,6 @@
 import path = require("node:path")
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@tektronix/kic-cli"
+import { EXECUTABLE } from "./kic-cli"
 
 import { CONNECTION_RE } from "./resourceManager"
 import { LOG_DIR } from "./utility"

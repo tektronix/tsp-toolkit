@@ -2,8 +2,8 @@ import * as child from "child_process"
 import path = require("path")
 import { EventEmitter } from "events"
 import fetch from "node-fetch"
-import { EXECUTABLE } from "@tektronix/kic-cli"
 import * as vscode from "vscode"
+import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
 
@@ -477,8 +477,13 @@ export class ConnectionHelper {
             return this.myIPmap.get(ip)
         }
 
-        const read = async (body: NodeJS.ReadableStream) => {
+        const read = async (body: NodeJS.ReadableStream | null) => {
             let error: string
+            if (body === null) {
+                return new Promise<string>((_, reject) => {
+                    return reject(new ReferenceError("RPC Body was null"))
+                })
+            }
             body.on("error", (err) => {
                 error = err as string
             })
@@ -496,7 +501,8 @@ export class ConnectionHelper {
         }
 
         try {
-            const response = await fetch("http://" + ip + "/lxi/identification")
+            const response = (await fetch("http://" + ip + "/lxi/identification"))
+
             const body = await read(response.body)
             const model = body.split("</Model>")[0].split("<Model>")[1]
             const sn = body
