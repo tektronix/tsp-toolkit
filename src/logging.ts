@@ -50,8 +50,8 @@ interface KicLogMessage {
     level: KicLogLevels
     fields: Fields
     target: string
-    span: Span
-    spans: Span[]
+    span?: Span
+    spans?: Span[]
 }
 
 /**
@@ -85,23 +85,33 @@ export class Logger {
         })
 
         this._server = createServer((stream) => {
+            let accumulated_data: string = ""
             stream.on("data", (c) => {
                 //console.log(c.toString())
-                const raw = "[" + c.toString() + "]"
-                const messages = JSON.parse(raw) as KicLogMessage[]
-
-                for (const m of messages) {
-                    const spans = m.spans
-                        .map((x) => {
-                            let span_string = ""
-                            const { name, ...args } = x
-                            span_string += name
-                            if (Object.keys(args).length > 0) {
-                                span_string += JSON.stringify(args)
-                            }
-                            return span_string
-                        })
-                        .join(":")
+                accumulated_data += c.toString()
+                const end = accumulated_data.lastIndexOf("\n")
+                const complete_messages = accumulated_data.substring(0, end)
+                accumulated_data = accumulated_data.substring(end + 1)
+                complete_messages.split("\n").forEach((raw) => {
+                    raw = raw.trim()
+                    if (raw.length === 0) {
+                        return
+                    }
+                    const m = JSON.parse(raw) as KicLogMessage
+                    let spans = ""
+                    if (m.spans) {
+                        spans = m.spans
+                            .map((x) => {
+                                let span_string = ""
+                                const { name, ...args } = x
+                                span_string += name
+                                if (Object.keys(args).length > 0) {
+                                    span_string += JSON.stringify(args)
+                                }
+                                return span_string
+                            })
+                            .join(":")
+                    }
 
                     const fields = ((f: Fields): string => {
                         let msg_text = ""
@@ -141,7 +151,7 @@ export class Logger {
                         default:
                             break
                     }
-                }
+                })
             })
 
             stream.on("end", () => {
