@@ -1,7 +1,7 @@
 import * as child from "child_process"
 import { join } from "path"
 import { EventEmitter } from "events"
-import fetch from "node-fetch"
+import { ReadableStream } from "node:stream/web"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
@@ -478,35 +478,31 @@ export class ConnectionHelper {
             return this.myIPmap.get(ip)
         }
 
-        const read = async (body: NodeJS.ReadableStream | null) => {
-            let error: Error
-            if (body === null) {
+        const read = async (response: Response) => {
+            if (!response.ok) {
                 return new Promise<string>((_, reject) => {
-                    return reject(new ReferenceError("RPC Body was null"))
+                    return reject(
+                        new ReferenceError(
+                            "did not receive instrument LXI information page",
+                        ),
+                    )
                 })
             }
-            body.on("error", (err) => {
-                error = new Error(err as string)
-            })
-            let retbody = ""
-            for await (const chunk of body) {
-                retbody += chunk.toString()
-            }
-
-            return new Promise<string>((resolve, reject) => {
-                body.on("close", () => {
-                    return error ? reject(error) : resolve(retbody)
-                })
-                return resolve(retbody)
-            })
+            return response.body
         }
 
         try {
             const response = await fetch("http://" + ip + "/lxi/identification")
 
-            const body = await read(response.body)
-            const model = body.split("</Model>")[0].split("<Model>")[1]
-            const sn = body
+            const body = (await read(response)) as ReadableStream<string>
+            if (body === null) {
+                console.log("did not receive instrument LXI information")
+                return undefined
+            }
+            const model = new String(body)
+                .split("</Model>")[0]
+                .split("<Model>")[1]
+            const sn = new String(body)
                 .split("</SerialNumber>")[0]
                 .split("<SerialNumber>")[1]
             // const portSplit = body.split("::SOCKET")[0].split("::")

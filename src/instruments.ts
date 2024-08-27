@@ -8,7 +8,6 @@ import {
     JSONRPCRequest,
     JSONRPCResponse,
 } from "json-rpc-2.0"
-import fetch from "node-fetch"
 import { plainToInstance } from "class-transformer"
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "./kic-cli"
 import {

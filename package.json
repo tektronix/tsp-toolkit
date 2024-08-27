@@ -343,15 +343,14 @@
         "cheerio": "1.0.0",
         "class-transformer": "0.5.1",
         "json-rpc-2.0": "1.7.0",
-        "node-fetch": "3.3.2",
         "path-browserify": "1.0.1",
         "portfinder": "1.0.32",
         "sax-ts": "1.2.13",
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-win32-x64": "0.17.2-0",
-        "@tektronix/kic-cli-linux-x64": "0.17.2-0"
+        "@tektronix/kic-cli-linux-x64": "0.17.2-0",
+        "@tektronix/kic-cli-win32-x64": "0.17.2-0"
     },
     "extensionDependencies": [
         "sumneko.lua"
