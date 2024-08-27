@@ -19,10 +19,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.17.2]
 
 ### Fixed
+
 - Many notification at TSP Toolkit Activation (TSP-779)
 - Make *.tsp=lua file association a User-level setting instead of a workspace setting (TSP-624)
+
 ### Added
--Add a + button to the Instruments pane title bar(TSP-792)
+
+- Added VISA support for connecting to an instrument
+- Added platform-specific extension versions for Windows x86_64 and Linux x86_64 systems
+- Add a + button to the Instruments pane title bar(TSP-792)
 
 ## [0.17.0]
 

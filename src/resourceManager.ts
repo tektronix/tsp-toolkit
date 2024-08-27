@@ -1,9 +1,9 @@
 import * as child from "child_process"
-import path = require("path")
+import { join } from "path"
 import { EventEmitter } from "events"
-import fetch from "node-fetch"
-import { EXECUTABLE } from "@tektronix/kic-cli"
+import { ReadableStream } from "node:stream/web"
 import * as vscode from "vscode"
+import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
 
@@ -80,7 +80,7 @@ export class FriendlyNameMgr {
      */
     public static generateUniqueName(
         io_type: IoType,
-        model_serial: string | undefined
+        model_serial: string | undefined,
     ): string {
         let unique_name = ""
         let found = false
@@ -123,7 +123,7 @@ export class FriendlyNameMgr {
      */
     public static async checkandAddFriendlyName(
         instr: InstrInfo,
-        new_name: string
+        new_name: string,
     ) {
         const connections: Array<InstrInfo> =
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
@@ -134,7 +134,7 @@ export class FriendlyNameMgr {
             (i) =>
                 i.io_type === instr.io_type &&
                 i.model == instr.model &&
-                i.serial_number == instr.serial_number
+                i.serial_number == instr.serial_number,
         )
         if (index !== -1) {
             //update
@@ -142,14 +142,14 @@ export class FriendlyNameMgr {
             await config.update(
                 "savedInstruments",
                 connections,
-                vscode.ConfigurationTarget.Global
+                vscode.ConfigurationTarget.Global,
             )
         } else {
             connections.push(instr)
             await config.update(
                 "savedInstruments",
                 connections,
-                vscode.ConfigurationTarget.Global
+                vscode.ConfigurationTarget.Global,
             )
         }
 
@@ -167,7 +167,7 @@ export class ConnectionDetails {
         name: string,
         connAddr: string,
         connType: string,
-        maxerr?: number
+        maxerr?: number,
     ) {
         this.Name = name
         this.ConnAddr = connAddr
@@ -206,7 +206,7 @@ export class KicProcessMgr {
         unique_id: string,
         connType: string,
         maxerr?: number,
-        filePath?: string
+        filePath?: string,
     ): [info: string, verified_name?: string] {
         const newCell = new KicCell()
         const [info, verified_name] = newCell.initialiseComponents(
@@ -214,7 +214,7 @@ export class KicProcessMgr {
             unique_id,
             connType,
             maxerr,
-            filePath
+            filePath,
         )
         this.debugTermPid = newCell.terminalPid
         this.kicList.push(newCell)
@@ -235,7 +235,7 @@ export class KicProcessMgr {
                 this._reconnectInstrDetails.Name,
                 this._reconnectInstrDetails.ConnAddr,
                 this._reconnectInstrDetails.ConnType,
-                this._reconnectInstrDetails.Maxerr
+                this._reconnectInstrDetails.Maxerr,
             )
         }
     }
@@ -248,7 +248,7 @@ export class KicProcessMgr {
         }
         const ip = await vscode.window.showInputBox(options)
         if (ip === undefined) {
-            return Promise.reject("connection unsuccessful.")
+            return Promise.reject(new Error("connection unsuccessful."))
         }
         this.doReconnect = false
 
@@ -280,7 +280,7 @@ export class KicCell extends EventEmitter {
         unique_id: string,
         connType: string,
         maxerr?: number,
-        filePath?: string
+        filePath?: string,
     ): [info: string, verified_name?: string] {
         //#ToDo: need to verify if maxerr is required
         this._uniqueID = unique_id
@@ -290,7 +290,7 @@ export class KicCell extends EventEmitter {
             name,
             unique_id,
             connType,
-            maxerr
+            maxerr,
         )
         const logger = LoggerManager.instance().add_logger("TSP Terminal")
 
@@ -302,11 +302,11 @@ export class KicCell extends EventEmitter {
                     EXECUTABLE,
                     [
                         "--log-file",
-                        path.join(
+                        join(
                             LOG_DIR,
                             `${new Date()
                                 .toISOString()
-                                .substring(0, 10)}-kic.log`
+                                .substring(0, 10)}-kic.log`,
                         ),
                         "--log-socket",
                         `${logger.host}:${logger.port}`,
@@ -317,7 +317,7 @@ export class KicCell extends EventEmitter {
                     ],
                     {
                         env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                    }
+                    },
                 )
                 .stdout.toString()
 
@@ -330,7 +330,7 @@ export class KicCell extends EventEmitter {
 
                 verified_name = FriendlyNameMgr.generateUniqueName(
                     IoType.Lan,
-                    _info.model + "#" + _info.serial_number
+                    _info.model + "#" + _info.serial_number,
                 )
                 name = verified_name
                 this._connDetails.Name = name
@@ -341,9 +341,9 @@ export class KicCell extends EventEmitter {
                 shellPath: EXECUTABLE,
                 shellArgs: [
                     "--log-file",
-                    path.join(
+                    join(
                         LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
                     "--log-socket",
                     `${logger.host}:${logger.port}`,
@@ -359,9 +359,9 @@ export class KicCell extends EventEmitter {
                 shellPath: EXECUTABLE,
                 shellArgs: [
                     "--log-file",
-                    path.join(
+                    join(
                         LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
                     "--log-socket",
                     `${logger.host}:${logger.port}`,
@@ -376,6 +376,7 @@ export class KicCell extends EventEmitter {
         vscode.window.onDidCloseTerminal((t) => {
             if (
                 t.creationOptions.iconPath !== undefined &&
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
                 t.creationOptions.iconPath.toString().search("keithley-logo") &&
                 t.exitStatus !== undefined &&
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
@@ -413,7 +414,7 @@ export class KicCell extends EventEmitter {
                 await this.sleep(500)
             }
         }
-        return Promise.reject("couldn't close terminal")
+        return Promise.reject(new Error("couldn't close terminal"))
     }
 
     private sendEvent(event: string, ...args: string[]): void {
@@ -439,7 +440,7 @@ export class KicCell extends EventEmitter {
 export class ConnectionHelper {
     public IPTest(ip: string) {
         return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
-            ip
+            ip,
         )
     }
     public instrIPValidator = (val: string) => {
@@ -458,7 +459,7 @@ export class ConnectionHelper {
                         ": Found instrument model " +
                         msn.model +
                         " with S/N: " +
-                        msn.sn
+                        msn.sn,
                 )
             }
         })
@@ -471,35 +472,37 @@ export class ConnectionHelper {
     >()
 
     public async getModelAndSerialNumber(
-        ip: string
+        ip: string,
     ): Promise<{ model: string; sn: string; port: string } | undefined> {
         if (this.myIPmap.has(ip)) {
             return this.myIPmap.get(ip)
         }
 
-        const read = async (body: NodeJS.ReadableStream) => {
-            let error: string
-            body.on("error", (err) => {
-                error = err as string
-            })
-            let retbody = ""
-            for await (const chunk of body) {
-                retbody += chunk.toString()
-            }
-
-            return new Promise<string>((resolve, reject) => {
-                body.on("close", () => {
-                    error ? reject(error) : resolve(retbody)
+        const read = async (response: Response) => {
+            if (!response.ok) {
+                return new Promise<string>((_, reject) => {
+                    return reject(
+                        new ReferenceError(
+                            "did not receive instrument LXI information page",
+                        ),
+                    )
                 })
-                return resolve(retbody)
-            })
+            }
+            return response.body
         }
 
         try {
             const response = await fetch("http://" + ip + "/lxi/identification")
-            const body = await read(response.body)
-            const model = body.split("</Model>")[0].split("<Model>")[1]
-            const sn = body
+
+            const body = (await read(response)) as ReadableStream<string>
+            if (body === null) {
+                console.log("did not receive instrument LXI information")
+                return undefined
+            }
+            const model = new String(body)
+                .split("</Model>")[0]
+                .split("<Model>")[1]
+            const sn = new String(body)
                 .split("</SerialNumber>")[0]
                 .split("<SerialNumber>")[1]
             // const portSplit = body.split("::SOCKET")[0].split("::")
@@ -522,7 +525,7 @@ export class ConnectionHelper {
         kicProcessMgr: KicProcessMgr,
         instrumentIp?: string,
         usb_unique_string?: string,
-        filePath?: string
+        filePath?: string,
     ) {
         const maxerr: number =
             vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
@@ -568,7 +571,7 @@ export class ConnectionHelper {
                 unique_string,
                 "usb",
                 undefined,
-                filePath
+                filePath,
             )
         }
 

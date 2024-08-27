@@ -1,4 +1,4 @@
-import path = require("path")
+import { join } from "path"
 import * as fs from "fs"
 import * as vscode from "vscode"
 import * as cheerio from "cheerio"
@@ -18,8 +18,8 @@ export class HelpDocumentWebView {
                 "kic.viewHelpDocument",
                 (helpfile: string) => {
                     this.getHelpDocumentContent(helpfile)
-                }
-            )
+                },
+            ),
         )
     }
     /**
@@ -51,7 +51,7 @@ export class HelpDocumentWebView {
                 "helpFileWebView",
                 helpfile,
                 { viewColumn: this.getViewColumn(), preserveFocus: true },
-                options
+                options,
             )
 
             panel.onDidDispose(
@@ -59,7 +59,7 @@ export class HelpDocumentWebView {
                     HelpDocumentWebView.currentPanel = undefined
                 },
                 null,
-                this.context.subscriptions
+                this.context.subscriptions,
             )
 
             HelpDocumentWebView.currentPanel = panel
@@ -91,7 +91,7 @@ export class HelpDocumentWebView {
      * @return html string
      */
     private static generateWebviewContent(htmlFileName: string): string {
-        const filePath = path.join(WEB_HELP_FILE_PATH, htmlFileName)
+        const filePath = join(WEB_HELP_FILE_PATH, htmlFileName)
         if (!fs.existsSync(filePath)) {
             return `
             <!DOCTYPE html>
@@ -154,12 +154,12 @@ export class HelpDocumentWebView {
                 const uri =
                     HelpDocumentWebView.currentPanel?.webview.asWebviewUri(
                         vscode.Uri.file(
-                            path.join(
+                            join(
                                 WEB_HELP_FILE_PATH,
                                 htmlFileName.split("/")[0],
-                                src
-                            )
-                        )
+                                src,
+                            ),
+                        ),
                     )
                 html = html.replace(src, uri?.toString() || src)
             }

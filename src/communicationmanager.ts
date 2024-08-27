@@ -1,6 +1,6 @@
-import path = require("node:path")
+import { join } from "node:path"
 import * as vscode from "vscode"
-import { EXECUTABLE } from "@tektronix/kic-cli"
+import { EXECUTABLE } from "./kic-cli"
 import {
     CONNECTION_RE,
     ConnectionHelper,
@@ -16,7 +16,7 @@ export class CommunicationManager {
     constructor(
         context: vscode.ExtensionContext,
         kicProcessMgr: KicProcessMgr,
-        conneHelper: ConnectionHelper
+        conneHelper: ConnectionHelper,
     ) {
         this._connHelper = conneHelper
         this._kicProcessMgr = kicProcessMgr
@@ -24,25 +24,25 @@ export class CommunicationManager {
             "tsp.sendFile",
             async (e) => {
                 await this.sendScript(e)
-            }
+            },
         )
         const configureTspLanguage = vscode.commands.registerCommand(
             "tsp.configureTspLanguage",
             async (e) => {
                 await this.fetchAndUpdateInstrumentTspLinkConfiguration(e)
-            }
+            },
         )
         const kic_openterminal = vscode.window.onDidOpenTerminal(
-            async () => await this.terminalAction()
+            async () => await this.terminalAction(),
         )
         const kic_closeterminal = vscode.window.onDidCloseTerminal(
-            async (e) => await this.handleTerminalCloseAction(e)
+            async (e) => await this.handleTerminalCloseAction(e),
         )
         const sendFileToAllInstr = vscode.commands.registerCommand(
             "tsp.sendFileToAllInstr",
             (e) => {
                 this.sendScriptToAllInstruments(e)
-            }
+            },
         )
         context.subscriptions.push(kic_openterminal)
         context.subscriptions.push(kic_closeterminal)
@@ -57,7 +57,7 @@ export class CommunicationManager {
         const filePath = `.script "${uriObject.fsPath}"`
         await this.handleSendTextToTerminal(filePath).then(() => {
             void vscode.window.showInformationMessage(
-                "Sending script to terminal"
+                "Sending script to terminal",
             )
         })
     }
@@ -87,13 +87,10 @@ export class CommunicationManager {
      */
     private async fetchAndUpdateInstrumentTspLinkConfiguration(_e: unknown) {
         const uriObject = _e as vscode.Uri
-        const text = `.nodes "${path.join(
-            uriObject.fsPath,
-            "config.tsp.json"
-        )}"`
+        const text = `.nodes "${join(uriObject.fsPath, "config.tsp.json")}"`
         await this.handleSendTextToTerminal(text)
         void vscode.window.showInformationMessage(
-            "Fetching and Updating Instrument tspLink Configuration"
+            "Fetching and Updating Instrument tspLink Configuration",
         )
     }
 
@@ -121,7 +118,7 @@ export class CommunicationManager {
                 const Ip = await vscode.window.showInputBox(options)
 
                 if (Ip == undefined) {
-                    return Promise.reject("IP is undefined")
+                    return Promise.reject(new Error("IP is undefined"))
                 }
 
                 const msn = await this._connHelper.getModelAndSerialNumber(Ip)
@@ -131,7 +128,7 @@ export class CommunicationManager {
                             ": Found instrument model " +
                             msn.model +
                             " with S/N: " +
-                            msn.sn
+                            msn.sn,
                     )
                     await createTerminal(Ip, msn.model, text)
                     return Promise.resolve(true)
@@ -159,7 +156,7 @@ export class CommunicationManager {
             })
             if ((await vscode.window.showInputBox(options)) != undefined) {
                 const selectedTerm = await vscode.window.showQuickPick(
-                    Object.keys(kicDict)
+                    Object.keys(kicDict),
                 )
                 if (selectedTerm != undefined) {
                     kicDict[selectedTerm]?.sendText(text)
@@ -168,7 +165,7 @@ export class CommunicationManager {
             }
         }
 
-        return Promise.reject("Unknown error")
+        return Promise.reject(new Error("Unknown error"))
     }
 
     //this is the main create
@@ -186,7 +183,7 @@ export class CommunicationManager {
         term_name: string,
         instrumentIp?: string,
         usb_unique_string?: string,
-        filePath?: string
+        filePath?: string,
     ): [info: string, verified_name?: string] {
         let res: [string, string?] = ["", undefined]
         const maxerr: number =
@@ -223,7 +220,7 @@ export class CommunicationManager {
                 ip,
                 "lan",
                 maxerr,
-                filePath
+                filePath,
             )
         } else if (usb_unique_string != undefined) {
             let unique_string = usb_unique_string
@@ -236,7 +233,7 @@ export class CommunicationManager {
                 unique_string,
                 "usb",
                 undefined,
-                filePath
+                filePath,
             )
         }
 
@@ -254,12 +251,12 @@ export class CommunicationManager {
             (t) =>
                 (
                     t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE
+                )?.shellPath?.toString() === EXECUTABLE,
         )
         await vscode.commands.executeCommand(
             "setContext",
             "isKicTerminalActive",
-            kicTerminals.length > 1
+            kicTerminals.length > 1,
         )
     }
 
@@ -283,12 +280,12 @@ export class CommunicationManager {
             (t) =>
                 (
                     t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE
+                )?.shellPath?.toString() === EXECUTABLE,
         )
         await vscode.commands.executeCommand(
             "setContext",
             "isKicTerminalActive",
-            kicTerminals.length > 1
+            kicTerminals.length > 1,
         )
     }
 

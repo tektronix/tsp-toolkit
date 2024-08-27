@@ -1,9 +1,7 @@
 import { existsSync, mkdirSync, PathLike } from "node:fs"
 import { homedir, platform, tmpdir } from "node:os"
-import path = require("node:path")
-import process = require("node:process")
-
-const { env } = process
+import { basename, join } from "node:path"
+import { env } from "node:process"
 
 interface PathsInterface {
     data: PathLike
@@ -58,7 +56,7 @@ class Paths {
 
     get temp(): string {
         if (!existsSync(this._temp)) {
-            mkdirSync(this._temp), { recursive: true }
+            mkdirSync(this._temp, { recursive: true })
         }
         return this._temp
     }
@@ -79,60 +77,57 @@ class Paths {
 const PATHS: Paths = (function (app_name: string): Paths {
     switch (platform()) {
         case "win32": {
-            const ad = env.APPDATA || path.join(homedir(), "AppData", "Roaming")
-            const lad =
-                env.LOCALAPPDATA || path.join(homedir(), "AppData", "Local")
+            const ad = env.APPDATA || join(homedir(), "AppData", "Roaming")
+            const lad = env.LOCALAPPDATA || join(homedir(), "AppData", "Local")
 
             return new Paths({
-                data: path.join(lad, app_name, "Data"),
-                config: path.join(ad, app_name, "Config"),
-                cache: path.join(lad, app_name, "Cache"),
-                log: path.join(lad, app_name, "Log"),
-                temp: path.join(tmpdir(), app_name),
+                data: join(lad, app_name, "Data"),
+                config: join(ad, app_name, "Config"),
+                cache: join(lad, app_name, "Cache"),
+                log: join(lad, app_name, "Log"),
+                temp: join(tmpdir(), app_name),
             })
         }
         case "darwin": {
-            const lib = path.join(homedir(), "Library")
+            const lib = join(homedir(), "Library")
 
             return new Paths({
-                data: path.join(lib, app_name, "Application Support"),
-                config: path.join(lib, app_name, "Preferences"),
-                cache: path.join(lib, app_name, "Caches"),
-                log: path.join(lib, app_name, "Logs"),
-                temp: path.join(tmpdir(), app_name),
+                data: join(lib, app_name, "Application Support"),
+                config: join(lib, app_name, "Preferences"),
+                cache: join(lib, app_name, "Caches"),
+                log: join(lib, app_name, "Logs"),
+                temp: join(tmpdir(), app_name),
             })
         }
         case "linux": {
-            const username = path.basename(homedir())
+            const username = basename(homedir())
             return new Paths({
-                data: path.join(
-                    env.XDG_DATA_HOME ||
-                        path.join(homedir(), ".local", "share"),
-                    app_name
+                data: join(
+                    env.XDG_DATA_HOME || join(homedir(), ".local", "share"),
+                    app_name,
                 ),
-                config: path.join(
-                    env.XDG_CONFIG_HOME || path.join(homedir(), ".config"),
-                    app_name
+                config: join(
+                    env.XDG_CONFIG_HOME || join(homedir(), ".config"),
+                    app_name,
                 ),
-                cache: path.join(
-                    env.XDG_CACHE_HOME || path.join(homedir(), ".cache"),
-                    app_name
+                cache: join(
+                    env.XDG_CACHE_HOME || join(homedir(), ".cache"),
+                    app_name,
                 ),
-                log: path.join(
-                    env.XDG_STATE_HOME ||
-                        path.join(homedir(), ".local", "state"),
-                    app_name
+                log: join(
+                    env.XDG_STATE_HOME || join(homedir(), ".local", "state"),
+                    app_name,
                 ),
-                temp: path.join(tmpdir(), username, app_name),
+                temp: join(tmpdir(), username, app_name),
             })
         }
         default: {
             return new Paths({
-                data: path.join(homedir(), app_name, "data"),
-                config: path.join(homedir(), app_name, "config"),
-                cache: path.join(homedir(), app_name, "cache"),
-                log: path.join(homedir(), app_name, "log"),
-                temp: path.join(tmpdir(), app_name),
+                data: join(homedir(), app_name, "data"),
+                config: join(homedir(), app_name, "config"),
+                cache: join(homedir(), app_name, "cache"),
+                log: join(homedir(), app_name, "log"),
+                temp: join(tmpdir(), app_name),
             })
         }
     }
@@ -147,4 +142,3 @@ const log_path = PATHS.log
  * - **macOS**: ~/Library/Logs/tsp-toolkit
  */
 export const LOG_DIR = log_path
-
