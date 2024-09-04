@@ -351,7 +351,14 @@ export class KicCell extends EventEmitter {
                     "lan",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file("/keithley-logo.ico"),
+                iconPath: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "TSP_Toolkit_128x128.png",
+                    ),
+                ),
             })
         } else {
             this._term = vscode.window.createTerminal({
@@ -369,7 +376,14 @@ export class KicCell extends EventEmitter {
                     "usb",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file("/keithley-logo.ico"),
+                iconPath: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "TSP_Toolkit_128x128.png",
+                    ),
+                ),
             })
         }
 
@@ -377,7 +391,7 @@ export class KicCell extends EventEmitter {
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                t.creationOptions.iconPath.toString().search("keithley-logo") &&
+                t.creationOptions.iconPath.toString().search("TSP_Toolkit_128x128") &&
                 t.exitStatus !== undefined &&
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {
