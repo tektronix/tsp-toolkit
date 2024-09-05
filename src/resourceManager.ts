@@ -351,14 +351,26 @@ export class KicCell extends EventEmitter {
                     "lan",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file(
-                    join(
-                        __dirname,
-                        "..",
-                        "resources",
-                        "TSP_Toolkit_128x128.png",
+                iconPath: {
+                    light: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "light",
+                            "tsp-terminal-icon.svg",
+                        ),
                     ),
-                ),
+                    dark: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "dark",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                },
             })
         } else {
             this._term = vscode.window.createTerminal({
@@ -376,14 +388,26 @@ export class KicCell extends EventEmitter {
                     "usb",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file(
-                    join(
-                        __dirname,
-                        "..",
-                        "resources",
-                        "TSP_Toolkit_128x128.png",
+                iconPath: {
+                    light: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "light",
+                            "tsp-terminal-icon.svg",
+                        ),
                     ),
-                ),
+                    dark: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "dark",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                },
             })
         }
 
@@ -391,7 +415,9 @@ export class KicCell extends EventEmitter {
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                t.creationOptions.iconPath.toString().search("TSP_Toolkit_128x128") &&
+                t.creationOptions.iconPath
+                    .toString()
+                    .search("tsp-terminal-icon") &&
                 t.exitStatus !== undefined &&
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {
