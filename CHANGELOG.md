@@ -29,6 +29,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added platform-specific extension versions for Windows x86_64 and Linux x86_64 systems
 - Add a + button to the Instruments pane title bar(TSP-792)
 
+### Removed
+
+- Raw USBTMC support has been removed in favor of VISA
+
 ## [0.17.0]
 
 ### Fixed
