@@ -4,6 +4,7 @@ import { EXECUTABLE } from "./kic-cli"
 import {
     CONNECTION_RE,
     ConnectionHelper,
+    IoType,
     KicProcessMgr,
 } from "./resourceManager"
 import { createTerminal } from "./extension"
@@ -173,68 +174,70 @@ export class CommunicationManager {
     /**
      * Creates a kic terminal for given instrument connection details
      * @param term_name - terminal/connection name
-     * @param instrumentIp - instrument IP address (Lan only)
-     * @param usb_unique_string - unique string for USB connection (USB only)
+     * @param connType - The connection type to use for this connection
+     * @param address - The address to connect to
      * @param filePath - file path to send to terminal
      * @returns A tuple where the first element (string) is the *idn? info
      * and the second element (string | undefined) is system generated unique connection name if term_name is empty
      */
     public createTerminal(
         term_name: string,
-        instrumentIp?: string,
-        usb_unique_string?: string,
+        connType: IoType,
+        address: string,
         filePath?: string,
     ): [info: string, verified_name?: string] {
         let res: [string, string?] = ["", undefined]
         const maxerr: number =
             vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
-        if (instrumentIp != undefined) {
-            const parts = instrumentIp.match(CONNECTION_RE)
-            if (parts == null) return ["", undefined]
-            const ip_addr = parts[2]
-            const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
 
-            /*
-        //If for UX reason we need to have unique named terminals we can use this code
-        if (this.checkForDuplicateTermName(name)) {
-            void vscode.window.showWarningMessage(
-                'Terminal name already exists, appending "(new)" to the name, please provide unique terminal names'
-            )
-            name += "(new)"
-        }*/
-            // term = vscode.window.createTerminal({
-            //     name: name,
-            //     shellPath: EXECUTABLE,
-            //     shellArgs: [
-            //         "connect",
-            //         "lan",
-            //         ip,
-            //         "--max-errors",
-            //         maxerr.toString(),
-            //     ],
-            //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
-            // })
-
-            res = this._kicProcessMgr.createKicCell(
-                term_name,
-                ip,
-                "lan",
-                maxerr,
-                filePath,
-            )
-        } else if (usb_unique_string != undefined) {
-            let unique_string = usb_unique_string
-            const string_split = usb_unique_string.split("@")
-            if (string_split.length > 1) {
-                unique_string = string_split[1]
-            }
-            res = this._kicProcessMgr.createKicCell(
-                term_name,
-                unique_string,
-                "usb",
-                undefined,
-                filePath,
-            )
+        switch (connType) {
+            case IoType.Lan:
+                {
+                    const parts = address.match(CONNECTION_RE)
+                    if (parts == null) return ["", undefined]
+                    const ip_addr = parts[2]
+                    const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
+                    res = this._kicProcessMgr.createKicCell(
+                        term_name,
+                        ip,
+                        "lan",
+                        maxerr,
+                        filePath,
+                    )
+                }
+                break
+            case IoType.Usb:
+                {
+                    let unique_string = address
+                    const string_split = address.split("@")
+                    if (string_split.length > 1) {
+                        unique_string = string_split[1]
+                    }
+                    res = this._kicProcessMgr.createKicCell(
+                        term_name,
+                        unique_string,
+                        "usb",
+                        undefined,
+                        filePath,
+                    )
+                }
+                break
+            case IoType.Visa:
+                {
+                    let unique_string = address
+                    const string_split = address.split("@")
+                    if (string_split.length > 1) {
+                        unique_string = string_split[1]
+                    }
+                    res = this._kicProcessMgr.createKicCell(
+                        term_name,
+                        unique_string,
+                        "visa",
+                        undefined,
+                        filePath,
+                    )
+                }
+                break
         }
 
         // if (term != undefined) {

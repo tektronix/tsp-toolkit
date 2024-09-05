@@ -239,6 +239,12 @@ class USBNode extends IONode {
     }
 }
 
+class VisaNode extends IONode {
+    constructor() {
+        super("VISA", IoType.Visa, true)
+    }
+}
+
 /**
  * Used to create Saved node
  */
@@ -400,6 +406,12 @@ class USBNodeProvider extends NodeProvider {
     }
 }
 
+class VisaNodeProvider extends NodeProvider {
+    constructor() {
+        super(new VisaNode())
+    }
+}
+
 class SNodeprovider implements IRootNodeProvider {
     constructor(ioNode: SIONode) {
         this.ioNode = ioNode
@@ -515,6 +527,12 @@ class SUSBNode extends SIONode {
     }
 }
 
+class SVisaNode extends SIONode {
+    constructor() {
+        super("VISA", IoType.Visa, true)
+    }
+}
+
 class SLanNodeProvider extends SNodeprovider {
     constructor() {
         super(new SLanNode())
@@ -527,6 +545,12 @@ class SUsbNodeProvider extends SNodeprovider {
     }
 }
 
+class SVisaNodeProvider extends SNodeprovider {
+    constructor() {
+        super(new SVisaNode())
+    }
+}
+
 class SavedNodeProvider implements IRootNodeProvider {
     private node_providers: IRootNodeProvider[] = []
     private savedNode: SavedNode | undefined
@@ -536,12 +560,15 @@ class SavedNodeProvider implements IRootNodeProvider {
 
     private _slanNodeProvider: SLanNodeProvider | undefined
     private _susbNodeProvider: SUsbNodeProvider | undefined
+    private _svisaNodeProvider: SVisaNodeProvider | undefined
 
     constructor() {
         this._slanNodeProvider = new SLanNodeProvider()
         this._susbNodeProvider = new SUsbNodeProvider()
+        this._svisaNodeProvider = new SVisaNodeProvider()
         this.node_providers.push(this._slanNodeProvider)
         this.node_providers.push(this._susbNodeProvider)
+        this.node_providers.push(this._svisaNodeProvider)
     }
 
     GetInstrumentNode(instr: InstrInfo): InstrNode | undefined {
@@ -602,8 +629,10 @@ class SavedNodeProvider implements IRootNodeProvider {
         //from slan and susb
         if (unique_id.includes("Lan")) {
             this._slanNodeProvider?.removeInstrFromSavedNode(unique_id)
-        } else {
+        } else if (unique_id.includes("Usb")) {
             this._susbNodeProvider?.removeInstrFromSavedNode(unique_id)
+        } else if (unique_id.includes("Visa")) {
+            this._svisaNodeProvider?.removeInstrFromSavedNode(unique_id)
         }
     }
 }
@@ -616,6 +645,7 @@ export class NewTDPModel {
     private _savedNodeProvider: SavedNodeProvider | undefined
     private _lanNodeProvider: LanNodeProvider | undefined
     private _usbNodeProvider: USBNodeProvider | undefined
+    private _visaNodeProvider: VisaNodeProvider | undefined
     private new_instr: InstrInfo | undefined
 
     public is_instr_discovered = false
@@ -627,9 +657,11 @@ export class NewTDPModel {
         this._savedNodeProvider = new SavedNodeProvider()
         this._lanNodeProvider = new LanNodeProvider()
         this._usbNodeProvider = new USBNodeProvider()
+        this._visaNodeProvider = new VisaNodeProvider()
         //this.node_providers.push(this._savedNodeProvider)
         this.node_providers.push(this._lanNodeProvider)
         this.node_providers.push(this._usbNodeProvider)
+        this.node_providers.push(this._visaNodeProvider)
 
         this.fetchPersistedInstrList()
     }
@@ -717,10 +749,24 @@ export class NewTDPModel {
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
-            if (ioType == IoType.Lan) {
-                this._lanNodeProvider?.updateSavedList(saved_list ?? [], true)
-            } else {
-                this._usbNodeProvider?.updateSavedList(saved_list ?? [], true)
+            switch (ioType) {
+                case IoType.Lan:
+                    this._lanNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
+                    break
+                case IoType.Usb:
+                    this._usbNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
+                    break
+                case IoType.Visa:
+                    this._visaNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
             }
         }
     }
@@ -738,10 +784,25 @@ export class NewTDPModel {
 
             this.saveInstrInfoToPersist(nodeToBeSaved.fetchInstrInfo())
 
-            if (nodeToBeSaved.FetchInstrIOType() == IoType.Lan) {
-                this._lanNodeProvider?.updateSavedList(saved_list ?? [], true)
-            } else {
-                this._usbNodeProvider?.updateSavedList(saved_list ?? [], true)
+            switch (nodeToBeSaved.FetchInstrIOType()) {
+                case IoType.Lan:
+                    this._lanNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
+                    break
+                case IoType.Usb:
+                    this._usbNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
+                    break
+                case IoType.Visa:
+                    this._visaNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        true,
+                    )
+                    break
             }
         }
     }
@@ -808,10 +869,25 @@ export class NewTDPModel {
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
             this.removeInstrFromPersistedList(nodeToBeRemoved.fetchInstrInfo())
-            if (nodeToBeRemoved.FetchInstrIOType() == IoType.Lan) {
-                this._lanNodeProvider?.updateSavedList(saved_list ?? [], false)
-            } else {
-                this._usbNodeProvider?.updateSavedList(saved_list ?? [], false)
+            switch (nodeToBeRemoved.FetchInstrIOType()) {
+                case IoType.Lan:
+                    this._lanNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        false,
+                    )
+                    break
+                case IoType.Usb:
+                    this._usbNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        false,
+                    )
+                    break
+                case IoType.Visa:
+                    this._visaNodeProvider?.updateSavedList(
+                        saved_list ?? [],
+                        false,
+                    )
+                    break
             }
         }
     }
@@ -1330,10 +1406,13 @@ export class InstrumentsExplorer {
         if (resNode != undefined) {
             const conn_name =
                 resNode.label + "@" + resNode.FetchConnectionAddr()
-            if (resNode.FetchInstrIOType() == IoType.Lan) {
-                return [conn_name]
-            } else {
-                return [conn_name, resNode.fetchModelSerial()]
+            switch (resNode.FetchInstrIOType()) {
+                case IoType.Lan:
+                    return [conn_name]
+                case IoType.Usb:
+                    return [conn_name, resNode.fetchModelSerial()]
+                case IoType.Visa:
+                    return [conn_name, resNode.fetchModelSerial()]
             }
         }
         return [""]
