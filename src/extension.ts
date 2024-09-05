@@ -24,8 +24,6 @@ import {
     RELATIVE_TSP_CONFIG_FILE_PATH,
     updateConfiguration,
 } from "./workspaceManager"
-import { LOG_DIR } from "./utility"
-import { LoggerManager } from "./logging"
 
 let _activeConnectionManager: CommunicationManager
 //let _terminationMgr: TerminationManager
@@ -372,34 +370,77 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
 
 async function pickConnection(connection_info?: string): Promise<void> {
     const connections: string[] = FriendlyNameMgr.fetchConnListForPicker()
-    let selection = ""
-    if (connection_info != undefined) {
-        selection = connection_info
+
+    if (connection_info !== undefined) {
+        const options: vscode.InputBoxOptions = {
+            prompt: "Enter instrument IP in <insName>@<IP> format",
+            validateInput: _connHelper.instrIPValidator,
+        }
+        const Ip = await vscode.window.showInputBox(options)
+        if (Ip === undefined) {
+            return
+        }
+        await connect(Ip)
     } else {
-        selection =
-            (await vscode.window.showQuickPick(
-                ["New Connection"].concat(connections),
-                { placeHolder: "Select a connection" },
-            )) || ""
-
-        if (selection === undefined) {
-            return
+        const options: vscode.QuickPickItem[] = connections.map(
+            (connection) => ({
+                label: connection,
+            }),
+        )
+        const quickPick = vscode.window.createQuickPick()
+        quickPick.items = options
+        quickPick.placeholder = "Enter instrument IP in <insName>@<IP> format"
+        if (options.length > 0) {
+            quickPick.placeholder =
+                "Select connection from existing list or Enter instrument IP in <insName>@<IP> format"
         }
-        if (selection !== "New Connection") {
-            await createTerminal(selection)
-            return
-        }
-    }
 
-    const options: vscode.InputBoxOptions = {
-        prompt: "Enter instrument IP in <insName>@<IP> format",
-        validateInput: _connHelper.instrIPValidator,
+        quickPick.onDidChangeValue((value) => {
+            if (!options.some((option) => option.label === value)) {
+                const new_item = { label: value }
+                if (new_item.label.length > 0) {
+                    quickPick.items = [new_item, ...options]
+                }
+            }
+        })
+
+        quickPick.onDidAccept(async () => {
+            const selectedItem = quickPick.selectedItems[0]
+            quickPick.busy = true
+            try {
+                // Validate connection string
+                const validationResult = _connHelper.instrIPValidator(
+                    selectedItem.label,
+                )
+                if (validationResult) {
+                    throw new Error(validationResult)
+                }
+
+                if (
+                    options.some(
+                        (option) => option.label === selectedItem.label,
+                    )
+                ) {
+                    await createTerminal(selectedItem.label)
+                } else {
+                    const Ip = selectedItem.label
+                    if (Ip === undefined) {
+                        return
+                    }
+                    await connect(Ip)
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Error: ${(error as Error).message}`,
+                )
+            } finally {
+                quickPick.busy = false
+                quickPick.hide()
+            }
+        })
+
+        quickPick.show()
     }
-    const Ip = await vscode.window.showInputBox(options)
-    if (Ip === undefined) {
-        return
-    }
-    return connect(Ip)
 }
 
 async function connect(
@@ -425,40 +466,6 @@ async function connect(
         void vscode.window.showErrorMessage("Bad connection string")
     }
     return
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function startInstrDiscovery(): Promise<void> {
-    const wait_time = await vscode.window.showInputBox({
-        prompt: "Input how long to wait for instrument responses",
-        value: "15",
-    })
-    if (wait_time === undefined) {
-        return
-    }
-    const logger = LoggerManager.instance().add_logger("TSP Discovery")
-
-    if (parseInt(wait_time)) {
-        const term = vscode.window.createTerminal({
-            name: "Discovery",
-            shellPath: EXECUTABLE,
-            shellArgs: [
-                "--log-file",
-                join(
-                    LOG_DIR,
-                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                ),
-                "--log-socket",
-                `${logger.host}:${logger.port}`,
-                "discover",
-                "all",
-                "--timeout",
-                wait_time,
-            ],
-            iconPath: vscode.Uri.file("/keithley-logo.ico"),
-        })
-        term.show()
-    }
 }
 
 //function startTerminateAllConn() {

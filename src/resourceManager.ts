@@ -351,7 +351,26 @@ export class KicCell extends EventEmitter {
                     "lan",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file("/keithley-logo.ico"),
+                iconPath: {
+                    light: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "light",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                    dark: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "dark",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                },
             })
         } else {
             this._term = vscode.window.createTerminal({
@@ -369,7 +388,26 @@ export class KicCell extends EventEmitter {
                     "usb",
                     unique_id,
                 ],
-                iconPath: vscode.Uri.file("/keithley-logo.ico"),
+                iconPath: {
+                    light: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "light",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                    dark: vscode.Uri.file(
+                        join(
+                            __dirname,
+                            "..",
+                            "resources",
+                            "dark",
+                            "tsp-terminal-icon.svg",
+                        ),
+                    ),
+                },
             })
         }
 
@@ -377,7 +415,9 @@ export class KicCell extends EventEmitter {
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                t.creationOptions.iconPath.toString().search("keithley-logo") &&
+                t.creationOptions.iconPath
+                    .toString()
+                    .search("tsp-terminal-icon") &&
                 t.exitStatus !== undefined &&
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {

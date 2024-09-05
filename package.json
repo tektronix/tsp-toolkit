@@ -68,7 +68,7 @@
             },
             {
                 "command": "InstrumentsExplorer.connect",
-                "title": "Connect",
+                "title": "New Connection",
                 "icon": {
                     "light": "resources/light/connect.svg",
                     "dark": "resources/dark/connect.svg"
