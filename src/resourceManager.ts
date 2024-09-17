@@ -295,52 +295,10 @@ export class KicCell extends EventEmitter {
         )
         const logger = LoggerManager.instance().add_logger("TSP Terminal")
 
-        if (connType == "lan" && maxerr != undefined) {
-            //getting instr info before we do the actual connection.
-
-            info = child
-                .spawnSync(
-                    EXECUTABLE,
-                    [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date()
-                                .toISOString()
-                                .substring(0, 10)}-kic.log`,
-                        ),
-                        "--log-socket",
-                        `${logger.host}:${logger.port}`,
-                        "info",
-                        "lan",
-                        "--json",
-                        unique_id,
-                    ],
-                    {
-                        env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                    },
-                )
-                .stdout.toString()
-
-            if (info == "") return [info]
-
-            if (name == "") {
-                const _info = <IIDNInfo>JSON.parse(info)
-                //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
-                //we generate a unique name based on *idn? info
-
-                verified_name = FriendlyNameMgr.generateUniqueName(
-                    IoType.Lan,
-                    _info.model + "#" + _info.serial_number,
-                )
-                name = verified_name
-                this._connDetails.Name = name
-            }
-
-            this._term = vscode.window.createTerminal({
-                name: name,
-                shellPath: EXECUTABLE,
-                shellArgs: [
+        info = child
+            .spawnSync(
+                EXECUTABLE,
+                [
                     "--log-file",
                     join(
                         LOG_DIR,
@@ -348,87 +306,68 @@ export class KicCell extends EventEmitter {
                     ),
                     "--log-socket",
                     `${logger.host}:${logger.port}`,
-                    "connect",
-                    "lan",
+                    "info",
+                    connType,
+                    "--json",
                     unique_id,
                 ],
-                iconPath: {
-                    light: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "light",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                    dark: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "dark",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
+                {
+                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
                 },
-            })
-        } else if (connType == "usb") {
-            this._term = vscode.window.createTerminal({
-                name: name,
-                shellPath: EXECUTABLE,
-                shellArgs: [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "--log-socket",
-                    `${logger.host}:${logger.port}`,
-                    "connect",
-                    "usb",
-                    unique_id,
-                ],
-                iconPath: {
-                    light: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "light",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                    dark: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "dark",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                },
-            })
-        } else if (connType == "visa") {
-            this._term = vscode.window.createTerminal({
-                name: name,
-                shellPath: EXECUTABLE,
-                shellArgs: [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "--log-socket",
-                    `${logger.host}:${logger.port}`,
-                    "connect",
-                    "visa",
-                    unique_id,
-                ],
-                iconPath: vscode.Uri.file("/keithley-logo.ico"),
-            })
+            )
+            .stdout.toString()
+
+        if (info == "") return [info]
+
+        if (name == "") {
+            const _info = <IIDNInfo>JSON.parse(info)
+            //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
+            //we generate a unique name based on *idn? info
+
+            verified_name = FriendlyNameMgr.generateUniqueName(
+                IoType.Lan,
+                _info.model + "#" + _info.serial_number,
+            )
+            name = verified_name
+            this._connDetails.Name = name
         }
+
+        this._term = vscode.window.createTerminal({
+            name: name,
+            shellPath: EXECUTABLE,
+            shellArgs: [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "--log-socket",
+                `${logger.host}:${logger.port}`,
+                "connect",
+                connType,
+                unique_id,
+            ],
+            iconPath: {
+                light: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "light",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+                dark: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "dark",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+            },
+        })
 
         vscode.window.onDidCloseTerminal((t) => {
             if (

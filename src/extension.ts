@@ -108,6 +108,11 @@ export async function createTerminal(
             connection_string,
             command_text,
         )
+
+        const info = res[0].replace("\n", "")
+        name = res[1] == undefined ? name : res[1]
+
+        _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
     }
 }
 
