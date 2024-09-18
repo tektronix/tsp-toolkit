@@ -37,6 +37,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   has no results and is a valid connection string.
 
 
+### Removed
+
+- Raw USBTMC support has been removed in favor of VISA
+
 ## [0.17.0]
 
 ### Fixed

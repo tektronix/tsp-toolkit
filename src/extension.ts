@@ -54,19 +54,7 @@ export async function createTerminal(
         ip = connection_string.split("@")[1]
     }
 
-    if (_connHelper.IPTest(ip) == false) {
-        //USB
-        //This only works if selected from Instrument discovery
-        if (name == "") {
-            name = FriendlyNameMgr.generateUniqueName(IoType.Usb, model_serial)
-        }
-        res = _activeConnectionManager?.createTerminal(
-            name,
-            undefined,
-            connection_string,
-            command_text,
-        )
-    } else {
+    if (_connHelper.IPTest(ip)) {
         //LAN
         msn = await _connHelper.getModelAndSerialNumber(ip) //const to let
         if (msn != undefined) {
@@ -88,8 +76,8 @@ export async function createTerminal(
             )
             res = _activeConnectionManager?.createTerminal(
                 name,
+                IoType.Lan,
                 `${connection_string}:${msn.port}`,
-                undefined,
                 command_text,
             )
         }
@@ -97,8 +85,8 @@ export async function createTerminal(
         else {
             res = _activeConnectionManager?.createTerminal(
                 name,
+                IoType.Lan,
                 connection_string,
-                undefined,
                 command_text,
             )
         }
@@ -108,6 +96,23 @@ export async function createTerminal(
         name = res[1] == undefined ? name : res[1]
 
         _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, msn?.port)
+    } else {
+        //VISA
+        //This only works if selected from Instrument discovery
+        if (name == "") {
+            name = FriendlyNameMgr.generateUniqueName(IoType.Visa, model_serial)
+        }
+        res = _activeConnectionManager?.createTerminal(
+            name,
+            IoType.Visa,
+            connection_string,
+            command_text,
+        )
+
+        const info = res[0].replace("\n", "")
+        name = res[1] == undefined ? name : res[1]
+
+        _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
     }
 }
 

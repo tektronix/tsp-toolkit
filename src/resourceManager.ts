@@ -22,6 +22,7 @@ export interface IIDNInfo {
 export enum IoType {
     Lan = "Lan",
     Usb = "Usb",
+    Visa = "Visa",
 }
 
 /**
@@ -294,52 +295,10 @@ export class KicCell extends EventEmitter {
         )
         const logger = LoggerManager.instance().add_logger("TSP Terminal")
 
-        if (connType == "lan" && maxerr != undefined) {
-            //getting instr info before we do the actual connection.
-
-            info = child
-                .spawnSync(
-                    EXECUTABLE,
-                    [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date()
-                                .toISOString()
-                                .substring(0, 10)}-kic.log`,
-                        ),
-                        "--log-socket",
-                        `${logger.host}:${logger.port}`,
-                        "info",
-                        "lan",
-                        "--json",
-                        unique_id,
-                    ],
-                    {
-                        env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                    },
-                )
-                .stdout.toString()
-
-            if (info == "") return [info]
-
-            if (name == "") {
-                const _info = <IIDNInfo>JSON.parse(info)
-                //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
-                //we generate a unique name based on *idn? info
-
-                verified_name = FriendlyNameMgr.generateUniqueName(
-                    IoType.Lan,
-                    _info.model + "#" + _info.serial_number,
-                )
-                name = verified_name
-                this._connDetails.Name = name
-            }
-
-            this._term = vscode.window.createTerminal({
-                name: name,
-                shellPath: EXECUTABLE,
-                shellArgs: [
+        info = child
+            .spawnSync(
+                EXECUTABLE,
+                [
                     "--log-file",
                     join(
                         LOG_DIR,
@@ -347,69 +306,68 @@ export class KicCell extends EventEmitter {
                     ),
                     "--log-socket",
                     `${logger.host}:${logger.port}`,
-                    "connect",
-                    "lan",
+                    "info",
+                    connType,
+                    "--json",
                     unique_id,
                 ],
-                iconPath: {
-                    light: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "light",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                    dark: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "dark",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
+                {
+                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
                 },
-            })
-        } else {
-            this._term = vscode.window.createTerminal({
-                name: name,
-                shellPath: EXECUTABLE,
-                shellArgs: [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "--log-socket",
-                    `${logger.host}:${logger.port}`,
-                    "connect",
-                    "usb",
-                    unique_id,
-                ],
-                iconPath: {
-                    light: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "light",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                    dark: vscode.Uri.file(
-                        join(
-                            __dirname,
-                            "..",
-                            "resources",
-                            "dark",
-                            "tsp-terminal-icon.svg",
-                        ),
-                    ),
-                },
-            })
+            )
+            .stdout.toString()
+
+        if (info == "") return [info]
+
+        if (name == "") {
+            const _info = <IIDNInfo>JSON.parse(info)
+            //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
+            //we generate a unique name based on *idn? info
+
+            verified_name = FriendlyNameMgr.generateUniqueName(
+                IoType.Lan,
+                _info.model + "#" + _info.serial_number,
+            )
+            name = verified_name
+            this._connDetails.Name = name
         }
+
+        this._term = vscode.window.createTerminal({
+            name: name,
+            shellPath: EXECUTABLE,
+            shellArgs: [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "--log-socket",
+                `${logger.host}:${logger.port}`,
+                "connect",
+                connType,
+                unique_id,
+            ],
+            iconPath: {
+                light: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "light",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+                dark: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "dark",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+            },
+        })
 
         vscode.window.onDidCloseTerminal((t) => {
             if (
@@ -432,7 +390,7 @@ export class KicCell extends EventEmitter {
             }
         })
 
-        this.terminalPid = this._term.processId
+        this.terminalPid = this._term?.processId
 
         if (this._term != undefined) {
             this._term.show()
@@ -560,68 +518,68 @@ export class ConnectionHelper {
         }
     }
 
-    //#Todo: has zero references -- needs cleanup?
-    public createTerminal(
-        kicProcessMgr: KicProcessMgr,
-        instrumentIp?: string,
-        usb_unique_string?: string,
-        filePath?: string,
-    ) {
-        const maxerr: number =
-            vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
-        if (instrumentIp != undefined) {
-            const parts = instrumentIp.match(CONNECTION_RE)
-            if (parts == null) return
-            const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
-            const ip_addr = parts[2]
-            const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
+    // //#Todo: has zero references -- needs cleanup?
+    // public createTerminal(
+    //     kicProcessMgr: KicProcessMgr,
+    //     instrumentIp?: string,
+    //     usb_unique_string?: string,
+    //     filePath?: string,
+    // ) {
+    //     const maxerr: number =
+    //         vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
+    //     if (instrumentIp != undefined) {
+    //         const parts = instrumentIp.match(CONNECTION_RE)
+    //         if (parts == null) return
+    //         const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
+    //         const ip_addr = parts[2]
+    //         const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
 
-            /*
-        //If for UX reason we need to have unique named terminals we can use this code
-        if (this.checkForDuplicateTermName(name)) {
-            void vscode.window.showWarningMessage(
-                'Terminal name already exists, appending "(new)" to the name, please provide unique terminal names'
-            )
-            name += "(new)"
-        }*/
-            // term = vscode.window.createTerminal({
-            //     name: name,
-            //     shellPath: EXECUTABLE,
-            //     shellArgs: [
-            //         "connect",
-            //         "lan",
-            //         ip,
-            //         "--max-errors",
-            //         maxerr.toString(),
-            //     ],
-            //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
-            // })
+    //         /*
+    //     //If for UX reason we need to have unique named terminals we can use this code
+    //     if (this.checkForDuplicateTermName(name)) {
+    //         void vscode.window.showWarningMessage(
+    //             'Terminal name already exists, appending "(new)" to the name, please provide unique terminal names'
+    //         )
+    //         name += "(new)"
+    //     }*/
+    //         // term = vscode.window.createTerminal({
+    //         //     name: name,
+    //         //     shellPath: EXECUTABLE,
+    //         //     shellArgs: [
+    //         //         "connect",
+    //         //         "lan",
+    //         //         ip,
+    //         //         "--max-errors",
+    //         //         maxerr.toString(),
+    //         //     ],
+    //         //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
+    //         // })
 
-            kicProcessMgr.createKicCell(name, ip, "lan", maxerr, filePath)
-        } else if (usb_unique_string != undefined) {
-            let unique_string = usb_unique_string
-            let name = "KIC"
-            const string_split = usb_unique_string.split("@")
-            if (string_split.length > 1) {
-                name = string_split[0]
-                unique_string = string_split[1]
-            }
-            kicProcessMgr.createKicCell(
-                name,
-                unique_string,
-                "usb",
-                undefined,
-                filePath,
-            )
-        }
+    //         kicProcessMgr.createKicCell(name, ip, "lan", maxerr, filePath)
+    //     } else if (usb_unique_string != undefined) {
+    //         let unique_string = usb_unique_string
+    //         let name = "KIC"
+    //         const string_split = usb_unique_string.split("@")
+    //         if (string_split.length > 1) {
+    //             name = string_split[0]
+    //             unique_string = string_split[1]
+    //         }
+    //         kicProcessMgr.createKicCell(
+    //             name,
+    //             unique_string,
+    //             "usb",
+    //             undefined,
+    //             filePath,
+    //         )
+    //     }
 
-        // if (term != undefined) {
-        //     term.show()
-        //     if (filePath != undefined) {
-        //         term.sendText(filePath)
-        //     }
-        // }
-    }
+    //     // if (term != undefined) {
+    //     //     term.show()
+    //     //     if (filePath != undefined) {
+    //     //         term.sendText(filePath)
+    //     //     }
+    //     // }
+    // }
 }
 
 /**
