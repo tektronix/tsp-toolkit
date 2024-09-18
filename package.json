@@ -226,6 +226,10 @@
                 {
                     "command": "InstrumentsExplorer.remove",
                     "when": "false"
+                },
+                {
+                    "command": "tsp.sendFile",
+                    "when": "false"
                 }
             ],
             "view/item/context": [
