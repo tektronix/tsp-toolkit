@@ -45,7 +45,8 @@
             {
                 "command": "tsp.sendFile",
                 "title": "Send Script to Terminal",
-                "category": "TSP"
+                "category": "TSP",
+                 "icon": "$(run)"
             },
             {
                 "command": "tsp.sendFileToAllInstr",
@@ -225,6 +226,10 @@
                 {
                     "command": "InstrumentsExplorer.remove",
                     "when": "false"
+                },
+                {
+                    "command": "tsp.sendFile",
+                    "when": "false"
                 }
             ],
             "view/item/context": [
@@ -272,6 +277,13 @@
                 {
                     "command": "InstrumentsExplorer.upgradeSlot3",
                     "group": "upgrade.Slot"
+                }
+            ],
+            "editor/title/run": [
+                {
+                    "command": "tsp.sendFile",
+                    "when": "resourceExtname == .tsp",
+                    "group": "navigation"
                 }
             ]
         },

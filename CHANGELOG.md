@@ -28,8 +28,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Added VISA support for connecting to an instrument
 - Added platform-specific extension versions for Windows x86_64 and Linux x86_64 systems
-- Add a + button to the Instruments pane title bar
-- Add icon to tsp-toolkit terminal
+- Added a + button to the Instruments pane title bar
+- Added icon to tsp-toolkit connection terminal
+- Added run button to runs the current script
 
 ### Changed
 - Automatically assume a new connection is desired if the input to the "TSP: Connect" input box 
