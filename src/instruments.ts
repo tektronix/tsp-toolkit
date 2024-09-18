@@ -81,6 +81,7 @@ instr_map.set("DMM6500", "nimitz")
 instr_map.set("DAQ6510", "nimitz")
 instr_map.set("VERSATEST-300", "versatest")
 instr_map.set("VERSATEST-600", "versatest")
+instr_map.set("MP5103", "versatest")
 instr_map.set("TSP", "versatest")
 
 const rpcClient: JSONRPCClient = new JSONRPCClient(
