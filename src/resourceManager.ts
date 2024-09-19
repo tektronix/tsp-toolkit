@@ -245,7 +245,7 @@ export class KicProcessMgr {
         //return new ConnectionDetails("", connAddr, connType)
         const options: vscode.InputBoxOptions = {
             prompt: "Enter instrument IP in <IP> format",
-            validateInput: this._connHelper.instrIPValidator,
+            validateInput: this._connHelper.instrConnectionStringValidator,
         }
         const ip = await vscode.window.showInputBox(options)
         if (ip === undefined) {
@@ -441,19 +441,24 @@ export class ConnectionHelper {
             ip,
         )
     }
-    public instrIPValidator = (val: string) => {
-        let ip = val
+    public VisaResourceStringTest(val: string): boolean {
+        return /^(visa:\/\/.*\/)?((TCPIP|USB|GPIB|ASRL|FIREWIRE|GPIB-VXI|PXI|VXI)\d*)::.*/.test(
+            val,
+        )
+    }
+    public instrConnectionStringValidator = (val: string) => {
+        let conn_str = val
         if (val.split("@").length > 1) {
-            ip = val.split("@")[1]
+            conn_str = val.split("@")[1]
         }
-        if (this.IPTest(ip) == false) {
-            return "Enter proper IPv4 address"
+        if (!this.IPTest(conn_str) && !this.VisaResourceStringTest(conn_str)) {
+            return "Enter proper IPv4 address or VISA resource string"
         }
 
-        void this.getModelAndSerialNumber(ip).then((msn) => {
+        void this.getModelAndSerialNumber(conn_str).then((msn) => {
             if (msn != undefined) {
                 void vscode.window.showInformationMessage(
-                    ip +
+                    conn_str +
                         ": Found instrument model " +
                         msn.model +
                         " with S/N: " +

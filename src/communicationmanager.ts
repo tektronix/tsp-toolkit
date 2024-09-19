@@ -113,8 +113,9 @@ export class CommunicationManager {
             const res = await vscode.window.showInputBox(options)
             if (res?.toUpperCase() === "YES") {
                 const options: vscode.InputBoxOptions = {
-                    prompt: "Enter instrument IP in <insName>@<IP> format",
-                    validateInput: this._connHelper.instrIPValidator,
+                    prompt: "Enter instrument IP address or VISA resource string",
+                    validateInput:
+                        this._connHelper.instrConnectionStringValidator,
                 }
                 const Ip = await vscode.window.showInputBox(options)
 

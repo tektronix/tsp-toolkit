@@ -378,8 +378,8 @@ async function pickConnection(connection_info?: string): Promise<void> {
 
     if (connection_info !== undefined) {
         const options: vscode.InputBoxOptions = {
-            prompt: "Enter instrument IP in <insName>@<IP> format",
-            validateInput: _connHelper.instrIPValidator,
+            prompt: "Enter instrument IP address or VISA resource string",
+            validateInput: _connHelper.instrConnectionStringValidator,
         }
         const Ip = await vscode.window.showInputBox(options)
         if (Ip === undefined) {
@@ -414,9 +414,10 @@ async function pickConnection(connection_info?: string): Promise<void> {
             quickPick.busy = true
             try {
                 // Validate connection string
-                const validationResult = _connHelper.instrIPValidator(
-                    selectedItem.label,
-                )
+                const validationResult =
+                    _connHelper.instrConnectionStringValidator(
+                        selectedItem.label,
+                    )
                 if (validationResult) {
                     throw new Error(validationResult)
                 }
