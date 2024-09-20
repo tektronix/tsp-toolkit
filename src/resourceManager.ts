@@ -319,11 +319,16 @@ export class KicCell extends EventEmitter {
 
         if (info == "") return [info]
 
-        if (name == "") {
-            const _info = <IIDNInfo>JSON.parse(info)
-            //for instruments without lxi page, Ex: versatest, tspop etc, if user doesn't provide a connection name
-            //we generate a unique name based on *idn? info
+        const _info = <IIDNInfo>JSON.parse(info)
+        void vscode.window.showInformationMessage(
+            unique_id +
+                ": Found instrument model " +
+                _info.model +
+                " with S/N: " +
+                _info.serial_number,
+        )
 
+        if (name == "") {
             verified_name = FriendlyNameMgr.generateUniqueName(
                 IoType.Lan,
                 _info.model + "#" + _info.serial_number,
@@ -455,17 +460,17 @@ export class ConnectionHelper {
             return "Enter proper IPv4 address or VISA resource string"
         }
 
-        void this.getModelAndSerialNumber(conn_str).then((msn) => {
-            if (msn != undefined) {
-                void vscode.window.showInformationMessage(
-                    conn_str +
-                        ": Found instrument model " +
-                        msn.model +
-                        " with S/N: " +
-                        msn.sn,
-                )
-            }
-        })
+        // void this.getModelAndSerialNumber(conn_str).then((msn) => {
+        //     if (msn != undefined) {
+        //         void vscode.window.showInformationMessage(
+        //             conn_str +
+        //                 ": Found instrument model " +
+        //                 msn.model +
+        //                 " with S/N: " +
+        //                 msn.sn,
+        //         )
+        //     }
+        // })
         return null
     }
 

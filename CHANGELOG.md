@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [0.18.1]
+
+### Fixed
+- Showing correct model and serial number information instead of undefined (TSP-809)
+
 ## [0.17.2]
 
 ### Fixed

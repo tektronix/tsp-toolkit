@@ -1430,13 +1430,6 @@ export class InstrumentsExplorer {
         friendly_name: string,
         port: string | undefined,
     ) {
-        if (info == "") {
-            void vscode.window.showErrorMessage(
-                "Unable to connect to instrument",
-            )
-            return
-        }
-
         const _info = <IIDNInfo>JSON.parse(info)
         const __info = new InstrInfo()
         __info.io_type = ioType

@@ -121,19 +121,13 @@ export class CommunicationManager {
 
                 if (Ip == undefined) {
                     return Promise.reject(new Error("IP is undefined"))
-                }
-
-                const msn = await this._connHelper.getModelAndSerialNumber(Ip)
-                if (msn != undefined) {
-                    void vscode.window.showInformationMessage(
-                        Ip +
-                            ": Found instrument model " +
-                            msn.model +
-                            " with S/N: " +
-                            msn.sn,
-                    )
-                    await createTerminal(Ip, msn.model, text)
-                    return Promise.resolve(true)
+                } else {
+                    if (createTerminal(Ip, undefined, text))
+                        return Promise.resolve(true)
+                    else
+                        return Promise.reject(
+                            new Error("Unable to connect to instrument"),
+                        )
                 }
             }
         } else if (kicTerminals.length === 1) {
