@@ -31,6 +31,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added a + button to the Instruments pane title bar
 - Added icon to tsp-toolkit connection terminal
 - Added run button to runs the current script
+- **tsp-toolkit-webhelp-to-json:** Added language feature support for 2651A, 2657A and 2601B-PULSE models
+- **tsp-toolkit-webhelp:** Added webhelp documents for 2651A, 2657A and 2601B-PULSE models
 
 ### Changed
 - Automatically assume a new connection is desired if the input to the "TSP: Connect" input box
