@@ -20,7 +20,7 @@ import {
 import { LOG_DIR } from "./utility"
 import { LoggerManager } from "./logging"
 
-const DISCOVERY_TIMEOUT = 300
+const DISCOVERY_TIMEOUT = 5
 
 let nextID = 0
 const createID = () => nextID++
@@ -1334,7 +1334,7 @@ export class InstrumentsExplorer {
     private startDiscovery() {
         const logger = LoggerManager.instance().add_logger("TSP Discovery")
         if (this.InstrumentsDiscoveryViewer.message == "") {
-            cp.spawn(
+            const discover = cp.spawn(
                 DISCOVER_EXECUTABLE,
                 [
                     "--log-file",
@@ -1358,6 +1358,11 @@ export class InstrumentsExplorer {
                 // }
             )
 
+            discover.on("exit", () => {
+                this.InstrumentsDiscoveryViewer.message = ""
+                clearInterval(this.intervalID)
+            })
+
             //subprocess.unref()
 
             this.InstrumentsDiscoveryViewer.message =
@@ -1368,15 +1373,6 @@ export class InstrumentsExplorer {
             this.intervalID = setInterval(() => {
                 this.treeDataProvider?.refresh()
             }, 1000)
-
-            setTimeout(
-                () => {
-                    this.InstrumentsDiscoveryViewer.message = ""
-                    clearInterval(this.intervalID)
-                    //void stopDiscovery()
-                },
-                DISCOVERY_TIMEOUT * 1000 + 10000,
-            )
         }
     }
 
