@@ -122,6 +122,7 @@ The extension is currently only available in English.
     - If someone has already filed an [issue][tsp-toolkit-issues] that encompasses your
       feedback, please leave a 👍/👎 reaction on the issue. Otherwise please start a new
       [discussion][tsp-toolkit-discussions]
+- If on Windows, you must have [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170). Please ensure you have this installed.
 <!--
 - Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
   for more details.
