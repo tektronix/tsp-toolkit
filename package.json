@@ -361,8 +361,8 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-linux-x64": "0.18.2-1",
-        "@tektronix/kic-cli-win32-x64": "0.18.2-1"
+        "@tektronix/kic-cli-linux-x64": "0.18.2-2",
+        "@tektronix/kic-cli-win32-x64": "0.18.2-2"
     },
     "extensionDependencies": [
         "sumneko.lua"
