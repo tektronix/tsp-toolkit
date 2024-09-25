@@ -38,17 +38,15 @@ let _connHelper: ConnectionHelper
  * @param command_text command text that needs to send to terminal
  * @returns None
  */
-export async function createTerminal(
+export function createTerminal(
     connection_string: string,
     model_serial?: string,
     command_text?: string,
-) {
+): boolean {
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
     let res: [string, string?] = ["", undefined]
     let ip = connection_string
     let name = ""
-    let msn
-    let model_serial_no = ""
     if (connection_string.split("@").length > 1) {
         name = connection_string.split("@")[0]
         ip = connection_string.split("@")[1]
@@ -56,46 +54,25 @@ export async function createTerminal(
 
     if (_connHelper.IPTest(ip)) {
         //LAN
-        msn = await _connHelper.getModelAndSerialNumber(ip) //const to let
-        if (msn != undefined) {
-            model_serial_no =
-                (msn.model ?? "undefined") + "#" + (msn.sn ?? "undefined") //const to let
-            if (name == "") {
-                name = FriendlyNameMgr.generateUniqueName(
-                    IoType.Lan,
-                    model_serial_no,
-                )
-            }
-
-            void vscode.window.showInformationMessage(
-                connection_string +
-                    ": Found instrument model " +
-                    msn.model +
-                    " with S/N: " +
-                    msn.sn,
-            )
-            res = _activeConnectionManager?.createTerminal(
-                name,
-                IoType.Lan,
-                `${connection_string}:${msn.port}`,
-                command_text,
-            )
-        }
-        //TODO: Remove this else statement once lxi page is ready for versatest
-        else {
-            res = _activeConnectionManager?.createTerminal(
-                name,
-                IoType.Lan,
-                connection_string,
-                command_text,
-            )
-        }
+        res = _activeConnectionManager?.createTerminal(
+            name,
+            IoType.Lan,
+            connection_string,
+            command_text,
+        )
 
         //const instr_to_save: string = "Lan:" + model_serial_no
         const info = res[0].replace("\n", "")
+        if (info == "") {
+            void vscode.window.showErrorMessage(
+                "Unable to connect to instrument",
+            )
+            return false
+        }
         name = res[1] == undefined ? name : res[1]
+        const port_number = "5025"
 
-        _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, msn?.port)
+        _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, port_number)
     } else {
         //VISA
         //This only works if selected from Instrument discovery
@@ -110,10 +87,17 @@ export async function createTerminal(
         )
 
         const info = res[0].replace("\n", "")
+        if (info == "") {
+            void vscode.window.showErrorMessage(
+                "Unable to connect to instrument",
+            )
+            return false
+        }
         name = res[1] == undefined ? name : res[1]
 
         _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
     }
+    return true
 }
 
 // Called when the extension is activated.
@@ -427,7 +411,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
                         (option) => option.label === selectedItem.label,
                     )
                 ) {
-                    await createTerminal(selectedItem.label)
+                    createTerminal(selectedItem.label)
                 } else {
                     const Ip = selectedItem.label
                     if (Ip === undefined) {
@@ -467,7 +451,7 @@ async function connect(
     }
 
     if (_activeConnectionManager?.connectionRE.test(Ip)) {
-        await createTerminal(Ip, model_serial)
+        createTerminal(Ip, model_serial)
     } else {
         void vscode.window.showErrorMessage("Bad connection string")
     }
@@ -487,7 +471,7 @@ function connectCmd(def: object) {
         _instrExplorer.fetchConnectionArgs(def)
 
     if (_activeConnectionManager?.connectionRE.test(connection_str)) {
-        void createTerminal(connection_str, model_serial)
+        createTerminal(connection_str, model_serial)
     } else {
         void vscode.window.showErrorMessage("Unable to connect.")
     }
