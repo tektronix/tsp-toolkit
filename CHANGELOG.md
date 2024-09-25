@@ -21,7 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - Showing correct model and serial number information instead of undefined (TSP-809)
 
-## [0.17.2]
+## [0.18.0]
 
 ### Fixed
 
@@ -32,13 +32,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 
 - Added VISA support for connecting to an instrument
-- Added platform-specific extension versions for Windows x86_64 and Linux x86_64 systems
+- Added platform-specific extension versions for Windows x86\_64 and Linux x86\_64 systems
 - Added a + button to the Instruments pane title bar
 - Added icon to tsp-toolkit connection terminal
 - Added run button to runs the current script
+- **tsp-toolkit-webhelp-to-json:** Added language feature support for 2651A, 2657A and 2601B-PULSE models
+- **tsp-toolkit-webhelp:** Added webhelp documents for 2651A, 2657A and 2601B-PULSE models
 
 ### Changed
-- Automatically assume a new connection is desired if the input to the "TSP: Connect" input box 
+- Automatically assume a new connection is desired if the input to the "TSP: Connect" input box
   has no results and is a valid connection string.
 
 
@@ -164,8 +166,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.17.2...HEAD
-[0.17.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.2
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.0
 [0.17.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.17.0
 [0.16.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.4
 [0.16.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.16.1

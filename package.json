@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "[Beta] Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
-    "version": "0.17.2",
+    "version": "0.18.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -349,8 +349,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.16.0",
-        "@tektronix/web-help-documents": "0.15.3",
+        "@tektronix/keithley_instrument_libraries": "0.18.1",
+        "@tektronix/web-help-documents": "0.18.0",
         "@types/cheerio": "0.22.35",
         "cheerio": "1.0.0",
         "class-transformer": "0.5.1",
@@ -361,8 +361,8 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-linux-x64": "0.17.2-4",
-        "@tektronix/kic-cli-win32-x64": "0.17.2-4"
+        "@tektronix/kic-cli-linux-x64": "0.18.2",
+        "@tektronix/kic-cli-win32-x64": "0.18.2"
     },
     "extensionDependencies": [
         "sumneko.lua"
