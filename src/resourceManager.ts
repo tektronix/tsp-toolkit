@@ -459,18 +459,6 @@ export class ConnectionHelper {
         if (!this.IPTest(conn_str) && !this.VisaResourceStringTest(conn_str)) {
             return "Enter proper IPv4 address or VISA resource string"
         }
-
-        // void this.getModelAndSerialNumber(conn_str).then((msn) => {
-        //     if (msn != undefined) {
-        //         void vscode.window.showInformationMessage(
-        //             conn_str +
-        //                 ": Found instrument model " +
-        //                 msn.model +
-        //                 " with S/N: " +
-        //                 msn.sn,
-        //         )
-        //     }
-        // })
         return null
     }
 
