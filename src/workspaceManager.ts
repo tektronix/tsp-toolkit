@@ -2,10 +2,22 @@ import * as fs from "fs"
 import * as path from "path"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
+import { onDidChangeTspConfigFile } from "./extension"
 
-const supported_models = fs
+/**
+ * An array of supported model names.
+ *
+ * This array is populated by reading the directories within the COMMAND_SETS directory.
+ * Each directory name represents a supported model.
+ *
+ * @type {string[]}
+ */
+let supported_models: string[] = fs
     .readdirSync(COMMAND_SETS)
     .filter((folder) => fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory())
+
+// Remove "tsp-lua-5.0" from supported_models if it exists, because its a library
+supported_models = supported_models.filter((model) => model !== "tsp-lua-5.0")
 
 export const RELATIVE_TSP_CONFIG_FILE_PATH = path.join(".vscode", "tspConfig")
 
@@ -142,20 +154,79 @@ export async function processWorkspaceFolders() {
         for (const folder of workspaceFolders) {
             const folderPath = folder.uri.fsPath
             if (await processFiles(folderPath)) {
-                await updateConfiguration(
-                    "Lua.workspace.ignoreDir",
-                    [],
-                    vscode.ConfigurationTarget.WorkspaceFolder,
-                    folder,
-                )
-                await updateConfiguration(
-                    "Lua.diagnostics.libraryFiles",
-                    "Disable",
-                    vscode.ConfigurationTarget.WorkspaceFolder,
-                    folder,
-                )
                 createTspFileFolder(folderPath)
             }
+        }
+    }
+}
+
+export async function configure_initial_workspace_configurations() {
+    await updateConfiguration(
+        "files.associations",
+        {
+            "*.tsp": "lua",
+        },
+        vscode.ConfigurationTarget.Global,
+    )
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    if (workspaceFolders) {
+        for (const folder of workspaceFolders) {
+            await updateConfiguration(
+                "Lua.workspace.ignoreDir",
+                [],
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                folder,
+            )
+            await updateConfiguration(
+                "Lua.diagnostics.libraryFiles",
+                "Disable",
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                folder,
+            )
+            await updateConfiguration(
+                "Lua.runtime.version",
+                "Lua 5.1",
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                folder,
+            )
+            await updateConfiguration(
+                "Lua.runtime.builtin",
+                {
+                    basic: "disable",
+                    bit: "disable",
+                    bit32: "disable",
+                    builtin: "disable",
+                    coroutine: "disable",
+                    debug: "disable",
+                    ffi: "disable",
+                    io: "disable",
+                    jit: "disable",
+                    "jit.profile": "disable",
+                    "jit.util": "disable",
+                    math: "disable",
+                    os: "disable",
+                    package: "disable",
+                    string: "disable",
+                    "string.buffer": "disable",
+                    table: "disable",
+                    "table.clear": "disable",
+                    "table.new": "disable",
+                    utf8: "disable",
+                },
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                folder,
+            )
+            await updateConfiguration(
+                "Lua.workspace.library",
+                [path.join(COMMAND_SETS, "tsp-lua-5.0")],
+                vscode.ConfigurationTarget.WorkspaceFolder,
+                folder,
+            )
+            const config_file_path = path.join(
+                folder.uri.path,
+                "/.vscode/tspConfig/config.tsp.json",
+            )
+            await onDidChangeTspConfigFile(vscode.Uri.file(config_file_path))
         }
     }
 }
