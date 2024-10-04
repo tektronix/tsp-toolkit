@@ -22,40 +22,45 @@ supported_models = supported_models.filter((model) => model !== "tsp-lua-5.0")
 export const RELATIVE_TSP_CONFIG_FILE_PATH = path.join(".vscode", "tspConfig")
 
 const tspSchemaContent = `{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "nodes": {
-      "type": "object",
-      "patternProperties": {
-        "^node\\\\d+$": {
-              "type": "object",
-              "properties": {
-                "model": {
-                  "type": "string",
-                  "enum": ${JSON.stringify(supported_models)}
-                },
-                "slots": {
-                  "type": "object",
-                  "patternProperties": {
-                    "^slot\\\\d+$": {
-                      "type": "string"
-                    }
-                  },
-                  "minProperties": 1
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "nodes": {
+            "type": "object",
+            "description": "Configuration for nodes in the TSP-Link network.\\n example: \\n \\"node1\\":{\\n\\t\\"model\\": \\"2460\\" \\n},\\n \\"node2\\":{\\n\\t\\"model\\": \\"2450\\" \\n}",
+            "patternProperties": {
+                "^node\\\\d+$": {
+                    "type": "object",
+                    "description": "node number for specific node \\n example:\\n node1",
+                    "properties": {
+                        "model": {
+                            "type": "string",
+                            "enum": ${JSON.stringify(supported_models)},
+                            "description": "The model of the node."
+                        },
+                        "slots": {
+                            "type": "object",
+                            "description": "Configuration for slots within the node.",
+                            "patternProperties": {
+                                "^slot\\\\d+$": {
+                                    "type": "string",
+                                    "description": "The type of module in the slot."
+                                }
+                            },
+                            "minProperties": 1
+                        }
+                    },
+                    "required": ["model"]
                 }
-              },
-              "required": ["model"]
             }
+        },
+        "self": {
+            "type": "string",
+            "enum": ${JSON.stringify(supported_models)},
+            "description": "The model of the current device or model of master node in TSP-Link network \\n example: \\n\\"self\\": \\"2450\\""
         }
-      },
-      "self": {
-        "type": "string",
-        "enum": ${JSON.stringify(supported_models)}
-      }
     }
-
-  }`
+}`
 
 const tspConfigJsonContent = `{
     "$schema": "./tspSchema.json",
@@ -109,7 +114,10 @@ function createTspFileFolder(folderPath: string) {
             }
 
             if (shouldUpdateSchema) {
-                await fs.promises.writeFile(tspSchema.fsPath, tspSchemaContent)
+                await vscode.workspace.fs.writeFile(
+                    tspSchema,
+                    Buffer.from(tspSchemaContent),
+                )
             }
         },
         async () => {
