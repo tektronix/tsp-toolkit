@@ -16,7 +16,7 @@ let supported_models: string[] = fs
     .readdirSync(COMMAND_SETS)
     .filter((folder) => fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory())
 
-// Remove "tsp-lua-5.0" from supported_models if it exists, because its a library
+// Remove "tsp-lua-5.0" from supported_models if it exists, because its am lua 5.0 library not a model
 supported_models = supported_models.filter((model) => model !== "tsp-lua-5.0")
 
 export const RELATIVE_TSP_CONFIG_FILE_PATH = path.join(".vscode", "tspConfig")
@@ -76,8 +76,34 @@ function createTspFileFolder(folderPath: string) {
     )
 
     vscode.workspace.fs.stat(nodeConfigFolderPath).then(
-        () => {
+        async () => {
             console.log("Folder already exists:", nodeConfigFolderPath.fsPath)
+            const tspSchema = vscode.Uri.file(
+                path.join(
+                    folderPath,
+                    RELATIVE_TSP_CONFIG_FILE_PATH,
+                    "tspSchema.json",
+                ),
+            )
+
+            // Check if tspSchema.json exists and its content
+            let shouldUpdateSchema = true
+            try {
+                const existingSchemaContent = await fs.promises.readFile(
+                    tspSchema.fsPath,
+                    "utf8",
+                )
+                if (existingSchemaContent === tspSchemaContent) {
+                    shouldUpdateSchema = false
+                }
+            } catch {
+                // File does not exist or cannot be read, so we should create/update it
+                shouldUpdateSchema = true
+            }
+
+            if (shouldUpdateSchema) {
+                await fs.promises.writeFile(tspSchema.fsPath, tspSchemaContent)
+            }
         },
         async () => {
             await fs.promises.mkdir(nodeConfigFolderPath.fsPath, {
