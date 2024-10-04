@@ -1,4 +1,5 @@
 import * as fs from "fs"
+import { nodesTableHeader } from "./workspaceManager"
 
 interface Slot {
     [slotNumber: string]: string
@@ -73,7 +74,7 @@ export function updateNodeDetails(
 ): void {
     // Read the file content
     // Write the updated content back to the file
-    fs.writeFileSync(file_path, node_details, "utf-8")
+    fs.writeFileSync(file_path, nodesTableHeader + node_details, "utf-8")
     console.log("File updated successfully.")
 }
 

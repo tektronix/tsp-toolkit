@@ -64,6 +64,13 @@ const tspConfigJsonContent = `{
     "self": ""
 }`
 
+export const nodesTableHeader = `
+-- !!! DO NOT EDIT !!! 
+-- Auto-generated script
+-- To enable language features for speciifc model, edit the config.tsp.json file in this folder.
+
+`
+
 /**
  * Create default ".vscode/tspConfig" folder in root level directory of workspace
  * if doesn't exist.
@@ -116,8 +123,10 @@ function createTspFileFolder(folderPath: string) {
                     "config.tsp.json",
                 ),
             )
-            await fs.promises.writeFile(tspconfig.fsPath, tspConfigJsonContent)
-
+            await vscode.workspace.fs.writeFile(
+                tspconfig,
+                Buffer.from(tspConfigJsonContent),
+            )
             const tspSchema = vscode.Uri.file(
                 path.join(
                     folderPath,
@@ -125,8 +134,10 @@ function createTspFileFolder(folderPath: string) {
                     "tspSchema.json",
                 ),
             )
-            await fs.promises.writeFile(tspSchema.fsPath, tspSchemaContent)
-
+            await vscode.workspace.fs.writeFile(
+                tspSchema,
+                Buffer.from(tspSchemaContent),
+            )
             const nodeTable = vscode.Uri.file(
                 path.join(
                     folderPath,
@@ -134,7 +145,10 @@ function createTspFileFolder(folderPath: string) {
                     "nodeTable.tsp",
                 ),
             )
-            await fs.promises.writeFile(nodeTable.fsPath, "")
+            await vscode.workspace.fs.writeFile(
+                nodeTable,
+                Buffer.from(nodesTableHeader),
+            )
         },
     )
 }
