@@ -20,6 +20,7 @@ import {
     updateNodeDetails,
 } from "./tspConfigJsonParser"
 import {
+    configure_initial_workspace_configurations,
     processWorkspaceFolders,
     RELATIVE_TSP_CONFIG_FILE_PATH,
     updateConfiguration,
@@ -164,15 +165,9 @@ export function activate(context: vscode.ExtensionContext) {
     //context.subscriptions.push(rclick)
 
     // call function which is required to call first time while activating the plugin
-    hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
-    void updateConfiguration(
-        "files.associations",
-        {
-            "*.tsp": "lua",
-        },
-        vscode.ConfigurationTarget.Global,
-    )
     void processWorkspaceFolders()
+    void configure_initial_workspace_configurations()
+    hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
 
     // Register a handler to process files whenever file is saved
     context.subscriptions.push(
@@ -261,7 +256,7 @@ function hookTspConfigFileChange(
  * Event listener for ".vscode/tspConfig/config.tsp.json"
  * @param uri text file uri
  */
-async function onDidChangeTspConfigFile(uri: vscode.Uri) {
+export async function onDidChangeTspConfigFile(uri: vscode.Uri) {
     void onDidSaveTextDocument(await vscode.workspace.openTextDocument(uri))
 }
 
@@ -294,7 +289,7 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                 if (workspace_path)
                     await updateConfiguration(
                         "Lua.workspace.library",
-                        undefined,
+                        [join(COMMAND_SETS, "tsp-lua-5.0")],
                         vscode.ConfigurationTarget.WorkspaceFolder,
                         workspace_path,
                         false,
@@ -346,6 +341,7 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
                 ),
                 nodeStr,
             )
+            new_library_settings.push(join(COMMAND_SETS, "tsp-lua-5.0")) // including Lua 5.0 definitions folder path
             await updateConfiguration(
                 "Lua.workspace.library",
                 new_library_settings,
