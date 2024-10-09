@@ -41,6 +41,9 @@
                 "id": "getting-started",
                 "title": "Getting Started with TSP Toolkit",
                 "description": "This guide will walk you through some setup and the features of the Keithley TSP™ Toolkit.",
+                "when": "true",
+                "icon": "./resources/TSP_Toolkit_128x128.png",
+                "featuredFor": ["**/*.tsp"],
                 "steps": [
                     {
                         "id": "windows-deps",
@@ -79,7 +82,7 @@
                     {
                         "id": "connect-instrument",
                         "title": "Connect to an Instrument",
-                        "description": "Connect to an instrument by opening the TSP view container and right-clicking on one of your discovered instruments.\nIf your instrument was not found due to network configuration but you know the IP address or the VISA connection string (if you have a VISA driver installed), you can use the `+` button to connect to it.",
+                        "description": "Connect to an instrument by opening the TSP view container and right-clicking on one of your discovered instruments.\nIf your instrument was not found due to network configuration but you know the IP address or the VISA connection string (if you have a VISA driver installed), you can use the ``+`` button to connect to it.",
                         "media": {
                             "image": "./resources/walkthrough/ConnectToInstrument.png",
                             "altText": "Open Instrument Explorer and Connect"
@@ -92,7 +95,7 @@
                     {
                         "id": "config-project",
                         "title": "Configure TSP Project",
-                        "description": "After opening your folder containing TSP files and connecting to your instrument of interest, open the file explorer and right-click on the `.vscode/tspConfig` folder and select **\"Fetch TSP-Link Nodes for Connected Instrument\"**.",
+                        "description": "After opening your folder containing TSP files and connecting to your instrument of interest, open the file explorer and right-click on the ``.vscode/tspConfig`` folder and select **\"Fetch TSP-Link Nodes for Connected Instrument\"**.",
                         "media": {
                             "image": "./resources/walkthrough/FetchConfig.png",
                             "altText": "Fetch Instrument Config"
@@ -117,7 +120,7 @@
                     {
                         "id": "using-terminal",
                         "title": "Using the Terminal",
-                        "description": "While connected to an instrument, you can use `.help` to view more terminal commands and `.exit` to close the connection.",
+                        "description": "While connected to an instrument, you can use ``.help`` to view more terminal commands and ``.exit`` to close the connection.",
                         "media": {
                             "image": "./resources/walkthrough/TerminalUsage.png",
                             "altText": "Open a TSP folder"
@@ -129,7 +132,7 @@
                     {
                         "id": "example-repo",
                         "title": "TSP Examples",
-                        "description": "To find TSP examples to get you started, you can visit the [Keithley GitHub Repository](https://github.com/tektronix/keithley/).\n1. You can select the `Application_Specific` or `Instrument_Examples` folder.\n 2. Navigate the folders to find example scripts.\n3. You can click on a script to view the code within Github. Select the download icon to download the script to your computer.\n4. After the download completes, copy the TSP file into your project folder.",
+                        "description": "To find TSP examples to get you started, you can visit the [Keithley GitHub Repository](https://github.com/tektronix/keithley/).\n1. You can select the ``Application_Specific`` or ``Instrument_Examples`` folder.\n 2. Navigate the folders to find example scripts.\n3. You can click on a script to view the code within Github. Select the download icon to download the script to your computer.\n4. After the download completes, copy the TSP file into your project folder.",
                         "media": {
                             "image": "./resources/walkthrough/TSPExampleRepo.png",
                             "altText": "The Keithley TSP Example Repo"
