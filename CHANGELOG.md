@@ -15,11 +15,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+
+
 ## [0.18.2]
 
 ### Added
 
 - Added walkthrough document
+- Added macOS support (LAN only)
 
 ### Changed
 

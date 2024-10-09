@@ -112,9 +112,11 @@ jobs:
             vscode-platform: win32-x64
             os: win32
             arch: x64
-          # - runner: macos-latest
-          #   triple: x86_64-apple-darwin
-          #   vscode-platform: darwin-arm64
+          - runner: macos-latest
+            triple: aarch64-apple-darwin
+            vscode-platform: darwin-arm64
+            os: darwin
+            arch: arm64
     runs-on: ${{matrix.runner}}
     steps:
       - name: Tool Versions
@@ -153,9 +155,11 @@ jobs:
             vscode-platform: win32-x64
             os: win32
             arch: x64
-          # - runner: macos-latest
-          #   triple: x86_64-apple-darwin
-          #   vscode-platform: darwin-arm64
+          - runner: macos-latest
+            triple: aarch64-apple-darwin
+            vscode-platform: darwin-arm64
+            os: darwin
+            arch: arm64
     needs:
       - compile
     container:
