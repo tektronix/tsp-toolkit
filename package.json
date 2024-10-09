@@ -36,6 +36,125 @@
     "license": "Apache-2.0",
     "main": "./out/extension.js",
     "contributes": {
+        "walkthroughs": [
+            {
+                "id": "getting-started",
+                "title": "Getting Started with TSP Toolkit",
+                "description": "This guide will walk you through some setup and the features of the Keithley TSP™ Toolkit.",
+                "steps": [
+                    {
+                        "id": "windows-deps",
+                        "title": "Install Dependencies",
+                        "description": "The Microsoft Windows version of this extension requires [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version) to be installed. If you don't have it installed, you will need to install it before instrument discovery or the terminal will work.",
+                        "media": {
+                            "markdown": "./resources/walkthrough/WindowsDeps.md"
+                        },
+                        "when": "isWindows",
+                        "completionEvents": [
+                            "onLink:https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version"
+                        ]
+                    },
+                    {
+                        "id": "linux-deps",
+                        "title": "Install Dependencies",
+                        "description": "",
+                        "media": {
+                            "markdown": "./example.md"
+                        },
+                        "when": "isLinux",
+                        "completionEvents": []
+                    },
+                    {
+                        "id": "open-tsp-folder",
+                        "title": "Open TSP Project Folder",
+                        "description": "Open a folder containing TSP files or open a folder and create TSP files within the folder.\n[Open Folder](command:vscode.openFolder)",
+                        "media": {
+                            "image": "./resources/walkthrough/OpenFolder.png",
+                            "altText": "Open a TSP folder"
+                        },
+                        "completionEvents": [
+                            "onCommand:vscode.openFolder"
+                        ]
+                    },
+                    {
+                        "id": "connect-instrument",
+                        "title": "Connect to an Instrument",
+                        "description": "Connect to an instrument by opening the TSP view container and right-clicking on one of your discovered instruments.\nIf your instrument was not found due to network configuration but you know the IP address or the VISA connection string (if you have a VISA driver installed), you can use the `+` button to connect to it.",
+                        "media": {
+                            "image": "./resources/walkthrough/ConnectToInstrument.png",
+                            "altText": "Open Instrument Explorer and Connect"
+                        },
+                        "completionEvents": [
+                            "onView:InstrumentsExplorer",
+                            "onCommand:tsp.openTerminalIP"
+                        ]
+                    },
+                    {
+                        "id": "config-project",
+                        "title": "Configure TSP Project",
+                        "description": "After opening your folder containing TSP files and connecting to your instrument of interest, open the file explorer and right-click on the `.vscode/tspConfig` folder and select **\"Fetch TSP-Link Nodes for Connected Instrument\"**.",
+                        "media": {
+                            "image": "./resources/walkthrough/FetchConfig.png",
+                            "altText": "Fetch Instrument Config"
+                        },
+                        "completionEvents": [
+                            "onView:Explorer",
+                            "onCommand:tsp.configureTspLanguage"
+                        ]
+                    },
+                    {
+                        "id": "run-script",
+                        "title": "Run TSP Script",
+                        "description": "While connected to an instrument with a TSP file open in an editor, either click on the play button in the upper-right of the editor or right-click in the editor and select \"Send Script to Terminal\".",
+                        "media": {
+                            "image": "./resources/walkthrough/RunTspScript.png",
+                            "altText": "Run a TSP script"
+                        },
+                        "completionEvents": [
+                            "onCommand:tsp.sendFile"
+                        ]
+                    },
+                    {
+                        "id": "using-terminal",
+                        "title": "Using the Terminal",
+                        "description": "While connected to an instrument, you can use `.help` to view more terminal commands and `.exit` to close the connection.",
+                        "media": {
+                            "image": "./resources/walkthrough/TerminalUsage.png",
+                            "altText": "Open a TSP folder"
+                        },
+                        "completionEvents": [
+                            "onStepSelected"
+                        ]
+                    },
+                    {
+                        "id": "example-repo",
+                        "title": "TSP Examples",
+                        "description": "To find TSP examples to get you started, you can visit the [Keithley GitHub Repository](https://github.com/tektronix/keithley/).\n1. You can select the `Application_Specific` or `Instrument_Examples` folder.\n 2. Navigate the folders to find example scripts.\n3. You can click on a script to view the code within Github. Select the download icon to download the script to your computer.\n4. After the download completes, copy the TSP file into your project folder.",
+                        "media": {
+                            "image": "./resources/walkthrough/TSPExampleRepo.png",
+                            "altText": "The Keithley TSP Example Repo"
+                        },
+                        "completionEvents": [
+                            "onLink:https://github.com/tektronix/keithley/"
+                        ]
+                    },
+                    {
+                        "id": "resources",
+                        "title": "Additional TSP Resources",
+                        "description": "- [Application Note: How to write scripts for TSP](https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp%29)\n- [TSP page on Tek.com](https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation)\n- [TSP video series](https://www.youtube.com/@tektronix/search?query=TSP)",
+                        "media": {
+                            "image": "./resources/walkthrough/TSPResources.png",
+                            "altText": "TSP Product Page"
+                        },
+                        "completionEvents": [
+                            "onLink:https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)",
+                            "onLink:https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation",
+                            "onLink:https://www.youtube.com/@tektronix/search?query=TSP"
+                        ]
+                    }
+                ]
+            }
+        ],
         "commands": [
             {
                 "command": "tsp.openTerminal",
@@ -46,7 +165,7 @@
                 "command": "tsp.sendFile",
                 "title": "Send Script to Terminal",
                 "category": "TSP",
-                 "icon": "$(run)"
+                "icon": "$(run)"
             },
             {
                 "command": "tsp.sendFileToAllInstr",
@@ -312,7 +431,6 @@
         ]
     },
     "scripts": {
-        "preinstall": "node scripts/link-dev-ki-comms.js",
         "pretest": "npm run compile && npm run lint",
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",
