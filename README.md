@@ -12,7 +12,7 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 ## Demo Video
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/d1jsgy6Dslc?si=oPrUgdM5yp-ykcIh" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<a href="https://www.youtube.com/watch?v=d1jsgy6Dslc"><img width="560" height="315" src="./resources/DemoVideoThumbnail_play.jpg" altText="TSP Toolkit Demo Video"></img></a>
 
 ## Installed Extensions
 
