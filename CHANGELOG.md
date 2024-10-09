@@ -27,6 +27,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Change TSP terminal icon to improve visibility
 
 ## [0.18.1]
+### Added
+- Support for lua 5.0 library
+
+### Changed
+- Updated sub commands help text
 
 ### Fixed
 
