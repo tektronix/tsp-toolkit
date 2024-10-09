@@ -4,7 +4,7 @@ import { EXECUTABLE } from "./kic-cli"
 
 import { CONNECTION_RE } from "./resourceManager"
 import { LOG_DIR } from "./utility"
-import { LoggerManager } from "./logging"
+//import { LoggerManager } from "./logging"
 
 export class TerminationManager {
     async terminateAllConn() {
@@ -64,8 +64,6 @@ export class TerminationManager {
         const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
         const ip = parts[2]
 
-        const logger = LoggerManager.instance().add_logger("TSP Terminal")
-
         const term = vscode.window.createTerminal({
             name: name,
             shellPath: EXECUTABLE,
@@ -75,8 +73,6 @@ export class TerminationManager {
                     LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
-                "--log-socket",
-                `${logger.host}:${logger.port}`,
                 "terminate",
                 "lan",
                 ip,

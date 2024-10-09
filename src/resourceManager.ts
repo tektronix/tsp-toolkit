@@ -5,7 +5,7 @@ import { ReadableStream } from "node:stream/web"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
-import { LoggerManager } from "./logging"
+//import { LoggerManager } from "./logging"
 
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
@@ -293,7 +293,6 @@ export class KicCell extends EventEmitter {
             connType,
             maxerr,
         )
-        const logger = LoggerManager.instance().add_logger("TSP Terminal")
 
         info = child
             .spawnSync(
@@ -304,8 +303,6 @@ export class KicCell extends EventEmitter {
                         LOG_DIR,
                         `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
-                    "--log-socket",
-                    `${logger.host}:${logger.port}`,
                     "info",
                     connType,
                     "--json",
@@ -346,8 +343,6 @@ export class KicCell extends EventEmitter {
                     LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
-                "--log-socket",
-                `${logger.host}:${logger.port}`,
                 "connect",
                 connType,
                 unique_id,
