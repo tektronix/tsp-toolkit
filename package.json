@@ -444,7 +444,6 @@
         "coverage": "nyc --nycrc-path='.nycrc.json' npm run test"
     },
     "devDependencies": {
-        "@cyclonedx/cyclonedx-npm": "1.19.3",
         "@istanbuljs/nyc-config-typescript": "1.0.2",
         "@types/chai": "4.3.18",
         "@types/mocha": "10.0.7",

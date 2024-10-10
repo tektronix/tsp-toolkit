@@ -52,6 +52,9 @@ jobs:
 
   sbom:
     name: Generate CycloneDX
+    # Temporarily skip this step because the cyclonedx package is has a vulnerability
+    # https://github.com/CycloneDX/cyclonedx-node-npm/issues/1224
+    if: false
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/tektronix/tsp-toolkit-build:latest
@@ -192,7 +195,7 @@ jobs:
     needs:
       - compile
       - test
-      - sbom
+      #- sbom
       - lint
       - style
     if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) && github.event.pull_request.merged ) }}
@@ -229,7 +232,7 @@ jobs:
     needs:
       - compile
       - test
-      - sbom
+      #- sbom
       - lint
       - style
     if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) || github.event.pull_request.merged ) }}
@@ -282,11 +285,11 @@ jobs:
           pattern: package-*
           merge-multiple: true
           path: extension
-      - name: Get SBOM
-        uses: actions/download-artifact@v4
-        with:
-          name: software-bom
-          path: sbom
+      #- name: Get SBOM
+      #  uses: actions/download-artifact@v4
+      #  with:
+      #    name: software-bom
+      #    path: sbom
       - name: Get Changelog for this Tag
         id: changelog
         uses: coditory/changelog-parser@v1
@@ -296,7 +299,8 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           name: ${{steps.lasttag.outputs.version}}
-          artifacts: "extension/*.vsix,sbom/**/*"
+          #artifacts: "extension/*.vsix,sbom/**/*"
+          artifacts: "extension/*.vsix"
           body: |
             ## Features Requests / Bugs
 
