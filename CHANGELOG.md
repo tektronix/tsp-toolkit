@@ -29,11 +29,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Change TSP view container icon to improve visibility
 - Change TSP terminal icon to improve visibility
 
+### Fixed
+
+- **tsp-toolkit-kic-cli**: Only call `readSTB` after a command or script is written to
+  the instrument
+
 ## [0.18.1]
+
 ### Added
+
 - Support for lua 5.0 library
 
 ### Changed
+
 - Updated sub commands help text
 
 ### Fixed
