@@ -7,10 +7,10 @@ enum LogLevel {
     DEBUG = 1,
     INFO = 2,
     WARN = 3,
-    CRITICAL = 4,
+    ERROR = 4,
 }
 
-const LOGLEVEL_PAD = 8
+const LOGLEVEL_PAD = 5
 
 function logLevelToString(level: LogLevel): string {
     switch (level) {
@@ -22,8 +22,8 @@ function logLevelToString(level: LogLevel): string {
             return "INFO"
         case LogLevel.WARN:
             return "WARN"
-        case LogLevel.CRITICAL:
-            return "CRITICAL"
+        case LogLevel.ERROR:
+            return "ERROR"
     }
 }
 export class Log {
@@ -31,8 +31,9 @@ export class Log {
      * Write a trace-level log to the log file.
      *
      * @param msg The message to write to the log file
+     * @param location The location in which the log took place
      */
-    public static trace(msg: string, location?: SourceLocation): void {
+    public static trace(msg: string, location: SourceLocation): void {
         Log.instance().writeln(new Date(), LogLevel.TRACE, msg, location)
     }
 
@@ -40,8 +41,9 @@ export class Log {
      * Write a debug-level log to the log file.
      *
      * @param msg The message to write to the log file
+     * @param location The location in which the log took place
      */
-    public static debug(msg: string, location?: SourceLocation): void {
+    public static debug(msg: string, location: SourceLocation): void {
         Log.instance().writeln(new Date(), LogLevel.DEBUG, msg, location)
     }
 
@@ -49,8 +51,9 @@ export class Log {
      * Write an info-level log to the log file.
      *
      * @param msg The message to write to the log file
+     * @param location The location in which the log took place
      */
-    public static info(msg: string, location?: SourceLocation): void {
+    public static info(msg: string, location: SourceLocation): void {
         Log.instance().writeln(new Date(), LogLevel.INFO, msg, location)
     }
 
@@ -58,8 +61,9 @@ export class Log {
      * Write a warning-level log to the log file.
      *
      * @param msg The message to write to the log file
+     * @param location The location in which the log took place
      */
-    public static warn(msg: string, location?: SourceLocation): void {
+    public static warn(msg: string, location: SourceLocation): void {
         Log.instance().writeln(new Date(), LogLevel.WARN, msg, location)
     }
 
@@ -67,9 +71,10 @@ export class Log {
      * Write a critical-level log to the log file.
      *
      * @param msg The message to write to the log file
+     * @param location The location in which the log took place
      */
-    public static crit(msg: string, location: SourceLocation): void {
-        Log.instance().writeln(new Date(), LogLevel.CRITICAL, msg, location)
+    public static error(msg: string, location?: SourceLocation): void {
+        Log.instance().writeln(new Date(), LogLevel.ERROR, msg, location)
     }
 
     private date: Date
@@ -138,7 +143,11 @@ export class Log {
     ): void {
         //2024-10-15T12:34:56.789Z [INFO ] source-file.ts@Class.functionName: Some message to write to the log file
         const content = `${timestamp.toISOString()} [${logLevelToString(level).padEnd(LOGLEVEL_PAD, " ")}] ${toString(location)}${msg}\n`
-        appendFileSync(this.file, content)
+        try {
+            appendFileSync(this.file, content)
+        } catch (err) {
+            console.error(err)
+        }
     }
 }
 

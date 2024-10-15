@@ -1,10 +1,10 @@
 import * as child from "child_process"
 import { join } from "path"
 import { EventEmitter } from "events"
-import { ReadableStream } from "node:stream/web"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
+import { Log, SourceLocation } from "./logging"
 //import { LoggerManager } from "./logging"
 
 export const CONNECTION_RE =
@@ -209,6 +209,11 @@ export class KicProcessMgr {
         maxerr?: number,
         filePath?: string,
     ): [info: string, verified_name?: string] {
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: `KicProcessMgr.createKicCell("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+        }
+        Log.trace("Creating Kic Cell", LOGLOC)
         const newCell = new KicCell()
         const [info, verified_name] = newCell.initialiseComponents(
             name,
@@ -221,12 +226,6 @@ export class KicProcessMgr {
         this.kicList.push(newCell)
         this.doReconnect = true
 
-        // newCell.on("closeTerminal", () => {
-        //     const idx = this.kicList.findIndex(
-        //         (x) => x.terminalPid == newCell.terminalPid
-        //     )
-        //     this.kicList.splice(idx)
-        // })
         return [info, verified_name]
     }
 
@@ -284,6 +283,11 @@ export class KicCell extends EventEmitter {
         filePath?: string,
     ): [info: string, verified_name?: string] {
         //#ToDo: need to verify if maxerr is required
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: `KicCell.initialiseComponents("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+        }
+        Log.trace("Initializing components", LOGLOC)
         this._uniqueID = unique_id
         let info = ""
         let verified_name: string | undefined = undefined
@@ -294,25 +298,32 @@ export class KicCell extends EventEmitter {
             maxerr,
         )
 
-        info = child
-            .spawnSync(
-                EXECUTABLE,
-                [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "info",
-                    connType,
-                    "--json",
-                    unique_id,
-                ],
-                {
-                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                },
-            )
-            .stdout.toString()
+        Log.trace("Getting instrument information", LOGLOC)
+        const info_proc = child.spawnSync(
+            EXECUTABLE,
+            [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "info",
+                connType,
+                "--json",
+                unique_id,
+            ],
+            {
+                env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+            },
+        )
+        const exit_code = info_proc.status
+
+        info = info_proc.stdout.toString()
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, information: ${info.trim()}`,
+            LOGLOC,
+        )
 
         if (info == "") return [info]
 
@@ -332,8 +343,10 @@ export class KicCell extends EventEmitter {
             )
             name = verified_name
             this._connDetails.Name = name
+            Log.trace(`Set name to "${name}"`, LOGLOC)
         }
 
+        Log.trace("Starting VSCode Terminal", LOGLOC)
         this._term = vscode.window.createTerminal({
             name: name,
             shellPath: EXECUTABLE,
@@ -370,6 +383,7 @@ export class KicCell extends EventEmitter {
         })
 
         vscode.window.onDidCloseTerminal((t) => {
+            Log.info("Terminal closed", LOGLOC)
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -380,6 +394,7 @@ export class KicCell extends EventEmitter {
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {
                 setTimeout(() => {
+                    Log.trace("Resetting closed instrument", LOGLOC)
                     child.spawnSync(EXECUTABLE, [
                         "-v",
                         "reset",
@@ -400,6 +415,7 @@ export class KicCell extends EventEmitter {
         }
 
         console.log(info)
+        Log.trace(`Connected to ${info.trim()}`, LOGLOC)
         return [info, verified_name]
     }
 

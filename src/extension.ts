@@ -45,6 +45,10 @@ export function createTerminal(
     model_serial?: string,
     command_text?: string,
 ): boolean {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: `createTerminal("${connection_string}", "${model_serial}", "${command_text}")`,
+    }
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
     let res: [string, string?] = ["", undefined]
     let ip = connection_string
@@ -55,7 +59,9 @@ export function createTerminal(
     }
 
     if (_connHelper.IPTest(ip)) {
+        Log.debug("Connection type was determined to be LAN", LOGLOC)
         //LAN
+        Log.trace("Creating terminal", LOGLOC)
         res = _activeConnectionManager?.createTerminal(
             name,
             IoType.Lan,
@@ -63,9 +69,16 @@ export function createTerminal(
             command_text,
         )
 
-        //const instr_to_save: string = "Lan:" + model_serial_no
+        Log.trace(
+            `createTerminal responded with '${res.toString().replace("\n", "").trim()}'`,
+            LOGLOC,
+        )
         const info = res[0].replace("\n", "")
         if (info == "") {
+            Log.trace(
+                "Unable to read response from createTerminal, could not connect to instrument",
+                LOGLOC,
+            )
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
@@ -74,8 +87,14 @@ export function createTerminal(
         name = res[1] == undefined ? name : res[1]
         const port_number = "5025"
 
+        Log.trace(
+            `Details from createTerminal - info: "${info}", name: "${name}"`,
+            LOGLOC,
+        )
+        Log.trace("Saving connection", LOGLOC)
         _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, port_number)
     } else {
+        Log.debug("Connection type was determined to be VISA", LOGLOC)
         //VISA
         //This only works if selected from Instrument discovery
         if (name == "") {
@@ -87,9 +106,14 @@ export function createTerminal(
             connection_string,
             command_text,
         )
+        Log.trace(`createTerminal responded with '${res.toString()}'`, LOGLOC)
 
         const info = res[0].replace("\n", "")
         if (info == "") {
+            Log.trace(
+                "Unable to read response from createTerminal, could not connect to instrument",
+                LOGLOC,
+            )
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
@@ -97,6 +121,12 @@ export function createTerminal(
         }
         name = res[1] == undefined ? name : res[1]
 
+        Log.trace(
+            `Details from createTerminal - info: "${info}", name: "${name}"`,
+            LOGLOC,
+        )
+
+        Log.trace("Saving connection", LOGLOC)
         _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
     }
     return true
@@ -256,7 +286,10 @@ function updateExtensionSettings() {
                             .getConfiguration("tsp")
                             .update(setting, undefined, true)
                             .then(() => {
-                                Log.info(`Setting \`${setting}\` removed`)
+                                Log.info(
+                                    `Setting \`${setting}\` removed`,
+                                    LOGLOC,
+                                )
                                 void vscode.window.showInformationMessage(
                                     "removed setting: " + setting,
                                 )
@@ -505,13 +538,31 @@ async function startRename(def: unknown): Promise<void> {
 }
 
 function connectCmd(def: object) {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: `connectCmd(${String(def)})`,
+    }
+
+    Log.trace("Fetching connection args", LOGLOC)
     const [connection_str, model_serial] =
         _instrExplorer.fetchConnectionArgs(def)
 
+    Log.trace(
+        `Connection string: '${connection_str}', Model serial: '${model_serial}'`,
+        LOGLOC,
+    )
+
     if (_activeConnectionManager?.connectionRE.test(connection_str)) {
+        Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
         createTerminal(connection_str, model_serial)
     } else {
-        void vscode.window.showErrorMessage("Unable to connect.")
+        Log.error(
+            "Connection string is invalid. Unable to connect to instrument.",
+            LOGLOC,
+        )
+        void vscode.window.showErrorMessage(
+            `Unable to connect. "${connection_str}" is not a valid connection string.`,
+        )
     }
 }
 
