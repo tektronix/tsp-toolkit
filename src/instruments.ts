@@ -18,6 +18,7 @@ import {
     KicProcessMgr,
 } from "./resourceManager"
 import { LOG_DIR } from "./utility"
+import { Log, SourceLocation } from "./logging"
 //import { LoggerManager } from "./logging"
 
 const DISCOVERY_TIMEOUT = 5
@@ -740,7 +741,12 @@ export class NewTDPModel {
 
     //add from connect
     public addFromConnectToSavedList(ioType: IoType, instr_details: InstrInfo) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: `NewTDPModel.addFromConnectToSavedList("${ioType.toString()}", "${String(instr_details)}")`,
+        }
         if (instr_details != undefined) {
+            Log.trace("Adding instrument to list", LOGLOC)
             this._savedNodeProvider?.saveInstrToList(
                 DiscoveryHelper.createUniqueID(instr_details),
             )
@@ -768,8 +774,11 @@ export class NewTDPModel {
                         saved_list ?? [],
                         true,
                     )
+                    break
             }
+            return
         }
+        Log.warn("Instrument details not provided", LOGLOC)
     }
 
     public addSavedList(instr: unknown) {
@@ -1223,6 +1232,11 @@ export class InstrTDP implements newTDP {
         ioType: IoType,
         instr_details: InstrInfo,
     ): void {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: `InstrTDP.saveInstrumentFromConnect("${ioType.toString()}", "${String(instr_details)}")`,
+        }
+        Log.trace("Add from connect to saved list", LOGLOC)
         this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
         this.reloadTreeData()
     }
@@ -1423,6 +1437,10 @@ export class InstrumentsExplorer {
         friendly_name: string,
         port: string | undefined,
     ) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: `InstrumentExplorer.saveWhileConnect("${ip}", "${ioType.toString()}", "${info}", "${friendly_name}", "${port}")`,
+        }
         const _info = <IIDNInfo>JSON.parse(info)
         const __info = new InstrInfo()
         __info.io_type = ioType
@@ -1438,7 +1456,7 @@ export class InstrumentsExplorer {
         const categ = instr_map.get(_info.model)
         if (categ != undefined) __info.instr_categ = categ
 
-        //FriendlyNameMgr.checkandAddFriendlyName(__info, friendly_name)
+        Log.trace("Saving Instrument", LOGLOC)
 
         this.treeDataProvider?.saveInstrumentFromConnect(ioType, __info)
     }

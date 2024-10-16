@@ -1,10 +1,10 @@
 import * as child from "child_process"
 import { join } from "path"
 import { EventEmitter } from "events"
-import { ReadableStream } from "node:stream/web"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
+import { Log, SourceLocation } from "./logging"
 //import { LoggerManager } from "./logging"
 
 export const CONNECTION_RE =
@@ -209,6 +209,11 @@ export class KicProcessMgr {
         maxerr?: number,
         filePath?: string,
     ): [info: string, verified_name?: string] {
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: `KicProcessMgr.createKicCell("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+        }
+        Log.trace("Creating Kic Cell", LOGLOC)
         const newCell = new KicCell()
         const [info, verified_name] = newCell.initialiseComponents(
             name,
@@ -221,12 +226,6 @@ export class KicProcessMgr {
         this.kicList.push(newCell)
         this.doReconnect = true
 
-        // newCell.on("closeTerminal", () => {
-        //     const idx = this.kicList.findIndex(
-        //         (x) => x.terminalPid == newCell.terminalPid
-        //     )
-        //     this.kicList.splice(idx)
-        // })
         return [info, verified_name]
     }
 
@@ -284,6 +283,11 @@ export class KicCell extends EventEmitter {
         filePath?: string,
     ): [info: string, verified_name?: string] {
         //#ToDo: need to verify if maxerr is required
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: `KicCell.initialiseComponents("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+        }
+        Log.trace("Initializing components", LOGLOC)
         this._uniqueID = unique_id
         let info = ""
         let verified_name: string | undefined = undefined
@@ -294,25 +298,32 @@ export class KicCell extends EventEmitter {
             maxerr,
         )
 
-        info = child
-            .spawnSync(
-                EXECUTABLE,
-                [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "info",
-                    connType,
-                    "--json",
-                    unique_id,
-                ],
-                {
-                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                },
-            )
-            .stdout.toString()
+        Log.trace("Getting instrument information", LOGLOC)
+        const info_proc = child.spawnSync(
+            EXECUTABLE,
+            [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "info",
+                connType,
+                "--json",
+                unique_id,
+            ],
+            {
+                env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+            },
+        )
+        const exit_code = info_proc.status
+
+        info = info_proc.stdout.toString()
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, information: ${info.trim()}`,
+            LOGLOC,
+        )
 
         if (info == "") return [info]
 
@@ -332,8 +343,10 @@ export class KicCell extends EventEmitter {
             )
             name = verified_name
             this._connDetails.Name = name
+            Log.trace(`Set name to "${name}"`, LOGLOC)
         }
 
+        Log.trace("Starting VSCode Terminal", LOGLOC)
         this._term = vscode.window.createTerminal({
             name: name,
             shellPath: EXECUTABLE,
@@ -370,6 +383,7 @@ export class KicCell extends EventEmitter {
         })
 
         vscode.window.onDidCloseTerminal((t) => {
+            Log.info("Terminal closed", LOGLOC)
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -380,6 +394,7 @@ export class KicCell extends EventEmitter {
                 t.exitStatus.reason !== vscode.TerminalExitReason.Process
             ) {
                 setTimeout(() => {
+                    Log.trace("Resetting closed instrument", LOGLOC)
                     child.spawnSync(EXECUTABLE, [
                         "-v",
                         "reset",
@@ -400,6 +415,7 @@ export class KicCell extends EventEmitter {
         }
 
         console.log(info)
+        Log.trace(`Connected to ${info.trim()}`, LOGLOC)
         return [info, verified_name]
     }
 
@@ -456,123 +472,6 @@ export class ConnectionHelper {
         }
         return null
     }
-
-    public myIPmap = new Map<
-        string,
-        { model: string; sn: string; port: string }
-    >()
-
-    public async getModelAndSerialNumber(
-        ip: string,
-    ): Promise<{ model: string; sn: string; port: string } | undefined> {
-        if (this.myIPmap.has(ip)) {
-            return this.myIPmap.get(ip)
-        }
-
-        const read = async (response: Response) => {
-            if (!response.ok) {
-                return new Promise<string>((_, reject) => {
-                    return reject(
-                        new ReferenceError(
-                            "did not receive instrument LXI information page",
-                        ),
-                    )
-                })
-            }
-            return response.body
-        }
-
-        try {
-            const response = await fetch("http://" + ip + "/lxi/identification")
-
-            const body = (await read(response)) as ReadableStream<string>
-            if (body === null) {
-                console.log("did not receive instrument LXI information")
-                return undefined
-            }
-            const model = new String(body)
-                .split("</Model>")[0]
-                .split("<Model>")[1]
-            const sn = new String(body)
-                .split("</SerialNumber>")[0]
-                .split("<SerialNumber>")[1]
-            // const portSplit = body.split("::SOCKET")[0].split("::")
-            const portNumber = "5025"
-            // if (portSplit.length > 0) {
-            //     portNumber = ":" + portSplit[portSplit.length - 1]
-            // }
-
-            const st = { model, sn, port: portNumber }
-            this.myIPmap.set(ip, st)
-            return st
-        } catch (err) {
-            console.log(err)
-            return undefined
-        }
-    }
-
-    // //#Todo: has zero references -- needs cleanup?
-    // public createTerminal(
-    //     kicProcessMgr: KicProcessMgr,
-    //     instrumentIp?: string,
-    //     usb_unique_string?: string,
-    //     filePath?: string,
-    // ) {
-    //     const maxerr: number =
-    //         vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
-    //     if (instrumentIp != undefined) {
-    //         const parts = instrumentIp.match(CONNECTION_RE)
-    //         if (parts == null) return
-    //         const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
-    //         const ip_addr = parts[2]
-    //         const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
-
-    //         /*
-    //     //If for UX reason we need to have unique named terminals we can use this code
-    //     if (this.checkForDuplicateTermName(name)) {
-    //         void vscode.window.showWarningMessage(
-    //             'Terminal name already exists, appending "(new)" to the name, please provide unique terminal names'
-    //         )
-    //         name += "(new)"
-    //     }*/
-    //         // term = vscode.window.createTerminal({
-    //         //     name: name,
-    //         //     shellPath: EXECUTABLE,
-    //         //     shellArgs: [
-    //         //         "connect",
-    //         //         "lan",
-    //         //         ip,
-    //         //         "--max-errors",
-    //         //         maxerr.toString(),
-    //         //     ],
-    //         //     iconPath: vscode.Uri.file("/keithley-logo.ico"),
-    //         // })
-
-    //         kicProcessMgr.createKicCell(name, ip, "lan", maxerr, filePath)
-    //     } else if (usb_unique_string != undefined) {
-    //         let unique_string = usb_unique_string
-    //         let name = "KIC"
-    //         const string_split = usb_unique_string.split("@")
-    //         if (string_split.length > 1) {
-    //             name = string_split[0]
-    //             unique_string = string_split[1]
-    //         }
-    //         kicProcessMgr.createKicCell(
-    //             name,
-    //             unique_string,
-    //             "usb",
-    //             undefined,
-    //             filePath,
-    //         )
-    //     }
-
-    //     // if (term != undefined) {
-    //     //     term.show()
-    //     //     if (filePath != undefined) {
-    //     //         term.sendText(filePath)
-    //     //     }
-    //     // }
-    // }
 }
 
 /**

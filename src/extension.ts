@@ -25,6 +25,7 @@ import {
     RELATIVE_TSP_CONFIG_FILE_PATH,
     updateConfiguration,
 } from "./workspaceManager"
+import { Log, SourceLocation } from "./logging"
 
 let _activeConnectionManager: CommunicationManager
 //let _terminationMgr: TerminationManager
@@ -44,6 +45,10 @@ export function createTerminal(
     model_serial?: string,
     command_text?: string,
 ): boolean {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: `createTerminal("${connection_string}", "${model_serial}", "${command_text}")`,
+    }
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
     let res: [string, string?] = ["", undefined]
     let ip = connection_string
@@ -54,7 +59,9 @@ export function createTerminal(
     }
 
     if (_connHelper.IPTest(ip)) {
+        Log.debug("Connection type was determined to be LAN", LOGLOC)
         //LAN
+        Log.trace("Creating terminal", LOGLOC)
         res = _activeConnectionManager?.createTerminal(
             name,
             IoType.Lan,
@@ -62,9 +69,16 @@ export function createTerminal(
             command_text,
         )
 
-        //const instr_to_save: string = "Lan:" + model_serial_no
+        Log.trace(
+            `createTerminal responded with '${res.toString().replace("\n", "").trim()}'`,
+            LOGLOC,
+        )
         const info = res[0].replace("\n", "")
         if (info == "") {
+            Log.trace(
+                "Unable to read response from createTerminal, could not connect to instrument",
+                LOGLOC,
+            )
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
@@ -73,8 +87,14 @@ export function createTerminal(
         name = res[1] == undefined ? name : res[1]
         const port_number = "5025"
 
+        Log.trace(
+            `Details from createTerminal - info: "${info}", name: "${name}"`,
+            LOGLOC,
+        )
+        Log.trace("Saving connection", LOGLOC)
         _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, port_number)
     } else {
+        Log.debug("Connection type was determined to be VISA", LOGLOC)
         //VISA
         //This only works if selected from Instrument discovery
         if (name == "") {
@@ -86,9 +106,14 @@ export function createTerminal(
             connection_string,
             command_text,
         )
+        Log.trace(`createTerminal responded with '${res.toString()}'`, LOGLOC)
 
         const info = res[0].replace("\n", "")
         if (info == "") {
+            Log.trace(
+                "Unable to read response from createTerminal, could not connect to instrument",
+                LOGLOC,
+            )
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
@@ -96,6 +121,12 @@ export function createTerminal(
         }
         name = res[1] == undefined ? name : res[1]
 
+        Log.trace(
+            `Details from createTerminal - info: "${info}", name: "${name}"`,
+            LOGLOC,
+        )
+
+        Log.trace("Saving connection", LOGLOC)
         _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
     }
     return true
@@ -103,37 +134,49 @@ export function createTerminal(
 
 // Called when the extension is activated.
 export function activate(context: vscode.ExtensionContext) {
+    const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "tspcomms" is now active!')
+    Log.info("TSP Toolkit activating", LOGLOC)
 
+    Log.trace("Updating extension settings", LOGLOC)
     updateExtensionSettings()
+
+    Log.trace("Starting ConnectionHelper", LOGLOC)
     _connHelper = new ConnectionHelper()
+
+    Log.trace("Starting KicProcessMgr", LOGLOC)
     _kicProcessMgr = new KicProcessMgr(_connHelper)
 
     // Create an object of Communication Manager
+    Log.trace("Starting CommunicationManager", LOGLOC)
     _activeConnectionManager = new CommunicationManager(
         context,
         _kicProcessMgr,
         _connHelper,
     )
     //_terminationMgr = new TerminationManager()
+    Log.trace("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context, _kicProcessMgr)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
+    Log.trace("Registering `tsp.openTerminal` command", LOGLOC)
     const openTerminal = vscode.commands.registerCommand(
         "tsp.openTerminal",
         pickConnection,
     )
 
+    Log.trace("Registering `InstrumentExplorer.connect` command", LOGLOC)
     const add_new_connection = vscode.commands.registerCommand(
         "InstrumentsExplorer.connect",
         async () => {
             await pickConnection("New Connection")
         },
     )
+
+    Log.trace("Setting up HelpDocumentWebView", LOGLOC)
     context.subscriptions.push(add_new_connection)
 
     HelpDocumentWebView.createOrShow(context)
@@ -153,7 +196,10 @@ export function activate(context: vscode.ExtensionContext) {
             },
     */
 
+    Log.trace("Registering `tsp.openTerminalIP` command", LOGLOC)
     vscode.commands.registerCommand("tsp.openTerminalIP", connectCmd)
+
+    Log.trace("Registering `InstrumentExplorer.rename` command", LOGLOC)
     vscode.commands.registerCommand("InstrumentsExplorer.rename", async (e) => {
         await startRename(e)
     })
@@ -164,9 +210,19 @@ export function activate(context: vscode.ExtensionContext) {
     //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
     //context.subscriptions.push(rclick)
 
+    Log.trace(
+        "Checking to see if workspace folder contains `*.tsp` files",
+        LOGLOC,
+    )
     // call function which is required to call first time while activating the plugin
     void processWorkspaceFolders()
+
+    Log.trace("Update local and global configuration for TSP", LOGLOC)
     void configure_initial_workspace_configurations()
+    Log.trace(
+        "Subscribing to TSP configuration changes in all workspace folders",
+        LOGLOC,
+    )
     hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
 
     // Register a handler to process files whenever file is saved
@@ -190,19 +246,30 @@ export function activate(context: vscode.ExtensionContext) {
         }),
     )
 
+    Log.info("TSP Toolkit activation complete", LOGLOC)
+
     return base_api
 }
 
 // Called when the extension is deactivated.
 export function deactivate() {
+    Log.info("Deactivating TSP Toolkit", {
+        file: "extensions.ts",
+        func: "deactivate()",
+    })
     /* empty */
 }
 
 function updateExtensionSettings() {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: "updateExtensionSettings()",
+    }
     const settingsList = ["connectionList", "savedInstrumentList"]
     settingsList.forEach((setting) => {
         if (vscode.workspace.getConfiguration("tsp").get(setting)) {
             console.log(setting)
+            Log.warn(`Found deprecated setting: \`${setting}\``, LOGLOC)
             void vscode.window
                 .showInformationMessage(
                     setting +
@@ -211,10 +278,18 @@ function updateExtensionSettings() {
                 )
                 .then((selection) => {
                     if (selection == "Remove") {
+                        Log.info(
+                            `User chose to remove \`${setting}\`. Removing.`,
+                            LOGLOC,
+                        )
                         void vscode.workspace
                             .getConfiguration("tsp")
                             .update(setting, undefined, true)
                             .then(() => {
+                                Log.info(
+                                    `Setting \`${setting}\` removed`,
+                                    LOGLOC,
+                                )
                                 void vscode.window.showInformationMessage(
                                     "removed setting: " + setting,
                                 )
@@ -463,13 +538,31 @@ async function startRename(def: unknown): Promise<void> {
 }
 
 function connectCmd(def: object) {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: `connectCmd(${String(def)})`,
+    }
+
+    Log.trace("Fetching connection args", LOGLOC)
     const [connection_str, model_serial] =
         _instrExplorer.fetchConnectionArgs(def)
 
+    Log.trace(
+        `Connection string: '${connection_str}', Model serial: '${model_serial}'`,
+        LOGLOC,
+    )
+
     if (_activeConnectionManager?.connectionRE.test(connection_str)) {
+        Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
         createTerminal(connection_str, model_serial)
     } else {
-        void vscode.window.showErrorMessage("Unable to connect.")
+        Log.error(
+            "Connection string is invalid. Unable to connect to instrument.",
+            LOGLOC,
+        )
+        void vscode.window.showErrorMessage(
+            `Unable to connect. "${connection_str}" is not a valid connection string.`,
+        )
     }
 }
 

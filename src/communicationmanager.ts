@@ -8,6 +8,7 @@ import {
     KicProcessMgr,
 } from "./resourceManager"
 import { createTerminal } from "./extension"
+import { Log, SourceLocation } from "./logging"
 
 export class CommunicationManager {
     public connectionRE = /(?:(\w+)@)?(\d+.*)/
@@ -143,11 +144,11 @@ export class CommunicationManager {
             kicTerminals.forEach((t) => {
                 const k: string =
                     t.name +
-                        "@" +
-                        (
-                            (t.creationOptions as vscode.TerminalOptions)
-                                ?.shellArgs as string[]
-                        )[1] ?? ""
+                    "@" +
+                    (
+                        (t.creationOptions as vscode.TerminalOptions)
+                            ?.shellArgs as string[]
+                    )[1]
                 kicDict[k] = t
             })
             if ((await vscode.window.showInputBox(options)) != undefined) {
@@ -181,6 +182,10 @@ export class CommunicationManager {
         address: string,
         filePath?: string,
     ): [info: string, verified_name?: string] {
+        const LOGLOC: SourceLocation = {
+            file: "extension.ts",
+            func: `CommunicationManager.createTerminal("${term_name}", "${connType.toString()}", "${address}", "${filePath ?? ""}")`,
+        }
         let res: [string, string?] = ["", undefined]
         const maxerr: number =
             vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
@@ -188,6 +193,7 @@ export class CommunicationManager {
         switch (connType) {
             case IoType.Lan:
                 {
+                    Log.trace("Connecting via LAN", LOGLOC)
                     const parts = address.match(CONNECTION_RE)
                     if (parts == null) return ["", undefined]
                     const ip_addr = parts[2]
@@ -203,6 +209,7 @@ export class CommunicationManager {
                 break
             case IoType.Usb:
                 {
+                    Log.trace("Connecting via USB", LOGLOC)
                     let unique_string = address
                     const string_split = address.split("@")
                     if (string_split.length > 1) {
@@ -219,6 +226,7 @@ export class CommunicationManager {
                 break
             case IoType.Visa:
                 {
+                    Log.trace("Connecting via VISA", LOGLOC)
                     let unique_string = address
                     const string_split = address.split("@")
                     if (string_split.length > 1) {
