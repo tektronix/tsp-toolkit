@@ -80,26 +80,28 @@ export class FriendlyNameMgr {
      * @returns - unique friendly name for given instrument
      */
     public static generateUniqueName(
-        io_type: IoType,
+        conn_type: string,
         model_serial: string | undefined,
     ): string {
         let unique_name = ""
         let found = false
+        const io_type: IoType = FriendlyNameMgr.getIoType(conn_type)
         const connections: Array<InstrInfo> =
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
             []
 
         if (connections.length > 0) {
-            connections.forEach((instr) => {
+            for (let i = 0; i < connections.length; i++) {
+                const instr = connections[i]
                 if (
                     io_type === instr.io_type &&
                     model_serial == instr.model + "#" + instr.serial_number
                 ) {
                     unique_name = instr.friendly_name
                     found = true
-                    return
+                    break
                 }
-            })
+            }
         }
 
         if (!found) {
@@ -114,6 +116,18 @@ export class FriendlyNameMgr {
             unique_name = uniqueString
         }
         return unique_name
+    }
+
+    private static getIoType(conn_type: string) {
+        let io_type: IoType
+        if (conn_type === "usb") {
+            io_type = IoType.Usb
+        } else if (conn_type === "lan") {
+            io_type = IoType.Lan
+        } else {
+            io_type = IoType.Visa
+        }
+        return io_type
     }
 
     /**
@@ -327,7 +341,7 @@ export class KicCell extends EventEmitter {
 
         if (name == "") {
             verified_name = FriendlyNameMgr.generateUniqueName(
-                IoType.Lan,
+                connType,
                 _info.model + "#" + _info.serial_number,
             )
             name = verified_name

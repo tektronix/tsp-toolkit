@@ -77,9 +77,9 @@ export function createTerminal(
     } else {
         //VISA
         //This only works if selected from Instrument discovery
-        if (name == "") {
-            name = FriendlyNameMgr.generateUniqueName(IoType.Visa, model_serial)
-        }
+        // if (name == "") {
+        //     name = FriendlyNameMgr.generateUniqueName(IoType.Visa, model_serial)
+        // }
         res = _activeConnectionManager?.createTerminal(
             name,
             IoType.Visa,

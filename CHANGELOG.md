@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.0.0]
+
+### Fixed
+
+- When entering only visa instrument address, connection is saved with correct model and serial number (TSP-839)
 
 ## [0.18.2]
 
