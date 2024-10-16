@@ -481,9 +481,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-linux-x64": "0.18.3-2",
-        "@tektronix/kic-cli-win32-x64": "0.18.3-2",
-        "@tektronix/kic-cli-darwin-arm64": "0.18.3-2"
+        "@tektronix/kic-cli-linux-x64": "0.18.3",
+        "@tektronix/kic-cli-win32-x64": "0.18.3",
+        "@tektronix/kic-cli-darwin-arm64": "0.18.3"
     },
     "extensionDependencies": [
         "sumneko.lua"
