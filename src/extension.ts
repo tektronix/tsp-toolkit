@@ -96,10 +96,6 @@ export function createTerminal(
     } else {
         Log.debug("Connection type was determined to be VISA", LOGLOC)
         //VISA
-        //This only works if selected from Instrument discovery
-        // if (name == "") {
-        //     name = FriendlyNameMgr.generateUniqueName(IoType.Visa, model_serial)
-        // }
         res = _activeConnectionManager?.createTerminal(
             name,
             IoType.Visa,
