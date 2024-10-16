@@ -16,12 +16,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
-## [1.0.0]
-
-### Fixed
-
-- When entering only visa instrument address, connection is saved with correct model and serial number (TSP-839)
-
 ## [0.18.2]
 
 ### Added
@@ -38,6 +32,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - **tsp-toolkit-kic-cli**: Only call `readSTB` after a command or script is written to
   the instrument
+- When entering only visa instrument address, connection is saved with correct model and serial number (TSP-839)
 
 ## [0.18.1]
 
