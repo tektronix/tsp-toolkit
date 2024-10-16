@@ -142,3 +142,4 @@ const log_path = PATHS.log
  * - **macOS**: ~/Library/Logs/tsp-toolkit
  */
 export const LOG_DIR = log_path
+export const COMMON_PATHS = PATHS

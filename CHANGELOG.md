@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Added walkthrough document
 - Added macOS support (LAN only)
+- Added file logging for extension code
 
 ### Changed
 
@@ -33,6 +34,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli**: Only call `readSTB` after a command or script is written to
   the instrument
 - When entering only visa instrument address, connection is saved with correct model and serial number (TSP-839)
+
+### Removed
+
+- Removed VSCode Output pane logging
 
 ## [0.18.1]
 
