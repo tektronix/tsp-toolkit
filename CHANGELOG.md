@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.0.0]
+
+### Fixed
+
+- Fix issue where connecting to an instrument can fail with a mysterious error message
+
 ## [0.18.2]
 
 ### Added
@@ -222,7 +228,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v0.18.2...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.0.0
 [0.18.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.2
 [0.18.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.1
 [0.18.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.0
