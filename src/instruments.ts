@@ -712,6 +712,8 @@ export class NewTDPModel {
                 // if any saved instrument is discovered and if the instrument address
                 // has changed, we need to update it
                 this.checkForSavedInstrIPChange()
+                    .then(() => {})
+                    .catch(() => {})
 
                 this.connection_list.forEach((instr) => {
                     const ret =
@@ -740,7 +742,10 @@ export class NewTDPModel {
     }
 
     //add from connect
-    public addFromConnectToSavedList(ioType: IoType, instr_details: InstrInfo) {
+    public async addFromConnectToSavedList(
+        ioType: IoType,
+        instr_details: InstrInfo,
+    ) {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: `NewTDPModel.addFromConnectToSavedList("${ioType.toString()}", "${String(instr_details)}")`,
@@ -752,7 +757,7 @@ export class NewTDPModel {
             )
             this.addToConnectionList(instr_details)
 
-            this.saveInstrInfoToPersist(instr_details)
+            await this.saveInstrInfoToPersist(instr_details)
 
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
@@ -781,7 +786,7 @@ export class NewTDPModel {
         Log.warn("Instrument details not provided", LOGLOC)
     }
 
-    public addSavedList(instr: unknown) {
+    public async addSavedList(instr: unknown) {
         const nodeToBeSaved = instr as IOInstrNode
         if (nodeToBeSaved != undefined) {
             this._savedNodeProvider?.saveInstrToList(
@@ -792,7 +797,7 @@ export class NewTDPModel {
             this.addToConnectionList(nodeToBeSaved.fetchInstrInfo())
             const saved_list = this._savedNodeProvider?.getSavedInstrList()
 
-            this.saveInstrInfoToPersist(nodeToBeSaved.fetchInstrInfo())
+            await this.saveInstrInfoToPersist(nodeToBeSaved.fetchInstrInfo())
 
             switch (nodeToBeSaved.FetchInstrIOType()) {
                 case IoType.Lan:
@@ -950,7 +955,7 @@ export class NewTDPModel {
      * Used to update saved instrument details if it is discovered with a
      * different instrument address
      */
-    private checkForSavedInstrIPChange() {
+    private async checkForSavedInstrIPChange() {
         for (let i = 0; i < this.discovery_list.length; i++) {
             for (let j = 0; j < this.connection_list.length; j++) {
                 if (
@@ -965,7 +970,7 @@ export class NewTDPModel {
                         this.discovery_list[i].instr_address
 
                     //also update persisted list in settings.json
-                    this.saveInstrInfoToPersist(this.connection_list[j])
+                    await this.saveInstrInfoToPersist(this.connection_list[j])
                     break
                 }
             }
@@ -1019,7 +1024,7 @@ export class NewTDPModel {
      *
      * @param instr - saved instrument that needs to stored and recalled
      */
-    private saveInstrInfoToPersist(instr: InstrInfo) {
+    private async saveInstrInfoToPersist(instr: InstrInfo) {
         try {
             const instrList: Array<InstrInfo> =
                 vscode.workspace
@@ -1038,7 +1043,7 @@ export class NewTDPModel {
             if (idx == -1) {
                 instrList.push(instr)
 
-                void config.update(
+                await config.update(
                     "savedInstruments",
                     instrList,
                     vscode.ConfigurationTarget.Global,
@@ -1056,7 +1061,7 @@ export class NewTDPModel {
                     doUpdate = true
                 }
                 if (doUpdate) {
-                    void config.update(
+                    await config.update(
                         "savedInstruments",
                         instrList,
                         vscode.ConfigurationTarget.Global,
@@ -1216,8 +1221,8 @@ export class InstrTDP implements newTDP {
      *
      * @param instr - instrument to be saved
      */
-    public saveInstrument(instr: unknown): void {
-        this.instrModel?.addSavedList(instr)
+    public async saveInstrument(instr: unknown): Promise<void> {
+        await this.instrModel?.addSavedList(instr)
         this.reloadTreeData()
     }
 
@@ -1228,16 +1233,16 @@ export class InstrTDP implements newTDP {
      * @param ioType - ioType can be lan, usb etc.
      * @param instr_details - additional info of instrument to be saved
      */
-    public saveInstrumentFromConnect(
+    public async saveInstrumentFromConnect(
         ioType: IoType,
         instr_details: InstrInfo,
-    ): void {
+    ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: `InstrTDP.saveInstrumentFromConnect("${ioType.toString()}", "${String(instr_details)}")`,
         }
         Log.trace("Add from connect to saved list", LOGLOC)
-        this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
+        await this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
         this.reloadTreeData()
     }
 
@@ -1322,8 +1327,8 @@ export class InstrumentsExplorer {
 
         const saveInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.save",
-            (e) => {
-                this.saveInstrument(e)
+            async (e) => {
+                await this.saveInstrument(e)
             },
         )
 
@@ -1430,7 +1435,7 @@ export class InstrumentsExplorer {
         await this.genericUpgradeFW(_e, 0)
     }
 
-    public saveWhileConnect(
+    public async saveWhileConnect(
         ip: string,
         ioType: IoType,
         info: string,
@@ -1458,11 +1463,11 @@ export class InstrumentsExplorer {
 
         Log.trace("Saving Instrument", LOGLOC)
 
-        this.treeDataProvider?.saveInstrumentFromConnect(ioType, __info)
+        await this.treeDataProvider?.saveInstrumentFromConnect(ioType, __info)
     }
 
-    private saveInstrument(instr: unknown) {
-        this.treeDataProvider?.saveInstrument(instr)
+    private async saveInstrument(instr: unknown) {
+        await this.treeDataProvider?.saveInstrument(instr)
     }
 
     //from connect

@@ -57,11 +57,16 @@ export class CommunicationManager {
     private async sendScript(_e: unknown) {
         const uriObject = _e as vscode.Uri
         const filePath = `.script "${uriObject.fsPath}"`
-        await this.handleSendTextToTerminal(filePath).then(() => {
-            void vscode.window.showInformationMessage(
-                "Sending script to terminal",
-            )
-        })
+        await this.handleSendTextToTerminal(filePath).then(
+            () => {
+                void vscode.window.showInformationMessage(
+                    "Sending script to terminal",
+                )
+            },
+            (reason) => {
+                void vscode.window.showErrorMessage(reason as string)
+            },
+        )
     }
 
     /**
@@ -119,16 +124,27 @@ export class CommunicationManager {
                         this._connHelper.instrConnectionStringValidator,
                 }
                 const Ip = await vscode.window.showInputBox(options)
+                let isConnSuccessful = false
+                let err_msg = ""
 
                 if (Ip == undefined) {
                     return Promise.reject(new Error("IP is undefined"))
                 } else {
-                    if (createTerminal(Ip, undefined, text))
-                        return Promise.resolve(true)
-                    else
-                        return Promise.reject(
-                            new Error("Unable to connect to instrument"),
-                        )
+                    await createTerminal(Ip, undefined, text).then(
+                        () => {
+                            isConnSuccessful = true
+                        },
+                        (reason) => {
+                            err_msg = reason as string
+                            isConnSuccessful = false
+                        },
+                    )
+                }
+
+                if (isConnSuccessful) {
+                    return Promise.resolve(true)
+                } else {
+                    return Promise.reject(new Error(err_msg))
                 }
             }
         } else if (kicTerminals.length === 1) {
