@@ -40,11 +40,11 @@ let _connHelper: ConnectionHelper
  * @param command_text command text that needs to send to terminal
  * @returns None
  */
-export function createTerminal(
+export async function createTerminal(
     connection_string: string,
     model_serial?: string,
     command_text?: string,
-): boolean {
+): Promise<boolean> {
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
         func: `createTerminal("${connection_string}", "${model_serial}", "${command_text}")`,
@@ -82,7 +82,7 @@ export function createTerminal(
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
-            return false
+            return Promise.reject(new Error("Unable to connect to instrument"))
         }
         name = res[1] == undefined ? name : res[1]
         const port_number = "5025"
@@ -92,7 +92,13 @@ export function createTerminal(
             LOGLOC,
         )
         Log.trace("Saving connection", LOGLOC)
-        _instrExplorer.saveWhileConnect(ip, IoType.Lan, info, name, port_number)
+        await _instrExplorer.saveWhileConnect(
+            ip,
+            IoType.Lan,
+            info,
+            name,
+            port_number,
+        )
     } else {
         Log.debug("Connection type was determined to be VISA", LOGLOC)
         //VISA
@@ -113,7 +119,7 @@ export function createTerminal(
             void vscode.window.showErrorMessage(
                 "Unable to connect to instrument",
             )
-            return false
+            return Promise.reject(new Error("Unable to connect to instrument"))
         }
         name = res[1] == undefined ? name : res[1]
 
@@ -123,9 +129,15 @@ export function createTerminal(
         )
 
         Log.trace("Saving connection", LOGLOC)
-        _instrExplorer.saveWhileConnect(ip, IoType.Visa, info, name, undefined)
+        await _instrExplorer.saveWhileConnect(
+            ip,
+            IoType.Visa,
+            info,
+            name,
+            undefined,
+        )
     }
-    return true
+    return Promise.resolve(true)
 }
 
 // Called when the extension is activated.
@@ -478,7 +490,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
                         (option) => option.label === selectedItem.label,
                     )
                 ) {
-                    createTerminal(selectedItem.label)
+                    await createTerminal(selectedItem.label)
                 } else {
                     const Ip = selectedItem.label
                     if (Ip === undefined) {
@@ -518,7 +530,7 @@ async function connect(
     }
 
     if (_activeConnectionManager?.connectionRE.test(Ip)) {
-        createTerminal(Ip, model_serial)
+        await createTerminal(Ip, model_serial)
     } else {
         void vscode.window.showErrorMessage("Bad connection string")
     }
@@ -550,7 +562,7 @@ function connectCmd(def: object) {
 
     if (_activeConnectionManager?.connectionRE.test(connection_str)) {
         Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
-        createTerminal(connection_str, model_serial)
+        void createTerminal(connection_str, model_serial)
     } else {
         Log.error(
             "Connection string is invalid. Unable to connect to instrument.",
