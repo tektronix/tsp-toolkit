@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 
 - Fix issue where connecting to an instrument can fail with a mysterious error message
+- Connection name needs to be same in Instruments pane, terminal and quick pick for a given instrument connection (TSP-839)
 
 ## [0.18.2]
 
