@@ -63,8 +63,11 @@ export class CommunicationManager {
                     "Sending script to terminal",
                 )
             },
-            (reason) => {
-                void vscode.window.showErrorMessage(reason as string)
+            (error: unknown) => {
+                const err_msg = (error as Error).message
+                void vscode.window.showErrorMessage(
+                    "Unable to send script to terminal. Error: " + err_msg,
+                )
             },
         )
     }
@@ -134,8 +137,8 @@ export class CommunicationManager {
                         () => {
                             isConnSuccessful = true
                         },
-                        (reason) => {
-                            err_msg = reason as string
+                        (error: unknown) => {
+                            err_msg = (error as Error).message
                             isConnSuccessful = false
                         },
                     )

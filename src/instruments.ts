@@ -824,10 +824,11 @@ export class NewTDPModel {
 
     //check for redundant entries
     public addToConnectionList(instr: InstrInfo) {
-        let res: InstrInfo | undefined = undefined
         let idx = -1
+        let status = "add_new"
         if (this.connection_list.length == 0) {
             this.connection_list.push(instr)
+            return
         } else {
             for (let i = 0; i < this.connection_list.length; i++) {
                 if (
@@ -839,23 +840,20 @@ export class NewTDPModel {
                         instr.instr_address
                     ) {
                         idx = i
-                        res = instr
+                        status = "update"
                         break
                     } else {
+                        status = "no_change"
                         break
                     }
-                } else {
-                    res = instr
                 }
             }
         }
 
-        if (res != undefined) {
-            if (idx > -1) {
-                this.connection_list[idx] = res
-            } else {
-                this.connection_list.push(res)
-            }
+        if (status == "add_new") {
+            this.connection_list.push(instr)
+        } else if (status == "update") {
+            this.connection_list[idx] = instr
         }
     }
 
