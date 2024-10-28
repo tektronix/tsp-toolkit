@@ -19,9 +19,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.0.0]
 
 ### Fixed
-
+- Fix issue with error propagation of send script to terminal command
 - Fix issue where connecting to an instrument can fail with a mysterious error message
-- Connection name needs to be same in Instruments pane, terminal and quick pick for a given instrument connection (TSP-839)
+- Connection name needs to be same in Instruments pane, terminal and quick pick for a given instrument connection
+- Add reset menu to reset instrument from the instruments list
+
 
 ## [0.18.2]
 

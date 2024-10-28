@@ -1,10 +1,9 @@
-# Keithley TSP® Toolkit Beta
+# Keithley TSP™ Toolkit
 
-Please note, this extension is still in Beta. We expect there will be issues or
-improvements. We would greatly appreciate any [feedback][tsp-toolkit-issues] on the GitHub repo for this
-project.
+This is an open source project from Keithley Instruments. We welcome
+any [feedback][tsp-toolkit-issues] on the GitHub repo for this project.
 
-The Keithley TSP® Toolkit is a [Visual Studio Code][code] extension that provides rich
+Keithley TSP™ Toolkit is a [Visual Studio Code][code] extension that provides rich
 support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
 scripts on TSP-enabled Keithley instruments. The extension includes command-set documentation and language features such as
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
@@ -29,7 +28,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 
     ![Open Folder][pic-open-folder]
 
-- **Step 4.** [Configure your project](#configure-your-project) for your [TSP-Link®][tsp-link] instrument configuration.
+- **Step 4.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
 - **Step 5.** Edit and run your TSP scripts by right-clicking them in the file explorer,
               file tabs, or editor window and selecting "Send Script to Terminal"
 
@@ -133,51 +132,21 @@ The extension is currently only available in English.
 
 ## Known Issues
 
-As a beta product, we expect there to be some issues with this software and some features
-may not be completed. Below is a list of known issues. If you come across new issues,
+We are constantly working to improve the stability and reliability of this software. Here
+are the known issues that we are working to fix.  If you come across new issues,
 please let us know! See the [next section](#questions-issues-feature-requests-and-contributions)
 for more information.
 
-- Saved instruments do not persist across VSCode sessions
-- Incomplete, incorrect, or missing command-sets, these items may be shown as errors in
-  the editor, but will run on any instrument on which they exist. These commands may not
-  be shown in completion suggestions or the completions may be incorrect.
-    - All instruments
-        - `acal.*`
-        - `beeper.*`
-        - `dataqueue.*`
-        - `display.*`
-        - `eventlog.*`
-        - `file.*`
-        - `fs.*`
-        - `lan.*`
-        - `status.*`
-        - `tsplink.*`
-        - `tspnet.*`
-        - `upgrade.*`
-        - `userstring.*`
-    - 2600-series instruments
-        - `bit.*`
-        - `errorqueue.*`
-        - `io.*`
-        - `serial.*`
-- Discovery feature updates the settings.json and discovery pane too frequently. This
-  causes tooltips to be closed too quickly and can also cause flickering.
-- Attempting to connect to an instrument multiple times with the different names, the
-  second connection will fail, but the name will change.
 - Due to limitations in instrument firmware, script names longer than 27 characters will
   be truncated to 27 characters. If multiple scripts have names that are the same up to
   the 27th character, the second script will overwrite the first.
-- If a terminal is closed using the trashcan icon, the instrument connection is not
-  closed correctly. In order to close the terminal so that the instrument connection
-  _is_ closed, type `.exit` into the terminal. It will close by itself after it cleans
-  up the connection.
 - The list of instruments that support language features is limited to the following:
     - 2450
     - 2460
     - 2461
     - 2470
     - 2601B
+    - 2601B-PULSE
     - 2602B
     - 2604B
     - 2611B
@@ -186,10 +155,11 @@ for more information.
     - 2634B
     - 2635B
     - 2636B
+    - 2651A
+    - 2657A
     - DMM7510
-- Flashing firmware to the 3706A, 707B, 708B, and 2600-series instruments is not
-  successful. This will NOT render the instrument inoperable, but will not complete
-  successfully.
+- Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
+  render the instrument inoperable, but will not complete successfully.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
