@@ -22,6 +22,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Fix issue with error propagation of send script to terminal command
 - Fix issue where connecting to an instrument can fail with a mysterious error message
 - Connection name needs to be same in Instruments pane, terminal and quick pick for a given instrument connection
+- Add reset menu to reset instrument from the instruments list
+
 
 ## [0.18.2]
 
