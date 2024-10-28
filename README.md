@@ -133,51 +133,20 @@ The extension is currently only available in English.
 
 ## Known Issues
 
-As a beta product, we expect there to be some issues with this software and some features
-may not be completed. Below is a list of known issues. If you come across new issues,
+Below is a list of known issues. If you come across new issues,
 please let us know! See the [next section](#questions-issues-feature-requests-and-contributions)
 for more information.
 
-- Saved instruments do not persist across VSCode sessions
-- Incomplete, incorrect, or missing command-sets, these items may be shown as errors in
-  the editor, but will run on any instrument on which they exist. These commands may not
-  be shown in completion suggestions or the completions may be incorrect.
-    - All instruments
-        - `acal.*`
-        - `beeper.*`
-        - `dataqueue.*`
-        - `display.*`
-        - `eventlog.*`
-        - `file.*`
-        - `fs.*`
-        - `lan.*`
-        - `status.*`
-        - `tsplink.*`
-        - `tspnet.*`
-        - `upgrade.*`
-        - `userstring.*`
-    - 2600-series instruments
-        - `bit.*`
-        - `errorqueue.*`
-        - `io.*`
-        - `serial.*`
-- Discovery feature updates the settings.json and discovery pane too frequently. This
-  causes tooltips to be closed too quickly and can also cause flickering.
-- Attempting to connect to an instrument multiple times with the different names, the
-  second connection will fail, but the name will change.
 - Due to limitations in instrument firmware, script names longer than 27 characters will
   be truncated to 27 characters. If multiple scripts have names that are the same up to
   the 27th character, the second script will overwrite the first.
-- If a terminal is closed using the trashcan icon, the instrument connection is not
-  closed correctly. In order to close the terminal so that the instrument connection
-  _is_ closed, type `.exit` into the terminal. It will close by itself after it cleans
-  up the connection.
 - The list of instruments that support language features is limited to the following:
     - 2450
     - 2460
     - 2461
     - 2470
     - 2601B
+    - 2601B-PULSE
     - 2602B
     - 2604B
     - 2611B
@@ -186,8 +155,10 @@ for more information.
     - 2634B
     - 2635B
     - 2636B
+    - 2651A
+    - 2657A
     - DMM7510
-- Flashing firmware to the 3706A, 707B, 708B, and 2600-series instruments is not
+- Flashing firmware to the 707B and 708B instruments is not
   successful. This will NOT render the instrument inoperable, but will not complete
   successfully.
 

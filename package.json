@@ -1,7 +1,7 @@
 {
     "name": "tsp-toolkit",
     "publisher": "Tektronix",
-    "displayName": "[Beta] Keithley TSP Toolkit",
+    "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
     "version": "1.0.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
