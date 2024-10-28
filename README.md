@@ -11,7 +11,7 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 ## Demo Video
 
-<a href="https://www.youtube.com/watch?v=d1jsgy6Dslc"><img width="560" height="315" src="./resources/DemoVideoThumbnail_play.jpg" altText="TSP Toolkit Demo Video"></img></a>
+<a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
 
 ## Installed Extensions
 
