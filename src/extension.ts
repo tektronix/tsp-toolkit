@@ -460,7 +460,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
         quickPick.placeholder = "Enter instrument IP in <insName>@<IP> format"
         if (options.length > 0) {
             quickPick.placeholder =
-                "Select connection from existing list or Enter instrument IP in <insName>@<IP> format"
+                "Select connection from existing list or enter instrument IP in <insName>@<IP> format"
         }
 
         quickPick.onDidChangeValue((value) => {
