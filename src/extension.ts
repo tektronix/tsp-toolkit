@@ -212,6 +212,10 @@ export function activate(context: vscode.ExtensionContext) {
         await startRename(e)
     })
 
+    vscode.commands.registerCommand("InstrumentsExplorer.reset", async (e) => {
+        await startReset(e)
+    })
+
     context.subscriptions.push(openTerminal)
 
     //TODO: Connect `.terminate` in ki-comms
@@ -266,6 +270,11 @@ export function deactivate() {
         func: "deactivate()",
     })
     /* empty */
+}
+
+//Request the instrument to be reset
+function startReset(def: unknown): Promise<void> {
+    return Promise.resolve(_instrExplorer.reset(def))
 }
 
 function updateExtensionSettings() {
@@ -460,7 +469,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
         quickPick.placeholder = "Enter instrument IP in <insName>@<IP> format"
         if (options.length > 0) {
             quickPick.placeholder =
-                "Select connection from existing list or Enter instrument IP in <insName>@<IP> format"
+                "Select connection from existing list or enter instrument IP in <insName>@<IP> format"
         }
 
         quickPick.onDidChangeValue((value) => {

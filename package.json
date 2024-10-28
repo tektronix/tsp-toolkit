@@ -1,7 +1,7 @@
 {
     "name": "tsp-toolkit",
     "publisher": "Tektronix",
-    "displayName": "[Beta] Keithley TSP Toolkit",
+    "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
     "version": "1.0.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
@@ -202,6 +202,10 @@
                 "title": "Rename"
             },
             {
+                "command": "InstrumentsExplorer.reset",
+                "title": "Reset"
+            },
+            {
                 "command": "InstrumentsExplorer.upgradeSlot1",
                 "title": "Upgrade Slot 1",
                 "category": "TSP"
@@ -360,6 +364,10 @@
                     "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
                 },
                 {
+                    "command": "InstrumentsExplorer.reset",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                },
+                {
                     "command": "tsp.openTerminalIP",
                     "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
                 },
@@ -481,9 +489,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-linux-x64": "0.18.4-0",
-        "@tektronix/kic-cli-win32-x64": "0.18.4-0",
-        "@tektronix/kic-cli-darwin-arm64": "0.18.4-0"
+        "@tektronix/kic-cli-linux-x64": "0.18.4",
+        "@tektronix/kic-cli-win32-x64": "0.18.4",
+        "@tektronix/kic-cli-darwin-arm64": "0.18.4"
     },
     "extensionDependencies": [
         "sumneko.lua"
