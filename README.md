@@ -158,7 +158,7 @@ for more information.
     - 2651A
     - 2657A
     - DMM7510
-- Upgrading firmware on the 707B and 708B instruments is not successful. This will NOT
+- Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
 
 <!--Refs-->
