@@ -1,10 +1,9 @@
-# Keithley TSP® Toolkit Beta
+# Keithley TSP™ Toolkit
 
-Please note, this extension is still in Beta. We expect there will be issues or
-improvements. We would greatly appreciate any [feedback][tsp-toolkit-issues] on the GitHub repo for this
-project.
+This is an open source project from Keithley Instruments. We welcome
+any [feedback][tsp-toolkit-issues] on the GitHub repo for this project.
 
-The Keithley TSP® Toolkit is a [Visual Studio Code][code] extension that provides rich
+Keithley TSP™ Toolkit is a [Visual Studio Code][code] extension that provides rich
 support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
 scripts on TSP-enabled Keithley instruments. The extension includes command-set documentation and language features such as
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
@@ -29,7 +28,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 
     ![Open Folder][pic-open-folder]
 
-- **Step 4.** [Configure your project](#configure-your-project) for your [TSP-Link®][tsp-link] instrument configuration.
+- **Step 4.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
 - **Step 5.** Edit and run your TSP scripts by right-clicking them in the file explorer,
               file tabs, or editor window and selecting "Send Script to Terminal"
 
@@ -133,7 +132,8 @@ The extension is currently only available in English.
 
 ## Known Issues
 
-Below is a list of known issues. If you come across new issues,
+We are constantly working to improve the stability and reliability of this software. Here
+are the known issues that we are working to fix.  If you come across new issues,
 please let us know! See the [next section](#questions-issues-feature-requests-and-contributions)
 for more information.
 
@@ -158,9 +158,8 @@ for more information.
     - 2651A
     - 2657A
     - DMM7510
-- Flashing firmware to the 707B and 708B instruments is not
-  successful. This will NOT render the instrument inoperable, but will not complete
-  successfully.
+- Upgrading firmware on the 707B and 708B instruments is not successful. This will NOT
+  render the instrument inoperable, but will not complete successfully.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
