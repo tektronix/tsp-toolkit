@@ -202,6 +202,10 @@
                 "title": "Rename"
             },
             {
+                "command": "InstrumentsExplorer.reset",
+                "title": "Reset"
+            },
+            {
                 "command": "InstrumentsExplorer.upgradeSlot1",
                 "title": "Upgrade Slot 1",
                 "category": "TSP"
@@ -358,6 +362,10 @@
                 {
                     "command": "InstrumentsExplorer.rename",
                     "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
+                },
+                {
+                    "command": "InstrumentsExplorer.reset",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
                 },
                 {
                     "command": "tsp.openTerminalIP",

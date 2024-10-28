@@ -1410,6 +1410,53 @@ export class InstrumentsExplorer {
         }
     }
 
+    public reset(item: unknown) {
+        const kicTerminals = vscode.window.terminals.filter((t) => {
+            const to = t.creationOptions as vscode.TerminalOptions
+            return to?.shellPath?.toString() === EXECUTABLE
+        })
+
+        const inputNode = item as IOInstrNode
+
+        if (kicTerminals.length == 0 && inputNode != undefined) {
+            //reset using the "kic reset" command
+            const connectionType = inputNode.FetchInstrIOType()
+            console.log(
+                "Connection address: " + inputNode.FetchConnectionAddr(),
+            )
+
+            let connection_type = "lan"
+            if (connectionType == IoType.Visa) {
+                connection_type = "visa"
+            }
+
+            //Start the connection process to reset
+            //The process is expected to exit after sending the cli reset command
+            cp.spawn(EXECUTABLE, [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "reset",
+                connection_type,
+                inputNode.FetchConnectionAddr(),
+            ])
+        } else {
+            //Use the existing terminal to reset
+            for (const kicCell of this._kicProcessMgr.kicList) {
+                if (inputNode != undefined) {
+                    if (
+                        inputNode.FetchConnectionAddr() ==
+                        kicCell.fetchConnAddr()
+                    ) {
+                        kicCell.sendTextToTerminal(".reset\n")
+                    }
+                }
+            }
+        }
+    }
+
     public fetchConnectionArgs(
         item: object,
     ): [connection_str: string, model_serial?: string] {

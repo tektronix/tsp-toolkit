@@ -212,6 +212,10 @@ export function activate(context: vscode.ExtensionContext) {
         await startRename(e)
     })
 
+    vscode.commands.registerCommand("InstrumentsExplorer.reset", async (e) => {
+        await startReset(e)
+    })
+
     context.subscriptions.push(openTerminal)
 
     //TODO: Connect `.terminate` in ki-comms
@@ -266,6 +270,11 @@ export function deactivate() {
         func: "deactivate()",
     })
     /* empty */
+}
+
+//Request the instrument to be reset
+function startReset(def: unknown): Promise<void> {
+    return Promise.resolve(_instrExplorer.reset(def))
 }
 
 function updateExtensionSettings() {
