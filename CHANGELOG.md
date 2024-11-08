@@ -16,6 +16,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.0.1]
+
+### Added
+
+- Added `tsp.dumpQueueOnConnect` setting to dump the instrument output queue before
+  clearing it so it can be printed when opening the terminal
+
 ## [1.0.0]
 
 ### Added
