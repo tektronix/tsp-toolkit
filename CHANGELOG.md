@@ -241,7 +241,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.0.1
 [1.0.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.0.0
 [0.18.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.2
 [0.18.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.1
