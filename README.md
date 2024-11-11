@@ -91,7 +91,7 @@ then it is possible to have TSP Toolkit automatically configure your project for
 
 ## Resources and Tutorials
 
-<!-- - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]-->
+- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
@@ -122,12 +122,6 @@ The extension is currently only available in English.
       feedback, please leave a 👍/👎 reaction on the issue. Otherwise please start a new
       [discussion][tsp-toolkit-discussions]
 - If on Windows, you must have [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170). Please ensure you have this installed.
-<!--
-- Contributions are always welcome! Please see our [contributing guide][tsp-toolkit-contributing]
-  for more details.
-- If you're interested in the development of the extension, your can read about our
-  [development process][tsp-toolkit-dev-process]
--->
 
 
 ## Known Issues
@@ -168,9 +162,9 @@ for more information.
 [sumneko]: https://marketplace.visualstudio.com/items?itemName=sumneko.lua
 [tsp-link]: https://www.tek.com/en/video/product-features/what-is-tsp-link
 [tsp-script-examples]: https://github.com/tektronix/keithley/
-<!--[tsp-toolkit-feature-walkthrough]: https://www.tek.com/-->
-[tsp-toolkit-marketplace]: https://code.visualstudio.com/docs/editor/extension-gallery
-<!--[tsp-toolkit]: https://www.tek.com/software/tsp-toolkit-->
+[tsp-toolkit-feature-walkthrough]: https://www.tek.com/en/documents/application-note/harness-the-power-of-tsp-toolkit-software
+[tsp-toolkit-marketplace]: https://marketplace.visualstudio.com/items?itemName=Tektronix.tsp-toolkit
+[tsp-toolkit]: https://www.tek.com/software/tsp-toolkit-scripting-tool
 [tsp-toolkit-issues]: https://github.com/tektronix/tsp-toolkit/issues
 [tsp-toolkit-contributing]: ./CONTRIBUTING.md
 [tsp-toolkit-discussions]: https://github.com/tektronix/tsp-toolkit/discussions
