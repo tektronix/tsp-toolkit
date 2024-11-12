@@ -145,6 +145,7 @@ export class Log {
         const content = `${timestamp.toISOString()} [${logLevelToString(level).padEnd(LOGLEVEL_PAD, " ")}] ${toString(location)}${msg}\n`
         try {
             appendFileSync(this.file, content)
+            console.log(content)
         } catch (err) {
             console.error(err)
         }

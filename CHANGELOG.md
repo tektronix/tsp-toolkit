@@ -18,9 +18,16 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.1.0]
 
+### Added
+
+- Added `tsp.dumpQueueOnConnect` setting to dump the instrument output queue before
+  clearing it so it can be printed when opening the terminal
+- Added progress indication to connection notification
+
 ### Fixed
 
 - Fixed Readme links and worked around markdown parser error
+
 
 ## [1.0.0]
 

@@ -62,7 +62,7 @@ export async function createTerminal(
         Log.debug("Connection type was determined to be LAN", LOGLOC)
         //LAN
         Log.trace("Creating terminal", LOGLOC)
-        res = _activeConnectionManager?.createTerminal(
+        res = await _activeConnectionManager?.createTerminal(
             name,
             IoType.Lan,
             connection_string,
@@ -102,7 +102,7 @@ export async function createTerminal(
     } else {
         Log.debug("Connection type was determined to be VISA", LOGLOC)
         //VISA
-        res = _activeConnectionManager?.createTerminal(
+        res = await _activeConnectionManager?.createTerminal(
             name,
             IoType.Visa,
             connection_string,
@@ -624,9 +624,9 @@ const base_api = {
         }
     },
 
-    restartConnAfterDbg(instr: ConnectionDetails) {
+    async restartConnAfterDbg(instr: ConnectionDetails) {
         if (instr != undefined) {
-            _kicProcessMgr.createKicCell(
+            await _kicProcessMgr.createKicCell(
                 instr.Name,
                 instr.ConnAddr,
                 instr.ConnType,

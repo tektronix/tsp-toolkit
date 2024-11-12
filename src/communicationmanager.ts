@@ -195,12 +195,12 @@ export class CommunicationManager {
      * @returns A tuple where the first element (string) is the *idn? info
      * and the second element (string | undefined) is system generated unique connection name if term_name is empty
      */
-    public createTerminal(
+    public async createTerminal(
         term_name: string,
         connType: IoType,
         address: string,
         filePath?: string,
-    ): [info: string, verified_name?: string] {
+    ): Promise<[info: string, verified_name?: string]> {
         const LOGLOC: SourceLocation = {
             file: "extension.ts",
             func: `CommunicationManager.createTerminal("${term_name}", "${connType.toString()}", "${address}", "${filePath ?? ""}")`,
@@ -217,7 +217,7 @@ export class CommunicationManager {
                     if (parts == null) return ["", undefined]
                     const ip_addr = parts[2]
                     const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
-                    res = this._kicProcessMgr.createKicCell(
+                    res = await this._kicProcessMgr.createKicCell(
                         term_name,
                         ip,
                         "lan",
@@ -234,7 +234,7 @@ export class CommunicationManager {
                     if (string_split.length > 1) {
                         unique_string = string_split[1]
                     }
-                    res = this._kicProcessMgr.createKicCell(
+                    res = await this._kicProcessMgr.createKicCell(
                         term_name,
                         unique_string,
                         "usb",
@@ -251,7 +251,7 @@ export class CommunicationManager {
                     if (string_split.length > 1) {
                         unique_string = string_split[1]
                     }
-                    res = this._kicProcessMgr.createKicCell(
+                    res = await this._kicProcessMgr.createKicCell(
                         term_name,
                         unique_string,
                         "visa",
