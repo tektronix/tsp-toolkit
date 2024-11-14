@@ -265,11 +265,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 // Called when the extension is deactivated.
 export function deactivate() {
-    Log.info("Deactivating TSP Toolkit", {
-        file: "extensions.ts",
-        func: "deactivate()",
-    })
-    /* empty */
+    const LOGLOC = { file: "extensions.ts", func: "deactivate()" }
+    Log.info("Deactivating TSP Toolkit", LOGLOC)
+    Log.trace("Closing all kic executables", LOGLOC)
+    _kicProcessMgr.dispose().then(
+        () => {
+            Log.info("Deactivation complete", LOGLOC)
+        },
+        () => {
+            Log.error("Deactivation had errors.")
+        },
+    )
 }
 
 //Request the instrument to be reset
