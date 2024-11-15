@@ -24,9 +24,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   clearing it so it can be printed when opening the terminal
 - Added progress indication to connection notification
 
+### Changed
+
+- Discover will use LXI identification page to get instrument information instead of `*IDN?`
+
 ### Fixed
 
 - Fixed Readme links and worked around markdown parser error
+- Close and reset instrument connections when extension is deactivated
 
 
 ## [1.0.0]

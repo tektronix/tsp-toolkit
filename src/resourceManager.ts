@@ -209,6 +209,15 @@ export class KicProcessMgr {
         this._connHelper = connHelper
     }
 
+    async dispose(): Promise<void> {
+        const disposer: Array<Promise<void>> = new Array<Promise<void>>()
+        for (const k of this.kicList) {
+            disposer.push(k.dispose())
+        }
+
+        await Promise.allSettled(disposer)
+    }
+
     /**
      * Used to establish a connection with an instrument
      *
@@ -295,6 +304,43 @@ export class KicCell extends EventEmitter {
 
     constructor() {
         super()
+    }
+
+    async dispose(): Promise<void> {
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: "KicCell.dispose()",
+        }
+        const pid = await this._term?.processId
+        if (pid !== undefined) {
+            Log.debug(`Killing PID ${pid}`, LOGLOC)
+            process.kill(pid)
+        }
+        this._term?.dispose()
+        this.reset()
+    }
+
+    private reset() {
+        const LOGLOC: SourceLocation = {
+            file: "resourceManager.ts",
+            func: "KicCell.reset()",
+        }
+        if (this._connDetails) {
+            Log.debug(
+                `Resetting instrument at ${this._connDetails.ConnAddr}`,
+                LOGLOC,
+            )
+            child.spawnSync(EXECUTABLE, [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "reset",
+                this._connDetails.ConnType,
+                this._connDetails.ConnAddr,
+            ])
+        }
     }
 
     /**
@@ -482,12 +528,7 @@ export class KicCell extends EventEmitter {
                     ) {
                         setTimeout(() => {
                             Log.trace("Resetting closed instrument", LOGLOC)
-                            child.spawnSync(EXECUTABLE, [
-                                "-v",
-                                "reset",
-                                connType,
-                                unique_id,
-                            ])
+                            this.reset()
                         }, 500)
                     }
                 })
