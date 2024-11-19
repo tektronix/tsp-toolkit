@@ -1446,10 +1446,7 @@ export class InstrumentsExplorer {
             //Use the existing terminal to reset
             for (const kicCell of this._kicProcessMgr.kicList) {
                 if (inputNode != undefined) {
-                    if (
-                        inputNode.FetchConnectionAddr() ==
-                        kicCell.fetchConnAddr()
-                    ) {
+                    if (inputNode.FetchConnectionAddr() == kicCell.connAddr) {
                         kicCell.sendTextToTerminal(".reset\n")
                     }
                 }
@@ -1558,10 +1555,7 @@ export class InstrumentsExplorer {
 
             for (const kicCell of this._kicProcessMgr.kicList) {
                 if (inputNode != undefined) {
-                    if (
-                        inputNode.FetchConnectionAddr() ==
-                        kicCell.fetchConnAddr()
-                    ) {
+                    if (inputNode.FetchConnectionAddr() == kicCell.connAddr) {
                         const fw_file = await vscode.window.showOpenDialog({
                             filters: {
                                 "All files (*.*)": ["*"],
