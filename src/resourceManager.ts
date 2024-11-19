@@ -214,7 +214,7 @@ export class KicProcessMgr {
             file: "resourceManager.ts",
             func: "KicProcessMgr.dispose()",
         }
-        Log.trace(`Disposing KicProcessMgr... List: ${this._kicList}`, LOGLOC)
+        Log.trace("Disposing KicProcessMgr...", LOGLOC)
         for (const k of this._kicList) {
             Log.trace(`Killing ${await k.terminalPid}: ${k.connAddr}`, LOGLOC)
             await k.dispose()
@@ -504,7 +504,7 @@ export class KicCell extends EventEmitter {
                     name: name,
                     shellPath: EXECUTABLE,
                     shellArgs: terminal_args,
-                    isTransient: true,// Don't try to reinitialize the terminal when restarting vscode
+                    isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
                     iconPath: {
                         light: vscode.Uri.file(
                             join(
