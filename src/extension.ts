@@ -608,7 +608,7 @@ const base_api = {
                 (x) => x.terminalPid == term_pid,
             )
 
-            const connDetails = kicCell?.fetchConnDetials()
+            const connDetails = kicCell?.connDetails
             kicCell?.sendTextToTerminal(".exit")
             let found = false
             await kicCell?.getTerminalState().then(

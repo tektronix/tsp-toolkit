@@ -198,7 +198,7 @@ export class ConnectionDetails {
  */
 export class KicProcessMgr {
     //kicList holds the up to date instrument connections
-    readonly kicList = new Array<KicCell>()
+    private _kicList = new Array<KicCell>()
     public debugTermPid: Thenable<number | undefined> | undefined
     public doReconnect = false
     private _reconnectInstrDetails: ConnectionDetails | undefined
@@ -210,12 +210,21 @@ export class KicProcessMgr {
     }
 
     async dispose(): Promise<void> {
-        const disposer: Array<Promise<void>> = new Array<Promise<void>>()
-        for (const k of this.kicList) {
-            disposer.push(k.dispose())
+        const LOGLOC = {
+            file: "resourceManager.ts",
+            func: "KicProcessMgr.dispose()",
+        }
+        Log.trace("Disposing KicProcessMgr...", LOGLOC)
+        for (const k of this._kicList) {
+            Log.trace(`Killing ${await k.terminalPid}: ${k.connAddr}`, LOGLOC)
+            await k.dispose()
         }
 
-        await Promise.allSettled(disposer)
+        Log.trace("KicProcessMgr Disposed...", LOGLOC)
+    }
+
+    public get kicList(): Array<KicCell> {
+        return this.kicList
     }
 
     /**
@@ -240,7 +249,7 @@ export class KicProcessMgr {
         }
         Log.trace("Creating Kic Cell", LOGLOC)
         const newCell = new KicCell()
-        const [info, verified_name] = await newCell.initialiseComponents(
+        const [info, verified_name] = await newCell.initializeComponents(
             name,
             unique_id,
             connType,
@@ -248,7 +257,7 @@ export class KicProcessMgr {
             filePath,
         )
         this.debugTermPid = newCell.terminalPid
-        this.kicList.push(newCell)
+        this._kicList.push(newCell)
         this.doReconnect = true
 
         return [info, verified_name]
@@ -313,7 +322,10 @@ export class KicCell extends EventEmitter {
         }
         const pid = await this._term?.processId
         if (pid !== undefined) {
-            Log.debug(`Killing PID ${pid}`, LOGLOC)
+            Log.trace(
+                `Killing PID ${pid}, connection to ${this.connAddr}`,
+                LOGLOC,
+            )
             process.kill(pid)
         }
         this._term?.dispose()
@@ -346,7 +358,7 @@ export class KicCell extends EventEmitter {
     /**
      * Used to create the components that establish communication with the instrument
      * */
-    public async initialiseComponents(
+    public async initializeComponents(
         name: string,
         unique_id: string,
         connType: string,
@@ -356,7 +368,7 @@ export class KicCell extends EventEmitter {
         //#ToDo: need to verify if maxerr is required
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
-            func: `KicCell.initialiseComponents("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+            func: `KicCell.initializeComponents("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
         }
         return await vscode.window.withProgress(
             {
@@ -415,7 +427,7 @@ export class KicCell extends EventEmitter {
                 }
 
                 progress.report({
-                    increment: 50,
+                    increment: 37,
                     message: "Getting instrument information",
                 })
                 Log.trace("Getting instrument information", LOGLOC)
@@ -492,6 +504,7 @@ export class KicCell extends EventEmitter {
                     name: name,
                     shellPath: EXECUTABLE,
                     shellArgs: terminal_args,
+                    isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
                     iconPath: {
                         light: vscode.Uri.file(
                             join(
@@ -546,7 +559,7 @@ export class KicCell extends EventEmitter {
                 Log.trace(`Connected to ${info.trim()}`, LOGLOC)
 
                 progress.report({
-                    increment: 40,
+                    increment: 53,
                     message: `Connected to instrument with model ${_info.model} and S/N ${_info.serial_number}`,
                 })
                 return new Promise((resolve) => resolve([info, verified_name]))
@@ -572,7 +585,7 @@ export class KicCell extends EventEmitter {
         }, 0)
     }
 
-    public fetchConnAddr(): string {
+    public get connAddr(): string {
         return this._uniqueID
     }
 
@@ -580,7 +593,7 @@ export class KicCell extends EventEmitter {
         this._term?.sendText(input)
     }
 
-    public fetchConnDetials(): ConnectionDetails | undefined {
+    public get connDetails(): ConnectionDetails | undefined {
         return this._connDetails
     }
 }
