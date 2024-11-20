@@ -224,7 +224,7 @@ export class KicProcessMgr {
     }
 
     public get kicList(): Array<KicCell> {
-        return this.kicList
+        return this._kicList
     }
 
     /**
@@ -396,7 +396,6 @@ export class KicCell extends EventEmitter {
                         .get("dumpQueueOnConnect")
                 ) {
                     progress.report({
-                        increment: 0,
                         message: "Dumping data from instrument output queue",
                     })
                     Log.info(
@@ -427,7 +426,6 @@ export class KicCell extends EventEmitter {
                 }
 
                 progress.report({
-                    increment: 37,
                     message: "Getting instrument information",
                 })
                 Log.trace("Getting instrument information", LOGLOC)
@@ -495,7 +493,6 @@ export class KicCell extends EventEmitter {
                 }
 
                 progress.report({
-                    increment: 10,
                     message: `Connecting to instrument with model ${_info.model} and S/N ${_info.serial_number}`,
                 })
 
@@ -559,7 +556,6 @@ export class KicCell extends EventEmitter {
                 Log.trace(`Connected to ${info.trim()}`, LOGLOC)
 
                 progress.report({
-                    increment: 53,
                     message: `Connected to instrument with model ${_info.model} and S/N ${_info.serial_number}`,
                 })
                 return new Promise((resolve) => resolve([info, verified_name]))
