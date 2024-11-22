@@ -69,13 +69,6 @@ const tspConfigJsonContent = `{
     "self": ""
 }`
 
-export const nodesTableHeader = `
--- !!! DO NOT EDIT !!! 
--- Auto-generated script
--- To enable language features for specific model, edit the config.tsp.json file in this folder.
-
-`
-
 /**
  * Create default ".vscode/tspConfig" folder in root level directory of workspace
  * if doesn't exist.
@@ -145,17 +138,6 @@ function createTspFileFolder(folderPath: string) {
             await vscode.workspace.fs.writeFile(
                 tspSchema,
                 Buffer.from(tspSchemaContent),
-            )
-            const nodeTable = vscode.Uri.file(
-                path.join(
-                    folderPath,
-                    RELATIVE_TSP_CONFIG_FILE_PATH,
-                    "nodeTable.tsp",
-                ),
-            )
-            await vscode.workspace.fs.writeFile(
-                nodeTable,
-                Buffer.from(nodesTableHeader),
             )
         },
     )

@@ -1,5 +1,4 @@
 import * as fs from "fs"
-import { nodesTableHeader } from "./workspaceManager"
 
 interface Slot {
     [slotNumber: string]: string
@@ -61,21 +60,6 @@ export function getNodeDetails(filePath: string): Record<string, string[]> {
     }
 
     return output
-}
-
-/**
- * Update node details in provide lua file
- * @param file_path file path
- * @param node_details node details
- */
-export function updateNodeDetails(
-    file_path: string,
-    node_details: string,
-): void {
-    // Read the file content
-    // Write the updated content back to the file
-    fs.writeFileSync(file_path, nodesTableHeader + node_details, "utf-8")
-    console.log("File updated successfully.")
 }
 
 export function getClassName(file_path: string): string {
