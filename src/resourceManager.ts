@@ -21,6 +21,10 @@ export interface IIDNInfo {
     firmware_rev: string
 }
 
+export function idn_to_string(idn: IIDNInfo): string {
+    return `${idn.vendor},${idn.model},${idn.serial_number},${idn.firmware_rev}`
+}
+
 export enum IoType {
     Lan = "Lan",
     Usb = "Usb",

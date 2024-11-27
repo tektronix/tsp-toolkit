@@ -12,6 +12,7 @@ import { plainToInstance } from "class-transformer"
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "./kic-cli"
 import {
     FriendlyNameMgr,
+    idn_to_string,
     IIDNInfo,
     InstrInfo,
     IoType,
@@ -639,8 +640,294 @@ class SavedNodeProvider implements IRootNodeProvider {
     }
 }
 
+/**
+ * The possible statuses of a connection interface/protocol
+ */
+export enum ConnectionStatus {
+    /**
+     * This connection interface was deemed inactive and will not respond to connection attempts
+     */
+    Inactive,
+    /**
+     * This connection interface was deemed active and will respond to connection attempts
+     */
+    Active,
+    /**
+     * This connection interface was deemed connected and already has a terminal associated with it
+     */
+    Connected,
+}
+
+/**
+ * A tree item that holds the details of an instrument connection interface/protocol
+ */
+export class Connection extends vscode.TreeItem {
+    private _type: IoType = IoType.Lan
+    private _addr: string = ""
+    private _status: ConnectionStatus = ConnectionStatus.Inactive
+
+    constructor(conn_type: IoType, addr: string) {
+        super(addr, vscode.TreeItemCollapsibleState.None)
+        this._type = conn_type
+        this._addr = addr
+        this.iconPath = new vscode.ThemeIcon("pass")
+    }
+
+    get type(): IoType {
+        return this._type
+    }
+
+    get addr(): string {
+        return this._addr
+    }
+
+    get status(): ConnectionStatus {
+        return this._status
+    }
+
+    set status(status: ConnectionStatus) {
+        switch (status) {
+            case ConnectionStatus.Inactive:
+                this.iconPath = new vscode.ThemeIcon("warning")
+                break
+            case ConnectionStatus.Active:
+                this.iconPath = new vscode.ThemeIcon("pass")
+                break
+            case ConnectionStatus.Connected:
+                this.iconPath = new vscode.ThemeIcon("pass-filled")
+                break
+        }
+        this._status = status
+    }
+}
+
+/**
+ * An Iterable list of connection interfaces
+ */
+export class ConnectionList
+    extends vscode.TreeItem
+    implements Iterable<Connection, unknown, unknown>
+{
+    private connection_set: Set<Connection> = new Set()
+    constructor(iterable?: Iterable<Connection> | null | undefined) {
+        super("Available Connections", vscode.TreeItemCollapsibleState.Expanded)
+        this.connection_set = new Set(iterable)
+    }
+
+    [Symbol.iterator](): Iterator<Connection, unknown, unknown> {
+        return this.connection_set[Symbol.iterator]()
+    }
+
+    as_array(): Connection[] {
+        return Array.from(this.connection_set.values())
+    }
+
+    add(connection: Connection) {
+        this.connection_set.add(connection)
+    }
+
+    get set(): Set<Connection>
+        return this.connection_set
+    }
+}
+
+/**
+ * A class used to indicate the start of the Inactive Instruments section of the instrument
+ * list. This class stores no data and is simply a sentinel.
+ */
+export class InactiveInstrumentList extends vscode.TreeItem {
+    constructor() {
+        super("Offline Instruments", vscode.TreeItemCollapsibleState.Collapsed)
+    }
+}
+
+/**
+ * Information describing an instrument that is either saved or discovered.
+ */
+export class Instrument extends vscode.TreeItem {
+    private _name: string = ""
+    private _connections: ConnectionList = new ConnectionList()
+    private _info: IIDNInfo = {
+        vendor: "",
+        model: "",
+        serial_number: "",
+        firmware_rev: "",
+    }
+
+    constructor(info: IIDNInfo, name?: string) {
+        if (!name) {
+            name = `${info.model}#${info.serial_number}`
+        }
+        super(name, vscode.TreeItemCollapsibleState.Collapsed)
+        this.description = idn_to_string(info)
+        this._info = info
+        this._name = name
+    }
+
+    get name(): string {
+        return this._name
+    }
+
+    set name(name: string) {
+        this._name = name
+    }
+
+    get info(): IIDNInfo {
+        return this._info
+    }
+
+    get connections(): ConnectionList {
+        return this._connections
+    }
+
+    /**
+     * Gets the ConnectionStatus of the instrument by calling `this.updateStatus`.
+     * @see updateStatus()
+     */
+    get status(): ConnectionStatus {
+        return this.updateStatus()
+    }
+
+    /**
+     * @param connection A new connection interface to add to this instrument
+     */
+    addConnection(connection: Connection) {
+        this._connections.add(connection)
+    }
+
+    /**
+     * Update the status of this Instrument by going through each connection interface
+     * and then determining the overall status of this instrument:
+     *
+     * @returns ConnectionStatus.Connected if any connections are Connected.
+     * @returns ConnectionStatus.Active if no connections are Connected but at least 1 is Active.
+     * @returns ConnectionStatus.Inactive otherwise.
+     */
+    updateStatus(): ConnectionStatus {
+        let status = ConnectionStatus.Inactive
+        for (const c of this._connections) {
+            if (c.status == ConnectionStatus.Active) {
+                status = c.status //If at least one connection is active, we show "Active"
+            } else if (c.status == ConnectionStatus.Connected) {
+                status = c.status
+                break //If any of the connections are connected, we show "Connected"
+            }
+        }
+
+        switch (status) {
+            case ConnectionStatus.Inactive:
+                this.iconPath = new vscode.ThemeIcon("warning")
+                break
+            case ConnectionStatus.Active:
+                this.iconPath = new vscode.ThemeIcon("pass")
+                break
+            case ConnectionStatus.Connected:
+                this.iconPath = new vscode.ThemeIcon("pass-filled")
+                break
+        }
+
+        return status
+    }
+}
+
+export class InstrumentTreeDataProvider
+    implements
+        vscode.TreeDataProvider<
+            Instrument | Connection | ConnectionList | InactiveInstrumentList
+        >
+{
+    private _instruments: Instrument[] = []
+
+    addOrUpdateInstrument(instrument: Instrument) {
+        for (const i of this._instruments) {
+            if (i.info.serial_number == instrument.info.serial_number){
+                i.connections.set.union(instrument.connections.set)
+            }
+        }
+    }
+
+
+    onDidChangeTreeData?:
+        | vscode.Event<
+              | void
+              | Instrument
+              | Connection
+              | ConnectionList
+              | InactiveInstrumentList
+              | (
+                    | Instrument
+                    | Connection
+                    | ConnectionList
+                    | InactiveInstrumentList
+                )[]
+              | null
+              | undefined
+          >
+        | undefined
+
+    getTreeItem(
+        element:
+            | Instrument
+            | Connection
+            | ConnectionList
+            | InactiveInstrumentList,
+    ): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        return element
+    }
+
+    getChildren(
+        element?:
+            | Instrument
+            | Connection
+            | ConnectionList
+            | InactiveInstrumentList
+            | undefined,
+    ): vscode.ProviderResult<
+        (Instrument | Connection | ConnectionList | InactiveInstrumentList)[]
+    > {
+        if (!element) {
+            return new Promise((resolve) => {
+                resolve([
+                    ...this._instruments.filter(
+                        (x) =>
+                            x.status == ConnectionStatus.Active ||
+                            x.status == ConnectionStatus.Connected,
+                    ),
+                    new InactiveInstrumentList(),
+                ])
+            })
+        }
+        if (element instanceof Instrument) {
+            return new Promise((resolve) => {
+                resolve([element.connections])
+            })
+        }
+        if (element instanceof ConnectionList) {
+            return new Promise((resolve) => {
+                resolve(element.as_array())
+            })
+        }
+        if (element instanceof Connection) {
+            return new Promise((resolve) => {
+                resolve([])
+            })
+        }
+        if (element instanceof InactiveInstrumentList) {
+            return new Promise((resolve) => {
+                resolve([
+                    ...this._instruments.filter(
+                        (x) => x.status == ConnectionStatus.Inactive,
+                    ),
+                ])
+            })
+        }
+        throw new Error("Method not implemented.")
+    }
+}
+
 export class NewTDPModel {
     //#region private variables
+
     private discovery_list: InstrInfo[] = []
     private connection_list: InstrInfo[] = []
     private node_providers: IRootNodeProvider[] = []
@@ -1135,6 +1422,16 @@ export class NewTDPModel {
     }
     //#endregion
 }
+
+/**
+ *  - NAME
+ *      - Connection Info
+ *          VISA1
+ *          VISA2
+ *          RAW SOCKET
+ *      Model: ____
+ *      SN: _____
+ */
 
 type newTDP = vscode.TreeDataProvider<InstrNode>
 
