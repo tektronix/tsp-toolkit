@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.1.1]
+
+### Added
+- support dynamically creating enums for configured nodes
+
 ## [1.1.0]
 
 ### Added

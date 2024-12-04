@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           npm install
       - name: Run eslint
         run: 'npx eslint --rule "{ prettier/prettier: off }" src'
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Tools
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           npm ci --devDependencies
       - name: Generate NPM BOM
         run: npx @cyclonedx/cyclonedx-npm --output-format JSON --package-lock-only --output-reproducible --output-file npm.cdx.json
@@ -93,7 +93,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           npm install
       - name: Run Tests with Coverage
         run: npx nyc --nycrc-path=.nycrc.json npm run test-ci
@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           npm install
       - name: Build
         run: npm run compile
