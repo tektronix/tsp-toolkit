@@ -1,6 +1,4 @@
-import { mkdtempSync } from "node:fs"
 import { join } from "node:path"
-import { tmpdir } from "node:os"
 import * as child from "node:child_process"
 import { EventEmitter } from "node:events"
 import * as vscode from "vscode"
@@ -27,7 +25,6 @@ export function idn_to_string(idn: IIDNInfo): string {
 
 export enum IoType {
     Lan = "Lan",
-    Usb = "Usb",
     Visa = "Visa",
 }
 
@@ -126,9 +123,7 @@ export class FriendlyNameMgr {
 
     private static getIoType(conn_type: string) {
         let io_type: IoType
-        if (conn_type === "usb") {
-            io_type = IoType.Usb
-        } else if (conn_type === "lan") {
+        if (conn_type === "lan") {
             io_type = IoType.Lan
         } else {
             io_type = IoType.Visa
@@ -142,7 +137,7 @@ export class FriendlyNameMgr {
      * @param instr - instrument whose friendly name needs to be added/updated
      * @param new_name - friendly name of instrument
      */
-    public static async checkandAddFriendlyName(
+    public static async checkAndAddFriendlyName(
         instr: InstrInfo,
         new_name: string,
     ) {
@@ -182,18 +177,11 @@ export class ConnectionDetails {
     Name: string
     ConnAddr: string
     ConnType: string
-    Maxerr?: number
 
-    constructor(
-        name: string,
-        connAddr: string,
-        connType: string,
-        maxerr?: number,
-    ) {
+    constructor(name: string, connAddr: string, connType: string) {
         this.Name = name
         this.ConnAddr = connAddr
         this.ConnType = connType
-        this.Maxerr = maxerr
     }
 }
 
@@ -207,11 +195,8 @@ export class KicProcessMgr {
     public doReconnect = false
     private _reconnectInstrDetails: ConnectionDetails | undefined
     public firstInstrDetails: ConnectionDetails | undefined
-    private _connHelper: ConnectionHelper
 
-    constructor(connHelper: ConnectionHelper) {
-        this._connHelper = connHelper
-    }
+    constructor() {}
 
     async dispose(): Promise<void> {
         const LOGLOC = {
@@ -237,34 +222,30 @@ export class KicProcessMgr {
      * @param name - name of the connection terminal
      * @param unique_id - unique id referring to the instrument
      * @param connType - connection type (usb, lan etc.)
-     * @param maxerr - maximum error
-     * @param filePath - file path of tsp file to be executed on the instrument
+     * @param additional_terminal_args - any additional arguments to pass to the terminal
      */
     public async createKicCell(
         name: string,
-        unique_id: string,
-        connType: string,
-        maxerr?: number,
-        filePath?: string,
-    ): Promise<[info: string, verified_name?: string]> {
+        addr: string,
+        connType: IoType,
+        additional_terminal_args?: string[],
+    ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
-            func: `KicProcessMgr.createKicCell("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+            func: `KicProcessMgr.createKicCell("${name}", "${addr}", "${connType}", "[${additional_terminal_args?.join(",")}]")`,
         }
         Log.trace("Creating Kic Cell", LOGLOC)
         const newCell = new KicCell()
-        const [info, verified_name] = await newCell.initializeComponents(
+
+        await newCell.initializeComponents(
             name,
-            unique_id,
+            addr,
             connType,
-            maxerr,
-            filePath,
+            additional_terminal_args,
         )
         this.debugTermPid = newCell.terminalPid
         this._kicList.push(newCell)
         this.doReconnect = true
-
-        return [info, verified_name]
     }
 
     public async restartConnectionAfterDebug() {
@@ -273,8 +254,7 @@ export class KicProcessMgr {
                 await this.createKicCell(
                     this._reconnectInstrDetails.Name,
                     this._reconnectInstrDetails.ConnAddr,
-                    this._reconnectInstrDetails.ConnType,
-                    this._reconnectInstrDetails.Maxerr,
+                    this._reconnectInstrDetails.ConnType as IoType,
                 )
             } catch (error) {
                 const details = `Unable to reconnect after debugging: ${error?.toString()}`
@@ -291,19 +271,20 @@ export class KicProcessMgr {
         //return new ConnectionDetails("", connAddr, connType)
         const options: vscode.InputBoxOptions = {
             prompt: "Enter instrument IP in <IP> format",
-            validateInput: this._connHelper.instrConnectionStringValidator,
+            validateInput: ConnectionHelper.instrConnectionStringValidator,
         }
-        const ip = await vscode.window.showInputBox(options)
-        if (ip === undefined) {
+        const addr = await vscode.window.showInputBox(options)
+        if (addr === undefined) {
             return Promise.reject(new Error("connection unsuccessful."))
         }
         this.doReconnect = false
 
-        if (this._connHelper.IPTest(ip) == false) {
-            this.firstInstrDetails = new ConnectionDetails("", ip, "usb")
-        } else {
-            this.firstInstrDetails = new ConnectionDetails("", ip, "lan")
-        }
+        const details = ConnectionHelper.parseConnectionString(addr)
+        this.firstInstrDetails = new ConnectionDetails(
+            details?.name ?? "",
+            details?.addr ?? addr,
+            details?.type.toString() ?? "lan",
+        )
     }
 }
 
@@ -364,207 +345,84 @@ export class KicCell extends EventEmitter {
      * */
     public async initializeComponents(
         name: string,
-        unique_id: string,
-        connType: string,
-        maxerr?: number,
-        filePath?: string,
-    ): Promise<[info: string, verified_name?: string]> {
-        //#ToDo: need to verify if maxerr is required
+        addr: string,
+        connType: IoType,
+        additional_terminal_args?: string[],
+    ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
-            func: `KicCell.initializeComponents("${name}", "${unique_id}", "${connType}", "${maxerr ?? ""}", "${filePath ?? ""}")`,
+            func: `KicCell.initializeComponents("${name}", "${addr}", "${connType}", "[${additional_terminal_args?.join(",")}]")`,
         }
-        return await vscode.window.withProgress(
-            {
-                cancellable: false,
-                location: vscode.ProgressLocation.Notification,
-                title: "Connecting to instrument",
-            },
-            (progress) => {
-                Log.trace("Initializing components", LOGLOC)
-                this._uniqueID = unique_id
-                let info = ""
-                let verified_name: string | undefined = undefined
-                this._connDetails = new ConnectionDetails(
-                    name,
-                    unique_id,
-                    connType,
-                    maxerr,
-                )
+        Log.trace("Initializing components", LOGLOC)
+        this._uniqueID = addr
+        this._connDetails = new ConnectionDetails(name, addr, connType)
 
-                //TODO Get tsp.dumpQueueOnConnect setting
-                let dump_path: string | undefined = undefined
-                if (
-                    vscode.workspace
-                        .getConfiguration("tsp")
-                        .get("dumpQueueOnConnect")
-                ) {
-                    progress.report({
-                        message: "Dumping data from instrument output queue",
-                    })
-                    Log.info(
-                        "Dumping data from instrument output queue",
-                        LOGLOC,
-                    )
-                    const dump_dir = mkdtempSync(join(tmpdir(), "tsp-toolkit-"))
-                    dump_path = join(dump_dir, "dump-output")
+        const terminal_args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "connect",
+            connType.toLowerCase(),
+            addr,
+        ]
 
-                    Log.trace(`Dumping data to ${dump_path}`, LOGLOC)
+        if (additional_terminal_args) {
+            for (const a of additional_terminal_args) {
+                terminal_args.push(a)
+            }
+        }
 
-                    const dump_proc = child.spawnSync(EXECUTABLE, [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                        ),
-                        "dump",
-                        connType,
-                        unique_id,
-                        "--output",
-                        dump_path,
-                    ])
-                    Log.trace(
-                        `Dump process exited with code: ${dump_proc.status}}`,
-                        LOGLOC,
-                    )
-                }
-
-                progress.report({
-                    message: "Getting instrument information",
-                })
-                Log.trace("Getting instrument information", LOGLOC)
-                const info_proc = child.spawnSync(
-                    EXECUTABLE,
-                    [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                        ),
-                        "info",
-                        connType,
-                        "--json",
-                        unique_id,
-                    ],
-                    {
-                        env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                    },
-                )
-                const exit_code = info_proc.status
-
-                info = info_proc.stdout.toString()
-
-                Log.trace(
-                    `Info process exited with code: ${exit_code}, information: ${info.trim()}`,
-                    LOGLOC,
-                )
-
-                if (info == "") return new Promise((resolve) => resolve([info]))
-
-                const _info = <IIDNInfo>JSON.parse(info)
-                // void vscode.window.showInformationMessage(
-                //     unique_id +
-                //         ": Found instrument model " +
-                //         _info.model +
-                //         " with S/N: " +
-                //         _info.serial_number,
-                // )
-
-                if (name == "") {
-                    verified_name = FriendlyNameMgr.generateUniqueName(
-                        connType,
-                        _info.model + "#" + _info.serial_number,
-                    )
-                    name = verified_name
-                    this._connDetails.Name = name
-                    Log.trace(`Set name to "${name}"`, LOGLOC)
-                }
-
-                const terminal_args = [
-                    "--log-file",
+        Log.trace("Starting VSCode Terminal", LOGLOC)
+        this._term = vscode.window.createTerminal({
+            name: name,
+            shellPath: EXECUTABLE,
+            shellArgs: terminal_args,
+            isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
+            iconPath: {
+                light: vscode.Uri.file(
                     join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                        __dirname,
+                        "..",
+                        "resources",
+                        "light",
+                        "tsp-terminal-icon.svg",
                     ),
-                    "connect",
-                    connType,
-                    unique_id,
-                ]
-
-                if (dump_path) {
-                    Log.trace(`Showing dump content from ${dump_path}`, LOGLOC)
-                    terminal_args.push("--dump-output", dump_path)
-                }
-
-                progress.report({
-                    message: `Connecting to instrument with model ${_info.model} and S/N ${_info.serial_number}`,
-                })
-
-                Log.trace("Starting VSCode Terminal", LOGLOC)
-                this._term = vscode.window.createTerminal({
-                    name: name,
-                    shellPath: EXECUTABLE,
-                    shellArgs: terminal_args,
-                    isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
-                    iconPath: {
-                        light: vscode.Uri.file(
-                            join(
-                                __dirname,
-                                "..",
-                                "resources",
-                                "light",
-                                "tsp-terminal-icon.svg",
-                            ),
-                        ),
-                        dark: vscode.Uri.file(
-                            join(
-                                __dirname,
-                                "..",
-                                "resources",
-                                "dark",
-                                "tsp-terminal-icon.svg",
-                            ),
-                        ),
-                    },
-                })
-
-                vscode.window.onDidCloseTerminal((t) => {
-                    Log.info("Terminal closed", LOGLOC)
-                    if (
-                        t.creationOptions.iconPath !== undefined &&
-                        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                        t.creationOptions.iconPath
-                            .toString()
-                            .search("tsp-terminal-icon") &&
-                        t.exitStatus !== undefined &&
-                        t.exitStatus.reason !==
-                            vscode.TerminalExitReason.Process
-                    ) {
-                        setTimeout(() => {
-                            Log.trace("Resetting closed instrument", LOGLOC)
-                            this.reset()
-                        }, 500)
-                    }
-                })
-
-                this.terminalPid = this._term?.processId
-
-                if (this._term != undefined) {
-                    this._term.show()
-                    if (filePath != undefined) {
-                        this._term.sendText(filePath)
-                    }
-                }
-
-                console.log(info)
-                Log.trace(`Connected to ${info.trim()}`, LOGLOC)
-
-                progress.report({
-                    message: `Connected to instrument with model ${_info.model} and S/N ${_info.serial_number}`,
-                })
-                return new Promise((resolve) => resolve([info, verified_name]))
+                ),
+                dark: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "dark",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
             },
-        )
+        })
+
+        vscode.window.onDidCloseTerminal((t) => {
+            Log.info("Terminal closed", LOGLOC)
+            if (
+                t.creationOptions.iconPath !== undefined &&
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                t.creationOptions.iconPath
+                    .toString()
+                    .search("tsp-terminal-icon") &&
+                t.exitStatus !== undefined &&
+                t.exitStatus.reason !== vscode.TerminalExitReason.Process
+            ) {
+                setTimeout(() => {
+                    Log.trace("Resetting closed instrument", LOGLOC)
+                    this.reset()
+                }, 500)
+            }
+        })
+
+        this.terminalPid = this._term?.processId
+
+        return new Promise((resolve) => resolve())
     }
 
     public async getTerminalState(): Promise<string> {
@@ -600,17 +458,48 @@ export class KicCell extends EventEmitter {
 
 //Hosts multiple functions to help with creating connection with the instrument
 export class ConnectionHelper {
-    public IPTest(ip: string) {
+    public static connectionType(addr: string): IoType | undefined {
+        if (ConnectionHelper.IPTest(addr)) {
+            return IoType.Lan
+        }
+        if (ConnectionHelper.VisaResourceStringTest(addr)) {
+            return IoType.Visa
+        }
+        return undefined
+    }
+    public static parseConnectionString(connection_string: string):
+        | {
+              name: string
+              type: IoType
+              addr: string
+          }
+        | undefined {
+        let name = ""
+        let addr = connection_string
+        if (connection_string.split("@").length > 1) {
+            name = connection_string.split("@")[0]
+            addr = connection_string.split("@")[1]
+        }
+        const type = ConnectionHelper.connectionType(addr)
+
+        if (!type) {
+            return undefined
+        }
+
+        return { name: name, type: type, addr: addr }
+    }
+
+    public static IPTest(ip: string) {
         return /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(
             ip,
         )
     }
-    public VisaResourceStringTest(val: string): boolean {
+    public static VisaResourceStringTest(val: string): boolean {
         return /^(visa:\/\/.*\/)?((TCPIP|USB|GPIB|ASRL|FIREWIRE|GPIB-VXI|PXI|VXI)\d*)::.*/.test(
             val,
         )
     }
-    public instrConnectionStringValidator = (val: string) => {
+    public static instrConnectionStringValidator = (val: string) => {
         let conn_str = val
         if (val.split("@").length > 1) {
             conn_str = val.split("@")[1]
