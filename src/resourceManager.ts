@@ -20,7 +20,7 @@ export interface IIDNInfo {
 }
 
 export function idn_to_string(idn: IIDNInfo): string {
-    return `${idn.vendor},${idn.model},${idn.serial_number},${idn.firmware_rev}`
+    return `Model: ${idn.model} SN: ${idn.serial_number} FW: ${idn.firmware_rev}`
 }
 
 export enum IoType {
@@ -402,6 +402,7 @@ export class KicCell extends EventEmitter {
             },
         })
 
+        this._term?.show(false)
         vscode.window.onDidCloseTerminal((t) => {
             Log.info("Terminal closed", LOGLOC)
             if (

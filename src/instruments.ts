@@ -1,4 +1,4 @@
-import * as cp from "node:child_process"
+import * as child from "child_process"
 import { join } from "path"
 
 import * as vscode from "vscode"
@@ -18,6 +18,7 @@ import {
     KicProcessMgr,
 } from "./resourceManager"
 import { LOG_DIR } from "./utility"
+import { Log, SourceLocation } from "./logging"
 
 const DISCOVERY_TIMEOUT = 5
 
@@ -118,6 +119,10 @@ const jsonRPCRequest: JSONRPCRequest = {
  */
 export enum ConnectionStatus {
     /**
+     * This instrument is ignored. This variant should not be used for interfaces
+     */
+    Ignored,
+    /**
      * This connection interface was deemed inactive and will not respond to connection attempts
      */
     Inactive,
@@ -129,10 +134,28 @@ export enum ConnectionStatus {
      * This connection interface was deemed connected and already has a terminal associated with it
      */
     Connected,
-    /**
-     * This instrument is ignored. This variant should not be used for interfaces
-     */
-    Ignored,
+}
+
+function connectionStatusIcon(status: ConnectionStatus): vscode.ThemeIcon {
+    switch (status) {
+        case ConnectionStatus.Inactive:
+            return new vscode.ThemeIcon(
+                "vm-outline",
+                new vscode.ThemeColor("list.deemphasizedForeground"),
+            )
+        case ConnectionStatus.Active:
+            return new vscode.ThemeIcon(
+                "vm-active",
+                new vscode.ThemeColor("progressBar.background"),
+            )
+        case ConnectionStatus.Connected:
+            return new vscode.ThemeIcon(
+                "vm-running",
+                new vscode.ThemeColor("testing.iconPassed"),
+            )
+    }
+
+    return new vscode.ThemeIcon("warning")
 }
 
 /**
@@ -143,11 +166,14 @@ export class Connection extends vscode.TreeItem {
     private _addr: string = ""
     private _status: ConnectionStatus = ConnectionStatus.Inactive
 
+    static from(info: InstrInfo) {
+        return new Connection(info.io_type, info.instr_address)
+    }
     constructor(conn_type: IoType, addr: string) {
         super(addr, vscode.TreeItemCollapsibleState.None)
         this._type = conn_type
         this._addr = addr
-        this.iconPath = new vscode.ThemeIcon("pass")
+        this.iconPath = connectionStatusIcon(this._status)
     }
 
     get type(): IoType {
@@ -163,18 +189,24 @@ export class Connection extends vscode.TreeItem {
     }
 
     set status(status: ConnectionStatus) {
-        switch (status) {
-            case ConnectionStatus.Inactive:
-                this.iconPath = new vscode.ThemeIcon("warning")
-                break
+        this.iconPath = connectionStatusIcon(status)
+        this._status = status
+        switch (this._status) {
             case ConnectionStatus.Active:
-                this.iconPath = new vscode.ThemeIcon("pass")
+                this.command = {
+                    title: "Connect",
+                    command: "tsp.openTerminalIP",
+                    arguments: [this],
+                    tooltip: "Connect to this interface",
+                }
+                break
+            case ConnectionStatus.Inactive:
+                this.command = undefined
                 break
             case ConnectionStatus.Connected:
-                this.iconPath = new vscode.ThemeIcon("pass-filled")
+                this.command = undefined
                 break
         }
-        this._status = status
     }
 }
 
@@ -185,26 +217,44 @@ export class ConnectionList
     extends vscode.TreeItem
     implements Iterable<Connection, unknown, unknown>
 {
-    private connection_set: Set<Connection> = new Set()
+    private _connections: Connection[] = []
     constructor(iterable?: Iterable<Connection> | null | undefined) {
         super("Available Connections", vscode.TreeItemCollapsibleState.Expanded)
-        this.connection_set = new Set(iterable)
+        if (iterable) {
+            this._connections = [...iterable]
+        }
     }
 
     [Symbol.iterator](): Iterator<Connection, unknown, unknown> {
-        return this.connection_set[Symbol.iterator]()
+        return this._connections[Symbol.iterator]()
     }
 
-    as_array(): Connection[] {
-        return Array.from(this.connection_set.values())
+    get connections(): Connection[] {
+        return this._connections
     }
 
-    add(connection: Connection) {
-        this.connection_set.add(connection)
+    has(connection: Connection): boolean {
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        return i > -1
     }
 
-    get set(): Set<Connection> {
-        return this.connection_set
+    /**
+     * @returns true if connection list was modified, false otherwise
+     */
+    add(connection: Connection): boolean {
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        if (i > -1) {
+            if (this._connections[i].status !== connection.status) {
+                this._connections[i].status = connection.status
+            }
+            return true
+        }
+        this._connections.push(connection)
+        return true
     }
 }
 
@@ -230,29 +280,39 @@ export class Instrument extends vscode.TreeItem {
         serial_number: "",
         firmware_rev: "",
     }
+    private _status = ConnectionStatus.Inactive
 
-    static fromInstrInfo(info: InstrInfo) {
-        return new Instrument(
+    static from(info: InstrInfo) {
+        const n = new Instrument(
             {
                 firmware_rev: info.firmware_revision,
                 model: info.model,
                 serial_number: info.serial_number,
                 vendor: info.manufacturer,
             },
-            info.firmware_revision.length == 0
-                ? undefined
-                : info.firmware_revision,
+            info.friendly_name.length == 0 ? undefined : info.friendly_name,
         )
+        n._connections.add(Connection.from(info))
+
+        return n
     }
 
     constructor(info: IIDNInfo, name?: string) {
         if (!name) {
             name = `${info.model}#${info.serial_number}`
         }
-        super(name, vscode.TreeItemCollapsibleState.Collapsed)
-        this.description = idn_to_string(info)
+        super(name, vscode.TreeItemCollapsibleState.Expanded)
+        //this.description = idn_to_string(info)
         this._info = info
         this._name = name
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
     }
 
     get name(): string {
@@ -295,40 +355,64 @@ export class Instrument extends vscode.TreeItem {
      * @returns ConnectionStatus.Inactive otherwise.
      */
     updateStatus(): ConnectionStatus {
-        let status = ConnectionStatus.Inactive
+        this._status = ConnectionStatus.Inactive
         for (const c of this._connections) {
             if (c.status == ConnectionStatus.Active) {
-                status = c.status //If at least one connection is active, we show "Active"
+                this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
             } else if (c.status == ConnectionStatus.Connected) {
-                status = c.status
+                this._status = ConnectionStatus.Connected
                 break //If any of the connections are connected, we show "Connected"
             }
         }
+        this.iconPath = connectionStatusIcon(this._status)
 
-        switch (status) {
-            case ConnectionStatus.Inactive:
-                this.iconPath = new vscode.ThemeIcon("warning")
-                break
-            case ConnectionStatus.Active:
-                this.iconPath = new vscode.ThemeIcon("pass")
-                break
-            case ConnectionStatus.Connected:
-                this.iconPath = new vscode.ThemeIcon("pass-filled")
-                break
-        }
+        return this._status
+    }
+}
 
-        return status
+export class InfoList extends vscode.TreeItem {
+    private _info?: IIDNInfo | undefined
+    constructor(info: IIDNInfo) {
+        super(
+            "Instrument Information",
+            vscode.TreeItemCollapsibleState.Collapsed,
+        )
+        this._info = info
+    }
+
+    get info(): IIDNInfo | undefined {
+        return this._info
+    }
+}
+
+export class StringData extends vscode.TreeItem {
+    constructor(text: string) {
+        super(text, vscode.TreeItemCollapsibleState.None)
     }
 }
 
 export class InstrumentTreeDataProvider
     implements
         vscode.TreeDataProvider<
-            Instrument | Connection | ConnectionList | InactiveInstrumentList
+            | Instrument
+            | Connection
+            | ConnectionList
+            | InactiveInstrumentList
+            | StringData
         >
 {
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
+    private savedCacheValid: boolean = false
+
+    constructor() {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.constructor()",
+        }
+        Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
+        this.getSavedInstruments().catch(() => {})
+    }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
         for (const i of instruments) {
@@ -336,24 +420,37 @@ export class InstrumentTreeDataProvider
         }
     }
     addOrUpdateInstrument(instrument: Instrument) {
-        for (const i of this._instruments) {
-            if (i.info.serial_number == instrument.info.serial_number) {
-                let changed = false
-                for (const c of instrument.connections.set) {
-                    if (!i.connections.set.has(c)) {
-                        i.connections.set.add(c)
-                        changed = true
-                    }
-                    if (i.name != instrument.name) {
-                        i.name = instrument.name
-                        changed = true
-                    }
+        // const LOGLOC: SourceLocation = {
+        //     file: "instruments.ts",
+        //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
+        // }
+
+        const found_idx = this._instruments.findIndex(
+            (v) =>
+                v.info.model === instrument.info.model &&
+                v.info.serial_number === instrument.info.serial_number,
+        )
+
+        let changed = false
+        if (found_idx > -1) {
+            for (const c of instrument.connections) {
+                if (this._instruments[found_idx].connections.add(c)) {
+                    changed = true
+                }
+                if (this._instruments[found_idx].name != instrument.name) {
+                    this._instruments[found_idx].name = instrument.name
+                    changed = true
                 }
                 if (changed) {
-                    this.reloadTreeData()
+                    this._instruments[found_idx].updateStatus()
                 }
             }
+        } else {
+            this._instruments.push(instrument)
+            changed = true
         }
+
+        this.reloadTreeData()
     }
 
     private _onDidChangeTreeData: vscode.EventEmitter<
@@ -362,7 +459,14 @@ export class InstrumentTreeDataProvider
         | Connection
         | ConnectionList
         | InactiveInstrumentList
-        | (Instrument | Connection | ConnectionList | InactiveInstrumentList)[]
+        | StringData
+        | (
+              | Instrument
+              | Connection
+              | ConnectionList
+              | InactiveInstrumentList
+              | StringData
+          )[]
         | null
         | undefined
     > = new vscode.EventEmitter<
@@ -371,7 +475,14 @@ export class InstrumentTreeDataProvider
         | Connection
         | ConnectionList
         | InactiveInstrumentList
-        | (Instrument | Connection | ConnectionList | InactiveInstrumentList)[]
+        | StringData
+        | (
+              | Instrument
+              | Connection
+              | ConnectionList
+              | InactiveInstrumentList
+              | StringData
+          )[]
         | null
         | undefined
     >()
@@ -382,7 +493,14 @@ export class InstrumentTreeDataProvider
         | Connection
         | ConnectionList
         | InactiveInstrumentList
-        | (Instrument | Connection | ConnectionList | InactiveInstrumentList)[]
+        | StringData
+        | (
+              | Instrument
+              | Connection
+              | ConnectionList
+              | InactiveInstrumentList
+              | StringData
+          )[]
         | null
         | undefined
     > = this._onDidChangeTreeData.event
@@ -392,7 +510,8 @@ export class InstrumentTreeDataProvider
             | Instrument
             | Connection
             | ConnectionList
-            | InactiveInstrumentList,
+            | InactiveInstrumentList
+            | StringData,
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element
     }
@@ -403,10 +522,21 @@ export class InstrumentTreeDataProvider
             | Connection
             | ConnectionList
             | InactiveInstrumentList
+            | StringData
             | undefined,
     ): vscode.ProviderResult<
-        (Instrument | Connection | ConnectionList | InactiveInstrumentList)[]
+        (
+            | Instrument
+            | Connection
+            | ConnectionList
+            | InactiveInstrumentList
+            | StringData
+        )[]
     > {
+        // const LOGLOC: SourceLocation = {
+        //     file: "instruments.ts",
+        //     func: `InstrumentTreeDataProvider.getChildren()`,
+        // }
         if (!element) {
             return new Promise((resolve) => {
                 resolve([
@@ -421,12 +551,33 @@ export class InstrumentTreeDataProvider
         }
         if (element instanceof Instrument) {
             return new Promise((resolve) => {
-                resolve([element.connections])
+                resolve([
+                    ...element.connections.connections,
+                    //new InfoList(element.info),
+                ])
             })
         }
         if (element instanceof ConnectionList) {
             return new Promise((resolve) => {
-                resolve(element.as_array())
+                resolve(element.connections)
+            })
+        }
+
+        if (element instanceof InfoList) {
+            return new Promise((resolve) => {
+                if (!element.info) {
+                    resolve([])
+                } else {
+                    resolve([
+                        new StringData(`Model: ${element.info.model}`),
+                        new StringData(
+                            `FW Version: ${element.info.firmware_rev}`,
+                        ),
+                        new StringData(
+                            `Serial Number: ${element.info.serial_number}`,
+                        ),
+                    ])
+                }
             })
         }
         if (element instanceof Connection) {
@@ -445,16 +596,27 @@ export class InstrumentTreeDataProvider
                 ])
             })
         }
-        throw new Error("Method not implemented.")
+        return new Promise((resolve) => {
+            resolve([])
+        })
     }
 
     async refresh(): Promise<void> {
-        if (this._instruments.length != 0) {
-            await this.getContent()
-            if (this.instruments_discovered) {
-                this.reloadTreeData()
-                this.instruments_discovered = false
-            }
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.refresh()",
+        }
+        Log.trace("Getting content", LOGLOC)
+
+        if (await this.getContent()) {
+            this.reloadTreeData()
+            this.instruments_discovered = false
+        }
+
+        Log.trace("Updating status ", LOGLOC)
+        if (await this.updateStatus()) {
+            this.reloadTreeData()
+            this.instruments_discovered = false
         }
     }
 
@@ -473,11 +635,129 @@ export class InstrumentTreeDataProvider
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    private getContent(): Promise<string> {
+    private getSavedInstruments(): Promise<Instrument[]> {
+        // const LOGLOC: SourceLocation = {
+        //     file: "instruments.ts",
+        //     func: "InstrumentTreeDataProvider.getSavedInstruments()",
+        // }
+        this.savedCacheValid = true
         return new Promise(() => {
+            const raw: InstrInfo[] =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+
+            this.addOrUpdateInstruments(raw.map((v) => Instrument.from(v)))
+
+            return this._instruments
+        })
+    }
+
+    private async updateStatus(): Promise<boolean> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.updateStatus()",
+        }
+        Log.trace("UpdateStatus", LOGLOC)
+        let changes = false
+        const parallel_info: Promise<void>[] = []
+        for (let i = 0; i < this._instruments.length; i++) {
+            Log.trace(
+                `Checking connections for ${this._instruments[i].name}`,
+                LOGLOC,
+            )
+            for (
+                let c = 0;
+                c < this._instruments[i].connections.connections.length;
+                c++
+            ) {
+                Log.trace(
+                    `Status of ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr}`,
+                    LOGLOC,
+                )
+                if (
+                    this._instruments[i].connections.connections[c].status ===
+                    ConnectionStatus.Inactive
+                ) {
+                    parallel_info.push(
+                        new Promise<void>((resolve) => {
+                            Log.trace(
+                                `[${i}][${c}]Checking if ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr} responds`,
+                                LOGLOC,
+                            )
+                            const background_process = child.spawn(
+                                EXECUTABLE,
+                                [
+                                    "--log-file",
+                                    join(
+                                        LOG_DIR,
+                                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                                    ),
+                                    "info",
+                                    this._instruments[
+                                        i
+                                    ].connections.connections[
+                                        c
+                                    ].type.toLowerCase(),
+                                    "--json",
+                                    this._instruments[i].connections
+                                        .connections[c].addr,
+                                ],
+                                {
+                                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                                },
+                            )
+
+                            setTimeout(() => {
+                                background_process.kill()
+                            }, 2000)
+
+                            background_process?.on("close", () => {
+                                const new_status =
+                                    background_process.exitCode === 0
+                                        ? ConnectionStatus.Active
+                                        : ConnectionStatus.Inactive
+                                Log.trace(
+                                    `[${i}][${c}] Instrument ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr} has a status of ${new_status}`,
+                                    LOGLOC,
+                                )
+                                if (
+                                    this._instruments[i].connections
+                                        .connections[c].status !== new_status
+                                ) {
+                                    this._instruments[
+                                        i
+                                    ].connections.connections[c].status =
+                                        new_status
+                                    changes = true
+                                }
+                                this._instruments[i].updateStatus()
+                                resolve()
+                            })
+                        }),
+                    )
+                }
+            }
+        }
+        await Promise.allSettled(parallel_info)
+        return new Promise((resolve) => {
+            resolve(changes)
+        })
+    }
+
+    /**
+     * @returns true when new instruments are discovered
+     */
+    getContent(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
             rpcClient.requestAdvanced(jsonRPCRequest).then(
                 (jsonRPCResponse: JSONRPCResponse) => {
                     if (jsonRPCResponse.error) {
+                        reject(
+                            new Error(
+                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
+                            ),
+                        )
                         console.log(
                             `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
                         )
@@ -485,11 +765,46 @@ export class InstrumentTreeDataProvider
                         this.addOrUpdateInstruments(
                             InstrumentTreeDataProvider.parseDiscoveredInstruments(
                                 jsonRPCResponse,
-                            ).map((v) => Instrument.fromInstrInfo(v)),
+                            ).map((v: InstrInfo) => {
+                                this.instruments_discovered = true
+                                const i = Instrument.from(v)
+                                i.connections.connections[0].status =
+                                    ConnectionStatus.Active
+                                i.updateStatus()
+                                return i
+                            }),
                         )
                     }
+
+                    //DEBUG
+                    //DEBUG
+                    //DEBUG
+                    // const example = new Instrument(
+                    //     {
+                    //         vendor: "KEITHLEY INSTRUMENTS LLC",
+                    //         firmware_rev: "0.0.1eng1165-230e88a",
+                    //         model: "TSPop",
+                    //         serial_number: "0",
+                    //     },
+                    //     "2461#04090044",
+                    // )
+                    // const example_conn_lan = new Connection(
+                    //     IoType.Lan,
+                    //     "127.0.0.1",
+                    // )
+                    // example_conn_lan.status = ConnectionStatus.Active
+
+                    // example.addConnection(example_conn_lan)
+                    // example.updateStatus()
+                    // this.addOrUpdateInstrument(example)
+                    //DEBUG
+                    //DEBUG
+                    //DEBUG
+
+                    resolve(this.instruments_discovered)
                 },
                 () => {
+                    reject(new Error("RPC Instr List Fetch failed!"))
                     console.log("RPC Instr List Fetch failed!")
                 },
             )
@@ -600,6 +915,8 @@ export class InstrumentTreeDataProvider
                 instrList,
                 vscode.ConfigurationTarget.Global,
             )
+
+            this.savedCacheValid = false
         } catch (err_msg) {
             vscode.window.showErrorMessage(String(err_msg))
         }
@@ -656,6 +973,8 @@ export class InstrumentTreeDataProvider
                 instrList,
                 vscode.ConfigurationTarget.Global,
             )
+
+            this.savedCacheValid = false
         } catch (err_msg) {
             vscode.window.showErrorMessage(String(err_msg))
         }
@@ -674,10 +993,22 @@ export class InstrumentsExplorer {
         context: vscode.ExtensionContext,
         kicProcessMgr: KicProcessMgr,
     ) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentExplorer.constructor()",
+        }
         this._kicProcessMgr = kicProcessMgr
         //const tdpModel = new NewTDPModel()
         //const treeDataProvider = new InstrTDP(tdpModel)
+        Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = new InstrumentTreeDataProvider()
+        Log.trace("Refreshing TDP", LOGLOC)
+        treeDataProvider.refresh().catch((e) => {
+            Log.error(
+                `Problem starting Instrument List data provider: ${e}`,
+                LOGLOC,
+            )
+        })
 
         this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
             Instrument | Connection | ConnectionList | InactiveInstrumentList
@@ -761,7 +1092,7 @@ export class InstrumentsExplorer {
 
     private startDiscovery(): void {
         if (this.InstrumentsDiscoveryViewer.message == "") {
-            const discover = cp.spawn(
+            const discover = child.spawn(
                 DISCOVER_EXECUTABLE,
                 [
                     "--log-file",
@@ -796,7 +1127,7 @@ export class InstrumentsExplorer {
             //this.treeDataProvider?.clear()
 
             this.intervalID = setInterval(() => {
-                this.treeDataProvider?.refresh().then(
+                this.treeDataProvider?.getContent().then(
                     () => {},
                     () => {},
                 )
@@ -833,7 +1164,7 @@ export class InstrumentsExplorer {
 
             //Start the connection process to reset
             //The process is expected to exit after sending the cli reset command
-            cp.spawn(EXECUTABLE, [
+            child.spawn(EXECUTABLE, [
                 "--log-file",
                 join(
                     LOG_DIR,

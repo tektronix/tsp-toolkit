@@ -89,7 +89,7 @@ export async function createTerminal(
             if (
                 vscode.workspace
                     .getConfiguration("tsp")
-                    .get("dumpQueueOnConnect")
+                    .get("dumpQueueOnConnect") === true
             ) {
                 progress.report({
                     message: "Dumping data from instrument output queue",
@@ -116,7 +116,7 @@ export async function createTerminal(
                 await new Promise<void>((resolve) => {
                     background_process?.on("close", () => {
                         Log.trace(
-                            `Dump process exited with code: ${background_process?.exitCode}}`,
+                            `Dump process exited with code: ${background_process?.exitCode}`,
                             LOGLOC,
                         )
                         resolve()
@@ -142,7 +142,7 @@ export async function createTerminal(
                         `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
                     "info",
-                    connection_details.type,
+                    connection_details.type.toLowerCase(),
                     "--json",
                     connection_details.addr,
                 ],
@@ -152,12 +152,16 @@ export async function createTerminal(
             )
             const info_string = await new Promise<string>((resolve) => {
                 let data = ""
+                background_process?.stderr?.on("data", (chunk) => {
+                    Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+                })
                 background_process?.stdout?.on("data", (chunk) => {
+                    Log.trace(`Info process received: ${chunk}`, LOGLOC)
                     data += chunk
                 })
                 background_process?.on("close", () => {
                     Log.trace(
-                        `Dump process exited with code: ${background_process?.exitCode}}`,
+                        `Info process exited with code: ${background_process?.exitCode}`,
                         LOGLOC,
                     )
                     resolve(data)
