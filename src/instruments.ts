@@ -302,7 +302,7 @@ export class Instrument extends vscode.TreeItem {
             name = `${info.model}#${info.serial_number}`
         }
         super(name, vscode.TreeItemCollapsibleState.Expanded)
-        //this.description = idn_to_string(info)
+        this.description = idn_to_string(info)
         this._info = info
         this._name = name
         this.tooltip = new vscode.MarkdownString(
@@ -601,23 +601,16 @@ export class InstrumentTreeDataProvider
         })
     }
 
-    async refresh(): Promise<void> {
+    async refresh(discovery_cb: () => Promise<void>): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.refresh()",
         }
-        Log.trace("Getting content", LOGLOC)
 
-        if (await this.getContent()) {
-            this.reloadTreeData()
-            this.instruments_discovered = false
-        }
+        Log.trace("Refreshing Discovered list", LOGLOC)
+        await Promise.allSettled([discovery_cb(), this.updateStatus()])
 
-        Log.trace("Updating status ", LOGLOC)
-        if (await this.updateStatus()) {
-            this.reloadTreeData()
-            this.instruments_discovered = false
-        }
+        this.instruments_discovered = false
     }
 
     async saveInstrument(instr: Instrument): Promise<void> {
@@ -677,7 +670,9 @@ export class InstrumentTreeDataProvider
                 )
                 if (
                     this._instruments[i].connections.connections[c].status ===
-                    ConnectionStatus.Inactive
+                        ConnectionStatus.Inactive ||
+                    this._instruments[i].connections.connections[c].status ===
+                        ConnectionStatus.Active
                 ) {
                     parallel_info.push(
                         new Promise<void>((resolve) => {
@@ -732,6 +727,7 @@ export class InstrumentTreeDataProvider
                                     changes = true
                                 }
                                 this._instruments[i].updateStatus()
+                                this.reloadTreeData()
                                 resolve()
                             })
                         }),
@@ -739,7 +735,7 @@ export class InstrumentTreeDataProvider
                 }
             }
         }
-        await Promise.allSettled(parallel_info)
+        await Promise.all(parallel_info)
         return new Promise((resolve) => {
             resolve(changes)
         })
@@ -774,6 +770,9 @@ export class InstrumentTreeDataProvider
                                 return i
                             }),
                         )
+                        if (this.instruments_discovered) {
+                            this.reloadTreeData()
+                        }
                     }
 
                     //DEBUG
@@ -1003,12 +1002,14 @@ export class InstrumentsExplorer {
         Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = new InstrumentTreeDataProvider()
         Log.trace("Refreshing TDP", LOGLOC)
-        treeDataProvider.refresh().catch((e) => {
-            Log.error(
-                `Problem starting Instrument List data provider: ${e}`,
-                LOGLOC,
-            )
-        })
+        treeDataProvider
+            .refresh(async () => await this.startDiscovery())
+            .catch((e) => {
+                Log.error(
+                    `Problem starting Instrument List data provider: ${e}`,
+                    LOGLOC,
+                )
+            })
 
         this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
             Instrument | Connection | ConnectionList | InactiveInstrumentList
@@ -1018,7 +1019,16 @@ export class InstrumentsExplorer {
 
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            this.startDiscovery()
+            this.treeDataProvider
+                ?.refresh(async () => {
+                    await this.startDiscovery()
+                })
+                .then(
+                    () => {},
+                    (e) => {
+                        Log.error(`Unable to refresh instrument explorer: ${e}`)
+                    },
+                )
         })
         vscode.commands.registerCommand(
             "InstrumentsExplorer.openInstrumentsDiscoveryResource",
@@ -1087,52 +1097,62 @@ export class InstrumentsExplorer {
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
 
-        this.startDiscovery()
+        this.treeDataProvider
+            ?.refresh(async () => await this.startDiscovery())
+            .then(
+                () => {},
+                (e: Error) => {
+                    Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
+                },
+            )
     }
 
-    private startDiscovery(): void {
-        if (this.InstrumentsDiscoveryViewer.message == "") {
-            const discover = child.spawn(
-                DISCOVER_EXECUTABLE,
-                [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date()
-                            .toISOString()
-                            .substring(0, 10)}-kic-discover.log`,
-                    ),
-                    "all",
-                    "--timeout",
-                    DISCOVERY_TIMEOUT.toString(),
-                    "--exit",
-                ],
-                //,
-                // {
-                //     detached: true,
-                //     stdio: "ignore",
-                // }
-            )
-
-            discover.on("exit", () => {
-                this.InstrumentsDiscoveryViewer.message = ""
-                clearInterval(this.intervalID)
-            })
-
-            //subprocess.unref()
-
-            this.InstrumentsDiscoveryViewer.message =
-                "Instruments Discovery in progress..."
-
-            //this.treeDataProvider?.clear()
-
-            this.intervalID = setInterval(() => {
-                this.treeDataProvider?.getContent().then(
-                    () => {},
-                    () => {},
+    private startDiscovery(): Promise<void> {
+        return new Promise<void>((resolve) => {
+            if (this.InstrumentsDiscoveryViewer.message == "") {
+                const discover = child.spawn(
+                    DISCOVER_EXECUTABLE,
+                    [
+                        "--log-file",
+                        join(
+                            LOG_DIR,
+                            `${new Date()
+                                .toISOString()
+                                .substring(0, 10)}-kic-discover.log`,
+                        ),
+                        "all",
+                        "--timeout",
+                        DISCOVERY_TIMEOUT.toString(),
+                        "--exit",
+                    ],
+                    //,
+                    // {
+                    //     detached: true,
+                    //     stdio: "ignore",
+                    // }
                 )
-            }, 1000)
-        }
+
+                discover.on("exit", () => {
+                    this.InstrumentsDiscoveryViewer.message = ""
+                    clearInterval(this.intervalID)
+                    resolve()
+                })
+
+                //subprocess.unref()
+
+                this.InstrumentsDiscoveryViewer.message =
+                    "Instruments Discovery in progress..."
+
+                //this.treeDataProvider?.clear()
+
+                this.intervalID = setInterval(() => {
+                    this.treeDataProvider?.getContent().then(
+                        () => {},
+                        () => {},
+                    )
+                }, 1000)
+            }
+        })
     }
 
     public async rename(item: Instrument) {
