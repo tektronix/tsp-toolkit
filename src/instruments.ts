@@ -281,6 +281,7 @@ export class Instrument extends vscode.TreeItem {
         firmware_rev: "",
     }
     private _status = ConnectionStatus.Inactive
+    private _category: string = ""
 
     static from(info: InstrInfo) {
         const n = new Instrument(
@@ -292,6 +293,7 @@ export class Instrument extends vscode.TreeItem {
             },
             info.friendly_name.length == 0 ? undefined : info.friendly_name,
         )
+        n._category = info.instr_categ
         n._connections.add(Connection.from(info))
 
         return n
@@ -325,6 +327,10 @@ export class Instrument extends vscode.TreeItem {
 
     get info(): IIDNInfo {
         return this._info
+    }
+
+    get category(): string {
+        return this._category
     }
 
     get connections(): ConnectionList {
@@ -413,12 +419,52 @@ export class InstrumentTreeDataProvider
         this.getSavedInstruments().catch(() => {})
     }
 
-    addOrUpdateInstruments(instruments: Instrument[]) {
+    private async updateSavedAll(instruments: Instrument[]) {
         for (const i of instruments) {
-            this.addOrUpdateInstrument(i)
+            await this.updateSaved(i)
         }
     }
-    addOrUpdateInstrument(instrument: Instrument) {
+    /**
+     * If the given instrument exists in the saved instrument list, add entries for any
+     * missing connections.
+     */
+    private async updateSaved(instrument: Instrument) {
+        const raw: InstrInfo[] =
+            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
+            []
+        const matches = raw.filter(
+            (v) => v.serial_number === instrument.info.serial_number,
+        )
+
+        const missing = instrument.connections.connections.filter((v) =>
+            matches.find((m) => m.instr_address === v.addr),
+        )
+
+        for (const m of missing) {
+            raw.push({
+                io_type: m.type,
+                instr_address: m.addr,
+                manufacturer: instrument.info.vendor,
+                model: instrument.info.model,
+                serial_number: instrument.info.serial_number,
+                firmware_revision: instrument.info.firmware_rev,
+                instr_categ: instrument.category,
+                friendly_name: instrument.name,
+            })
+        }
+
+        await vscode.workspace
+            .getConfiguration("tsp")
+            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
+    }
+
+    async addOrUpdateInstruments(instruments: Instrument[]) {
+        for (const i of instruments) {
+            await this.addOrUpdateInstrument(i)
+        }
+    }
+
+    async addOrUpdateInstrument(instrument: Instrument) {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
@@ -434,6 +480,7 @@ export class InstrumentTreeDataProvider
         if (found_idx > -1) {
             for (const c of instrument.connections) {
                 if (this._instruments[found_idx].connections.add(c)) {
+                    await this.updateSaved(this._instruments[found_idx])
                     changed = true
                 }
                 if (this._instruments[found_idx].name != instrument.name) {
@@ -627,18 +674,22 @@ export class InstrumentTreeDataProvider
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    private getSavedInstruments(): Promise<Instrument[]> {
-        // const LOGLOC: SourceLocation = {
-        //     file: "instruments.ts",
-        //     func: "InstrumentTreeDataProvider.getSavedInstruments()",
-        // }
+    private async getSavedInstruments(): Promise<Instrument[]> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.getSavedInstruments()",
+        }
         return new Promise(() => {
             const raw: InstrInfo[] =
                 vscode.workspace
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
 
-            this.addOrUpdateInstruments(raw.map((v) => Instrument.from(v)))
+            this.addOrUpdateInstruments(
+                raw.map((v) => Instrument.from(v)),
+            ).catch((e) => {
+                Log.error(`Unable to update instruments: ${e}`, LOGLOC)
+            })
 
             return this._instruments
         })
@@ -742,7 +793,7 @@ export class InstrumentTreeDataProvider
     /**
      * @returns true when new instruments are discovered
      */
-    getContent(): Promise<boolean> {
+    async getContent(): Promise<boolean> {
         return new Promise((resolve, reject) => {
             rpcClient.requestAdvanced(jsonRPCRequest).then(
                 (jsonRPCResponse: JSONRPCResponse) => {
@@ -767,7 +818,12 @@ export class InstrumentTreeDataProvider
                                 i.updateStatus()
                                 return i
                             }),
-                        )
+                        ).catch((e) => {
+                            Log.error(`${e}`, {
+                                file: "instruments.ts",
+                                func: "InstrumentTreeDataProvider::getContent()",
+                            })
+                        })
                         if (this.instruments_discovered) {
                             this.reloadTreeData()
                         }
@@ -1161,7 +1217,7 @@ export class InstrumentsExplorer {
             item != undefined
         ) {
             item.name = name
-            this.treeDataProvider?.addOrUpdateInstrument(item)
+            await this.treeDataProvider?.addOrUpdateInstrument(item)
         }
     }
 
