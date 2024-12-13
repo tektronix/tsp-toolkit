@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import * as child from "node:child_process"
+import * as child from "child_process"
 import { EventEmitter } from "node:events"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
