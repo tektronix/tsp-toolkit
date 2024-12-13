@@ -403,7 +403,6 @@ export class InstrumentTreeDataProvider
 {
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
-    private savedCacheValid: boolean = false
 
     constructor() {
         const LOGLOC: SourceLocation = {
@@ -633,7 +632,6 @@ export class InstrumentTreeDataProvider
         //     file: "instruments.ts",
         //     func: "InstrumentTreeDataProvider.getSavedInstruments()",
         // }
-        this.savedCacheValid = true
         return new Promise(() => {
             const raw: InstrInfo[] =
                 vscode.workspace
@@ -914,8 +912,6 @@ export class InstrumentTreeDataProvider
                 instrList,
                 vscode.ConfigurationTarget.Global,
             )
-
-            this.savedCacheValid = false
         } catch (err_msg) {
             vscode.window.showErrorMessage(String(err_msg))
         }
@@ -972,8 +968,6 @@ export class InstrumentTreeDataProvider
                 instrList,
                 vscode.ConfigurationTarget.Global,
             )
-
-            this.savedCacheValid = false
         } catch (err_msg) {
             vscode.window.showErrorMessage(String(err_msg))
         }
