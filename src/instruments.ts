@@ -166,9 +166,15 @@ export class Connection extends vscode.TreeItem {
     private _addr: string = ""
     private _status: ConnectionStatus = ConnectionStatus.Inactive
 
+    private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
+
+    readonly onChangedStatus: vscode.Event<ConnectionStatus> =
+        this._onChangedStatus.event
+
     static from(info: InstrInfo) {
         return new Connection(info.io_type, info.instr_address)
     }
+
     constructor(conn_type: IoType, addr: string) {
         super(addr, vscode.TreeItemCollapsibleState.None)
         this._type = conn_type
@@ -211,54 +217,6 @@ export class Connection extends vscode.TreeItem {
 }
 
 /**
- * An Iterable list of connection interfaces
- */
-export class ConnectionList
-    extends vscode.TreeItem
-    implements Iterable<Connection, unknown, unknown>
-{
-    private _connections: Connection[] = []
-    constructor(iterable?: Iterable<Connection> | null | undefined) {
-        super("Available Connections", vscode.TreeItemCollapsibleState.Expanded)
-        if (iterable) {
-            this._connections = [...iterable]
-        }
-    }
-
-    [Symbol.iterator](): Iterator<Connection, unknown, unknown> {
-        return this._connections[Symbol.iterator]()
-    }
-
-    get connections(): Connection[] {
-        return this._connections
-    }
-
-    has(connection: Connection): boolean {
-        const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type == connection.type,
-        )
-        return i > -1
-    }
-
-    /**
-     * @returns true if connection list was modified, false otherwise
-     */
-    add(connection: Connection): boolean {
-        const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type == connection.type,
-        )
-        if (i > -1) {
-            if (this._connections[i].status !== connection.status) {
-                this._connections[i].status = connection.status
-            }
-            return true
-        }
-        this._connections.push(connection)
-        return true
-    }
-}
-
-/**
  * A class used to indicate the start of the Inactive Instruments section of the instrument
  * list. This class stores no data and is simply a sentinel.
  */
@@ -273,7 +231,7 @@ export class InactiveInstrumentList extends vscode.TreeItem {
  */
 export class Instrument extends vscode.TreeItem {
     private _name: string = ""
-    private _connections: ConnectionList = new ConnectionList()
+    private _connections: Connection[] = []
     private _info: IIDNInfo = {
         vendor: "",
         model: "",
@@ -294,7 +252,7 @@ export class Instrument extends vscode.TreeItem {
             info.friendly_name.length == 0 ? undefined : info.friendly_name,
         )
         n._category = info.instr_categ
-        n._connections.add(Connection.from(info))
+        n._connections.push(Connection.from(info))
 
         return n
     }
@@ -333,7 +291,7 @@ export class Instrument extends vscode.TreeItem {
         return this._category
     }
 
-    get connections(): ConnectionList {
+    get connections(): Connection[] {
         return this._connections
     }
 
@@ -349,7 +307,23 @@ export class Instrument extends vscode.TreeItem {
      * @param connection A new connection interface to add to this instrument
      */
     addConnection(connection: Connection) {
-        this._connections.add(connection)
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        if (i > -1) {
+            if (this._connections[i].status !== connection.status) {
+                this._connections[i].status = connection.status
+            }
+            return true
+        }
+        this._connections.push(connection)
+    }
+
+    hasConnection(connection: Connection) {
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        return i > -1
     }
 
     /**
@@ -400,11 +374,7 @@ export class StringData extends vscode.TreeItem {
 export class InstrumentTreeDataProvider
     implements
         vscode.TreeDataProvider<
-            | Instrument
-            | Connection
-            | ConnectionList
-            | InactiveInstrumentList
-            | StringData
+            Instrument | Connection | InactiveInstrumentList | StringData
         >
 {
     private _instruments: Instrument[] = []
@@ -436,7 +406,7 @@ export class InstrumentTreeDataProvider
             (v) => v.serial_number === instrument.info.serial_number,
         )
 
-        const missing = instrument.connections.connections.filter((v) =>
+        const missing = instrument.connections.filter((v) =>
             matches.find((m) => m.instr_address === v.addr),
         )
 
@@ -479,7 +449,7 @@ export class InstrumentTreeDataProvider
         let changed = false
         if (found_idx > -1) {
             for (const c of instrument.connections) {
-                if (this._instruments[found_idx].connections.add(c)) {
+                if (this._instruments[found_idx].addConnection(c)) {
                     await this.updateSaved(this._instruments[found_idx])
                     changed = true
                 }
@@ -503,32 +473,18 @@ export class InstrumentTreeDataProvider
         | void
         | Instrument
         | Connection
-        | ConnectionList
         | InactiveInstrumentList
         | StringData
-        | (
-              | Instrument
-              | Connection
-              | ConnectionList
-              | InactiveInstrumentList
-              | StringData
-          )[]
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
         | null
         | undefined
     > = new vscode.EventEmitter<
         | void
         | Instrument
         | Connection
-        | ConnectionList
         | InactiveInstrumentList
         | StringData
-        | (
-              | Instrument
-              | Connection
-              | ConnectionList
-              | InactiveInstrumentList
-              | StringData
-          )[]
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
         | null
         | undefined
     >()
@@ -537,27 +493,15 @@ export class InstrumentTreeDataProvider
         | void
         | Instrument
         | Connection
-        | ConnectionList
         | InactiveInstrumentList
         | StringData
-        | (
-              | Instrument
-              | Connection
-              | ConnectionList
-              | InactiveInstrumentList
-              | StringData
-          )[]
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
         | null
         | undefined
     > = this._onDidChangeTreeData.event
 
     getTreeItem(
-        element:
-            | Instrument
-            | Connection
-            | ConnectionList
-            | InactiveInstrumentList
-            | StringData,
+        element: Instrument | Connection | InactiveInstrumentList | StringData,
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element
     }
@@ -566,18 +510,11 @@ export class InstrumentTreeDataProvider
         element?:
             | Instrument
             | Connection
-            | ConnectionList
             | InactiveInstrumentList
             | StringData
             | undefined,
     ): vscode.ProviderResult<
-        (
-            | Instrument
-            | Connection
-            | ConnectionList
-            | InactiveInstrumentList
-            | StringData
-        )[]
+        (Instrument | Connection | InactiveInstrumentList | StringData)[]
     > {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
@@ -597,15 +534,7 @@ export class InstrumentTreeDataProvider
         }
         if (element instanceof Instrument) {
             return new Promise((resolve) => {
-                resolve([
-                    ...element.connections.connections,
-                    //new InfoList(element.info),
-                ])
-            })
-        }
-        if (element instanceof ConnectionList) {
-            return new Promise((resolve) => {
-                resolve(element.connections)
+                resolve([...element.connections])
             })
         }
 
@@ -708,25 +637,21 @@ export class InstrumentTreeDataProvider
                 `Checking connections for ${this._instruments[i].name}`,
                 LOGLOC,
             )
-            for (
-                let c = 0;
-                c < this._instruments[i].connections.connections.length;
-                c++
-            ) {
+            for (let c = 0; c < this._instruments[i].connections.length; c++) {
                 Log.trace(
-                    `Status of ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr}`,
+                    `Status of ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr}`,
                     LOGLOC,
                 )
                 if (
-                    this._instruments[i].connections.connections[c].status ===
+                    this._instruments[i].connections[c].status ===
                         ConnectionStatus.Inactive ||
-                    this._instruments[i].connections.connections[c].status ===
+                    this._instruments[i].connections[c].status ===
                         ConnectionStatus.Active
                 ) {
                     parallel_info.push(
                         new Promise<void>((resolve) => {
                             Log.trace(
-                                `[${i}][${c}]Checking if ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr} responds`,
+                                `[${i}][${c}]Checking if ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr} responds`,
                                 LOGLOC,
                             )
                             const background_process = child.spawn(
@@ -738,14 +663,11 @@ export class InstrumentTreeDataProvider
                                         `${new Date().toISOString().substring(0, 10)}-kic.log`,
                                     ),
                                     "info",
-                                    this._instruments[
-                                        i
-                                    ].connections.connections[
+                                    this._instruments[i].connections[
                                         c
                                     ].type.toLowerCase(),
                                     "--json",
-                                    this._instruments[i].connections
-                                        .connections[c].addr,
+                                    this._instruments[i].connections[c].addr,
                                 ],
                                 {
                                     env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
@@ -762,16 +684,14 @@ export class InstrumentTreeDataProvider
                                         ? ConnectionStatus.Active
                                         : ConnectionStatus.Inactive
                                 Log.trace(
-                                    `[${i}][${c}] Instrument ${this._instruments[i].name} @ ${this._instruments[i].connections.connections[c].addr} has a status of ${new_status}`,
+                                    `[${i}][${c}] Instrument ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr} has a status of ${new_status}`,
                                     LOGLOC,
                                 )
                                 if (
-                                    this._instruments[i].connections
-                                        .connections[c].status !== new_status
+                                    this._instruments[i].connections[c]
+                                        .status !== new_status
                                 ) {
-                                    this._instruments[
-                                        i
-                                    ].connections.connections[c].status =
+                                    this._instruments[i].connections[c].status =
                                         new_status
                                     changes = true
                                 }
@@ -813,7 +733,7 @@ export class InstrumentTreeDataProvider
                             ).map((v: InstrInfo) => {
                                 this.instruments_discovered = true
                                 const i = Instrument.from(v)
-                                i.connections.connections[0].status =
+                                i.connections[0].status =
                                     ConnectionStatus.Active
                                 i.updateStatus()
                                 return i
@@ -1032,7 +952,7 @@ export class InstrumentTreeDataProvider
 
 export class InstrumentsExplorer {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
-        Instrument | Connection | ConnectionList | InactiveInstrumentList
+        Instrument | Connection | InactiveInstrumentList
     >
     private treeDataProvider?: InstrumentTreeDataProvider
     private intervalID?: NodeJS.Timeout
@@ -1062,7 +982,7 @@ export class InstrumentsExplorer {
             })
 
         this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
-            Instrument | Connection | ConnectionList | InactiveInstrumentList
+            Instrument | Connection | InactiveInstrumentList
         >("InstrumentsExplorer", {
             treeDataProvider,
         })
