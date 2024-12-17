@@ -358,8 +358,9 @@ export class Instrument extends vscode.TreeItem {
     }
 
     set name(name: string) {
-        this._onChanged.fire()
         this._name = name
+        this.label = this._name
+        this._onChanged.fire()
     }
 
     get info(): IIDNInfo {
@@ -479,7 +480,11 @@ export class Instrument extends vscode.TreeItem {
         return this._status
     }
 
-    saved(enabled: boolean): Instrument {
+    get saved(): boolean {
+        return this._saved
+    }
+
+    set saved(enabled: boolean) {
         this._saved = enabled
         const str = enabled ? "Saved" : "Discovered"
         if (this.contextValue?.match(/Saved|Discovered/)) {
@@ -490,8 +495,6 @@ export class Instrument extends vscode.TreeItem {
         } else {
             this.contextValue += str
         }
-
-        return this
     }
 }
 
@@ -546,7 +549,7 @@ export class InstrumentTreeDataProvider
      * If the given instrument exists in the saved instrument list, add entries for any
      * missing connections.
      */
-    private async updateSaved(instrument: Instrument) {
+    async updateSaved(instrument: Instrument) {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.updateSaved()",
@@ -629,7 +632,10 @@ export class InstrumentTreeDataProvider
         if (found_idx > -1) {
             for (const c of instrument.connections) {
                 changed = this._instruments[found_idx].addConnection(c)
-                if (this._instruments[found_idx].name != instrument.name) {
+                if (
+                    this._instruments[found_idx].name != instrument.name &&
+                    !this._instruments[found_idx].saved
+                ) {
                     this._instruments[found_idx].name = instrument.name
                     changed = true
                 }
@@ -753,7 +759,7 @@ export class InstrumentTreeDataProvider
         })
     }
 
-    private configWatcherEnable(enabled: boolean) {
+    configWatcherEnable(enabled: boolean) {
         if (enabled && !this._savedInstrumentConfigWatcher) {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
@@ -786,7 +792,7 @@ export class InstrumentTreeDataProvider
 
     async saveInstrument(instr: Instrument): Promise<void> {
         //TODO Add to saved list
-        instr.saved(true)
+        instr.saved = true
         await this.saveInstrumentToList(instr)
         this.reloadTreeData()
     }
@@ -817,7 +823,11 @@ export class InstrumentTreeDataProvider
                     .get("savedInstruments") ?? []
 
             this.addOrUpdateInstruments(
-                raw.map((v) => Instrument.from(v).saved(true)),
+                raw.map((v) => {
+                    const i = Instrument.from(v)
+                    i.saved = true
+                    return i
+                }),
             )
 
             return this._instruments
@@ -1285,10 +1295,22 @@ export class InstrumentsExplorer {
             name !== null &&
             name !== undefined &&
             name.length > 0 &&
-            item != undefined
+            item !== undefined
         ) {
+            Log.trace(`Changing name from ${item.name} to ${name}`, {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.rename()",
+            })
             item.name = name
             this.treeDataProvider?.addOrUpdateInstrument(item)
+            this.treeDataProvider?.configWatcherEnable(false)
+            await this.treeDataProvider?.updateSaved(item)
+            this.treeDataProvider?.configWatcherEnable(true)
+        } else {
+            Log.warn("Item not defined", {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.rename()",
+            })
         }
     }
 
@@ -1342,7 +1364,7 @@ export class InstrumentsExplorer {
     //from connect
 
     private async removeInstrument(instr: Instrument) {
-        instr.saved(false)
+        instr.saved = false
         await this.treeDataProvider?.removeInstrument(instr)
     }
 
