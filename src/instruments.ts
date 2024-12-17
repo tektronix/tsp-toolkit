@@ -1,3 +1,4 @@
+import * as os from "os"
 import * as child from "child_process"
 import { join } from "path"
 
@@ -246,7 +247,19 @@ export class Connection extends vscode.TreeItem {
             )
 
             setTimeout(() => {
-                background_process.kill("SIGTERM")
+                if (os.platform() === "win32" && background_process.pid) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    background_process.kill("SIGINT")
+                }
             }, 1000)
 
             let changes = false
