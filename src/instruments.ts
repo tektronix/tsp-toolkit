@@ -246,8 +246,8 @@ export class Connection extends vscode.TreeItem {
             )
 
             setTimeout(() => {
-                background_process.kill()
-            }, 2000)
+                background_process.kill("SIGTERM")
+            }, 1000)
 
             let changes = false
             background_process?.on("close", () => {
