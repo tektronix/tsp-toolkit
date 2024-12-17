@@ -222,6 +222,50 @@ export class Connection extends vscode.TreeItem {
             this._onChangedStatus.fire(this._status)
         }
     }
+
+    async getUpdatedStatus(): Promise<void> {
+        return new Promise((resolve) => {
+            // TODO: This shouldn't use info for TCPIP. Or the kic info command needs to
+            // use the instrument lxi page for anything on TCPIP/LAN
+            const background_process = child.spawn(
+                EXECUTABLE,
+                [
+                    "--log-file",
+                    join(
+                        LOG_DIR,
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                    ),
+                    "info",
+                    this.type.toLowerCase(),
+                    "--json",
+                    this.addr,
+                ],
+                {
+                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                },
+            )
+
+            setTimeout(() => {
+                background_process.kill()
+            }, 2000)
+
+            let changes = false
+            background_process?.on("close", () => {
+                const new_status =
+                    background_process.exitCode === 0
+                        ? ConnectionStatus.Active
+                        : ConnectionStatus.Inactive
+                if (this.status !== new_status) {
+                    this.status = new_status
+                    changes = true
+                }
+                if (changes) {
+                    this._onChangedStatus.fire(this.status)
+                }
+                resolve()
+            })
+        })
+    }
 }
 
 /**
@@ -350,6 +394,16 @@ export class Instrument extends vscode.TreeItem {
             (v) => v.addr === connection.addr && v.type == connection.type,
         )
         return i > -1
+    }
+
+    /**
+     * Check all connections to see if they are responsive. Can be run concurrently with
+     * other instrument checks.
+     */
+    async getUpdatedStatus(): Promise<void> {
+        for (const c of this._connections) {
+            await c.getUpdatedStatus()
+        }
     }
 
     /**
@@ -700,89 +754,23 @@ export class InstrumentTreeDataProvider
         })
     }
 
-    private async updateStatus(): Promise<boolean> {
+    private async updateStatus(): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.updateStatus()",
         }
         Log.trace("UpdateStatus", LOGLOC)
-        let changes = false
         const parallel_info: Promise<void>[] = []
         for (let i = 0; i < this._instruments.length; i++) {
             Log.trace(
                 `Checking connections for ${this._instruments[i].name}`,
                 LOGLOC,
             )
-            for (let c = 0; c < this._instruments[i].connections.length; c++) {
-                Log.trace(
-                    `Status of ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr}`,
-                    LOGLOC,
-                )
-                if (
-                    this._instruments[i].connections[c].status ===
-                        ConnectionStatus.Inactive ||
-                    this._instruments[i].connections[c].status ===
-                        ConnectionStatus.Active
-                ) {
-                    parallel_info.push(
-                        new Promise<void>((resolve) => {
-                            Log.trace(
-                                `[${i}][${c}]Checking if ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr} responds`,
-                                LOGLOC,
-                            )
-                            const background_process = child.spawn(
-                                EXECUTABLE,
-                                [
-                                    "--log-file",
-                                    join(
-                                        LOG_DIR,
-                                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                                    ),
-                                    "info",
-                                    this._instruments[i].connections[
-                                        c
-                                    ].type.toLowerCase(),
-                                    "--json",
-                                    this._instruments[i].connections[c].addr,
-                                ],
-                                {
-                                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                                },
-                            )
-
-                            setTimeout(() => {
-                                background_process.kill()
-                            }, 2000)
-
-                            background_process?.on("close", () => {
-                                const new_status =
-                                    background_process.exitCode === 0
-                                        ? ConnectionStatus.Active
-                                        : ConnectionStatus.Inactive
-                                Log.trace(
-                                    `[${i}][${c}] Instrument ${this._instruments[i].name} @ ${this._instruments[i].connections[c].addr} has a status of ${new_status}`,
-                                    LOGLOC,
-                                )
-                                if (
-                                    this._instruments[i].connections[c]
-                                        .status !== new_status
-                                ) {
-                                    this._instruments[i].connections[c].status =
-                                        new_status
-                                    changes = true
-                                }
-                                this._instruments[i].updateStatus()
-                                this.reloadTreeData()
-                                resolve()
-                            })
-                        }),
-                    )
-                }
-            }
+            parallel_info.push(this._instruments[i].getUpdatedStatus())
         }
         await Promise.all(parallel_info)
         return new Promise((resolve) => {
-            resolve(changes)
+            resolve()
         })
     }
 
