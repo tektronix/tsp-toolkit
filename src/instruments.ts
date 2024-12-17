@@ -309,6 +309,7 @@ export class Instrument extends vscode.TreeItem {
     private _onChanged = new vscode.EventEmitter<void>()
 
     readonly onChanged: vscode.Event<void> = this._onChanged.event
+    private _saved: boolean = false
 
     static from(info: InstrInfo) {
         const n = new Instrument(
@@ -357,6 +358,7 @@ export class Instrument extends vscode.TreeItem {
     }
 
     set name(name: string) {
+        this._onChanged.fire()
         this._name = name
     }
 
@@ -478,6 +480,7 @@ export class Instrument extends vscode.TreeItem {
     }
 
     saved(enabled: boolean): Instrument {
+        this._saved = enabled
         const str = enabled ? "Saved" : "Discovered"
         if (this.contextValue?.match(/Saved|Discovered/)) {
             this.contextValue = this.contextValue?.replace(
@@ -521,6 +524,8 @@ export class InstrumentTreeDataProvider
 {
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
+    private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
+        undefined
 
     constructor() {
         const LOGLOC: SourceLocation = {
@@ -529,6 +534,7 @@ export class InstrumentTreeDataProvider
         }
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
         this.getSavedInstruments().catch(() => {})
+        this.configWatcherEnable(true)
     }
 
     private async updateSavedAll(instruments: Instrument[]) {
@@ -541,6 +547,15 @@ export class InstrumentTreeDataProvider
      * missing connections.
      */
     private async updateSaved(instrument: Instrument) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.updateSaved()",
+        }
+
+        Log.trace(
+            `Updating saved instrument with sn ${instrument.info.serial_number}`,
+            LOGLOC,
+        )
         // Get all the saved entries
         const raw: InstrInfo[] =
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
@@ -570,18 +585,35 @@ export class InstrumentTreeDataProvider
             })
         }
 
-        await vscode.workspace
-            .getConfiguration("tsp")
-            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
-    }
+        for (const r of raw) {
+            if (r.serial_number === instrument.info.serial_number) {
+                if (r.friendly_name !== instrument.name) {
+                    r.friendly_name = instrument.name
+                }
+                if (r.firmware_revision !== instrument.info.firmware_rev) {
+                    r.firmware_revision = instrument.info.firmware_rev
+                }
+            }
+        }
 
-    async addOrUpdateInstruments(instruments: Instrument[]) {
-        for (const i of instruments) {
-            await this.addOrUpdateInstrument(i)
+        if (matches.length > 0) {
+            await vscode.workspace
+                .getConfiguration("tsp")
+                .update(
+                    "savedInstruments",
+                    raw,
+                    vscode.ConfigurationTarget.Global,
+                )
         }
     }
 
-    async addOrUpdateInstrument(instrument: Instrument) {
+    addOrUpdateInstruments(instruments: Instrument[]) {
+        for (const i of instruments) {
+            this.addOrUpdateInstrument(i)
+        }
+    }
+
+    addOrUpdateInstrument(instrument: Instrument) {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
@@ -596,13 +628,9 @@ export class InstrumentTreeDataProvider
         let changed = false
         if (found_idx > -1) {
             for (const c of instrument.connections) {
-                if (this._instruments[found_idx].addConnection(c)) {
-                    await this.updateSaved(this._instruments[found_idx])
-                    changed = true
-                }
+                changed = this._instruments[found_idx].addConnection(c)
                 if (this._instruments[found_idx].name != instrument.name) {
                     this._instruments[found_idx].name = instrument.name
-                    await this.updateSaved(this._instruments[found_idx])
                     changed = true
                 }
                 if (changed) {
@@ -725,6 +753,20 @@ export class InstrumentTreeDataProvider
         })
     }
 
+    private configWatcherEnable(enabled: boolean) {
+        if (enabled && !this._savedInstrumentConfigWatcher) {
+            this._savedInstrumentConfigWatcher =
+                vscode.workspace.onDidChangeConfiguration((e) => {
+                    if (e.affectsConfiguration("tsp.savedInstrument")) {
+                        this.getSavedInstruments().catch(() => {})
+                    }
+                })
+        } else if (!enabled && this._savedInstrumentConfigWatcher) {
+            this._savedInstrumentConfigWatcher.dispose()
+            this._savedInstrumentConfigWatcher = undefined
+        }
+    }
+
     async refresh(discovery_cb: () => Promise<void>): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
@@ -735,16 +777,25 @@ export class InstrumentTreeDataProvider
         await this.updateStatus()
         await discovery_cb()
 
+        this.configWatcherEnable(false)
+        await this.updateSavedAll(this._instruments)
+        this.configWatcherEnable(true)
+
         this.instruments_discovered = false
     }
 
     async saveInstrument(instr: Instrument): Promise<void> {
         //TODO Add to saved list
+        instr.saved(true)
         await this.saveInstrumentToList(instr)
         this.reloadTreeData()
     }
 
     async removeInstrument(instr: Instrument): Promise<void> {
+        Log.trace(`Remove ${instr.info.serial_number}`, {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.removeInstrument()",
+        })
         await this.removeSavedList(instr)
         this.reloadTreeData()
     }
@@ -759,10 +810,6 @@ export class InstrumentTreeDataProvider
     }
 
     private async getSavedInstruments(): Promise<Instrument[]> {
-        const LOGLOC: SourceLocation = {
-            file: "instruments.ts",
-            func: "InstrumentTreeDataProvider.getSavedInstruments()",
-        }
         return new Promise(() => {
             const raw: InstrInfo[] =
                 vscode.workspace
@@ -771,9 +818,7 @@ export class InstrumentTreeDataProvider
 
             this.addOrUpdateInstruments(
                 raw.map((v) => Instrument.from(v).saved(true)),
-            ).catch((e) => {
-                Log.error(`Unable to update instruments: ${e}`, LOGLOC)
-            })
+            )
 
             return this._instruments
         })
@@ -827,12 +872,8 @@ export class InstrumentTreeDataProvider
                                 i.updateStatus()
                                 return i
                             }),
-                        ).catch((e) => {
-                            Log.error(`${e}`, {
-                                file: "instruments.ts",
-                                func: "InstrumentTreeDataProvider::getContent()",
-                            })
-                        })
+                        )
+
                         if (this.instruments_discovered) {
                             this.reloadTreeData()
                         }
@@ -951,6 +992,10 @@ export class InstrumentTreeDataProvider
         return indices
     }
     private async removeSavedList(instr: Instrument) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.removeInstrument()",
+        }
         try {
             const instrList: Array<InstrInfo> =
                 vscode.workspace
@@ -965,11 +1010,14 @@ export class InstrumentTreeDataProvider
                         v.serial_number == instr.info.serial_number
                     )
                 })
+            Log.trace(
+                `Removing ${matching_instruments_indices.length} instances of ${instr.info.serial_number}`,
+                LOGLOC,
+            )
 
-            if (matching_instruments_indices.length == 0) {
-                for (const idx of matching_instruments_indices.reverse()) {
-                    instrList.splice(idx, 1)
-                }
+            for (const idx of matching_instruments_indices.reverse()) {
+                Log.trace(`Removing ${JSON.stringify(instrList[idx])}`, LOGLOC)
+                instrList.splice(idx, 1)
             }
 
             await config.update(
@@ -1046,6 +1094,7 @@ export class InstrumentsExplorer {
     private treeDataProvider?: InstrumentTreeDataProvider
     private intervalID?: NodeJS.Timeout
     private _kicProcessMgr: KicProcessMgr
+    private _discoveryInProgress: boolean = false
 
     constructor(
         context: vscode.ExtensionContext,
@@ -1056,8 +1105,7 @@ export class InstrumentsExplorer {
             func: "InstrumentExplorer.constructor()",
         }
         this._kicProcessMgr = kicProcessMgr
-        //const tdpModel = new NewTDPModel()
-        //const treeDataProvider = new InstrTDP(tdpModel)
+
         Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = new InstrumentTreeDataProvider()
         Log.trace("Refreshing TDP", LOGLOC)
@@ -1076,8 +1124,13 @@ export class InstrumentsExplorer {
             treeDataProvider,
         })
 
+        this.InstrumentsDiscoveryViewer.message =
+            "Checking saved instrument connections..."
+
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
+            this.InstrumentsDiscoveryViewer.message =
+                "Checking saved instrument connections..."
             this.treeDataProvider
                 ?.refresh(async () => {
                     await this.startDiscovery()
@@ -1172,7 +1225,8 @@ export class InstrumentsExplorer {
             func: "InstrumentExplorer.startDiscovery()",
         }
         return new Promise<void>((resolve) => {
-            if (this.InstrumentsDiscoveryViewer.message == "") {
+            if (!this._discoveryInProgress) {
+                this._discoveryInProgress = true
                 const discover = child.spawn(
                     DISCOVER_EXECUTABLE,
                     [
@@ -1201,13 +1255,14 @@ export class InstrumentsExplorer {
                     }
                     this.InstrumentsDiscoveryViewer.message = ""
                     clearInterval(this.intervalID)
+                    this._discoveryInProgress = false
                     resolve()
                 })
 
                 //subprocess.unref()
 
                 this.InstrumentsDiscoveryViewer.message =
-                    "Instruments Discovery in progress..."
+                    "Discovering new instrument connections..."
 
                 //this.treeDataProvider?.clear()
 
@@ -1233,7 +1288,7 @@ export class InstrumentsExplorer {
             item != undefined
         ) {
             item.name = name
-            await this.treeDataProvider?.addOrUpdateInstrument(item)
+            this.treeDataProvider?.addOrUpdateInstrument(item)
         }
     }
 
@@ -1287,6 +1342,7 @@ export class InstrumentsExplorer {
     //from connect
 
     private async removeInstrument(instr: Instrument) {
+        instr.saved(false)
         await this.treeDataProvider?.removeInstrument(instr)
     }
 
