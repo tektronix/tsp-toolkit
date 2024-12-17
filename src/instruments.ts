@@ -1,4 +1,5 @@
-import * as cp from "node:child_process"
+import * as os from "os"
+import * as child from "child_process"
 import { join } from "path"
 
 import * as vscode from "vscode"
@@ -11,7 +12,7 @@ import {
 import { plainToInstance } from "class-transformer"
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "./kic-cli"
 import {
-    FriendlyNameMgr,
+    idn_to_string,
     IIDNInfo,
     InstrInfo,
     IoType,
@@ -19,9 +20,8 @@ import {
 } from "./resourceManager"
 import { LOG_DIR } from "./utility"
 import { Log, SourceLocation } from "./logging"
-//import { LoggerManager } from "./logging"
 
-const DISCOVERY_TIMEOUT = 5
+const DISCOVERY_TIMEOUT = 2
 
 let nextID = 0
 const createID = () => nextID++
@@ -116,961 +116,818 @@ const jsonRPCRequest: JSONRPCRequest = {
 }
 
 /**
- * Each node in treeview is object of this class
+ * The possible statuses of a connection interface/protocol
  */
-class InstrNode {
-    #labelPrivate: string
-    #expandablePrivate: boolean
-    children: InstrNode[] = []
-    constructor(name: string, expandable?: boolean) {
-        this.#labelPrivate = name
-        this.#expandablePrivate = expandable ?? false
-    }
-    public get label(): string {
-        return this.#labelPrivate
-    }
-    // public get_Children(): InstrNode[] {
-    //     return this.#childrenPrivate
-    // }
+export enum ConnectionStatus {
+    /**
+     * This instrument is ignored. This variant should not be used for interfaces
+     */
+    Ignored,
+    /**
+     * This connection interface was deemed inactive and will not respond to connection attempts
+     */
+    Inactive,
+    /**
+     * This connection interface was deemed active and will respond to connection attempts
+     */
+    Active,
+    /**
+     * This connection interface was deemed connected and already has a terminal associated with it
+     */
+    Connected,
+}
 
-    public updateLabelVal(label: string) {
-        this.#labelPrivate = label
+function connectionStatusIcon(status: ConnectionStatus): vscode.ThemeIcon {
+    switch (status) {
+        case ConnectionStatus.Inactive:
+            return new vscode.ThemeIcon(
+                "vm-outline",
+                new vscode.ThemeColor("list.deemphasizedForeground"),
+            )
+        case ConnectionStatus.Active:
+            return new vscode.ThemeIcon(
+                "vm-active",
+                new vscode.ThemeColor("progressBar.background"),
+            )
+        case ConnectionStatus.Connected:
+            return new vscode.ThemeIcon(
+                "vm-running",
+                new vscode.ThemeColor("testing.iconPassed"),
+            )
     }
 
-    public get isExpandable(): boolean {
-        return this.#expandablePrivate
-    }
+    return new vscode.ThemeIcon("warning")
 }
 
 /**
- * Used to create Lan, Usb nodes for discovered instruments
+ * A tree item that holds the details of an instrument connection interface/protocol
  */
-class IONode extends InstrNode {
-    constructor(label: string, supported_type: IoType, isExpandable?: boolean) {
-        super(label, isExpandable)
-        this.supported_type = supported_type
+export class Connection extends vscode.TreeItem {
+    private _type: IoType = IoType.Lan
+    private _addr: string = ""
+    private _status: ConnectionStatus = ConnectionStatus.Inactive
+
+    private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
+
+    readonly onChangedStatus: vscode.Event<ConnectionStatus> =
+        this._onChangedStatus.event
+
+    static from(info: InstrInfo) {
+        return new Connection(info.io_type, info.instr_address)
     }
 
-    private instrInList: string[] = []
-    private supported_type: IoType = IoType.Lan
-    private saved_list: string[] = []
-
-    public IsSupported(type: IoType): boolean {
-        return this.supported_type == type
+    constructor(conn_type: IoType, addr: string) {
+        super(addr, vscode.TreeItemCollapsibleState.None)
+        this._type = conn_type
+        this._addr = addr
+        this.iconPath = connectionStatusIcon(this._status)
     }
 
-    public AddInstrument(instr: InstrInfo) {
-        if (instr.io_type != this.supported_type) return
-        let found = false
-        const unique_id = DiscoveryHelper.createUniqueID(instr)
-        //ToDo: extract to method
-        for (let i = 0; i < this.saved_list.length; i++) {
-            if (this.saved_list[i] == unique_id) {
-                return
-            }
+    get type(): IoType {
+        return this._type
+    }
+
+    get addr(): string {
+        return this._addr
+    }
+
+    get status(): ConnectionStatus {
+        return this._status
+    }
+
+    set status(status: ConnectionStatus) {
+        this.iconPath = connectionStatusIcon(status)
+        let changed = false
+        if (this._status != status) {
+            changed = true
         }
-
-        this.instrInList.forEach((element) => {
-            if (element == unique_id) {
-                found = true
-            }
-        })
-
-        //if found == true, extract the element and check if ip is same and modify
-        if (found) {
-            this.children.forEach((child) => {
-                const res = child as IOInstrNode
-                if (res.FetchUniqueID() == unique_id) {
-                    res.updateConnectionAddress(instr)
-                    return
+        this._status = status
+        switch (this._status) {
+            case ConnectionStatus.Active:
+                this.command = {
+                    title: "Connect",
+                    command: "tsp.openTerminalIP",
+                    arguments: [this],
+                    tooltip: "Connect to this interface",
                 }
-            })
-        }
-
-        if (!found) {
-            this.instrInList.push(unique_id)
-            this.children.push(new IOInstrNode(instr, false))
-        }
-    }
-
-    public ClearAll() {
-        this.instrInList.splice(0)
-        this.children.splice(0)
-    }
-
-    /**
-     * Used to clear discovered instruments if they are saved
-     *
-     * @param saved_list - list of current saved instruments
-     */
-    public ClearSavedDuplicateInstr(saved_list: string[]) {
-        const idx_arr: number[] = []
-        saved_list.forEach((saved_instr) => {
-            const idx = this.instrInList.indexOf(saved_instr)
-            if (idx > -1) {
-                this.instrInList.splice(idx, 1)
-            }
-
-            for (let i = 0; i < this.children.length; i++) {
-                const res = this.children[i] as IOInstrNode
-                if (res.FetchUniqueID() == saved_instr) {
-                    idx_arr.push(i)
-                }
-            }
-
-            idx_arr.forEach((idx) => {
-                this.children.splice(idx, 1)
-            })
-        })
-    }
-
-    public updateSavedList(saved_list: string[]) {
-        this.saved_list = saved_list
-    }
-}
-
-class LanNode extends IONode {
-    constructor() {
-        super("LAN", IoType.Lan, true)
-    }
-}
-
-class USBNode extends IONode {
-    constructor() {
-        super("USB", IoType.Usb, true)
-    }
-}
-
-class VisaNode extends IONode {
-    constructor() {
-        super("VISA", IoType.Visa, true)
-    }
-}
-
-/**
- * Used to create Saved node
- */
-class SavedNode extends InstrNode {
-    constructor() {
-        super("Saved", true)
-    }
-}
-
-/**
- * Used to create sub-node for which right-click options are defined
- */
-class IOInstrNode extends InstrNode {
-    private _instrInfo: InstrInfo
-    public showNestedMenu = true
-    private _modSerial = ""
-    private _saveStatus = false
-
-    constructor(instr: InstrInfo, saveStat: boolean) {
-        super(DiscoveryHelper.createModelSerial(instr))
-        this._modSerial = instr.model + "#" + instr.serial_number
-        this._saveStatus = saveStat
-
-        this._instrInfo = instr
-        this.addChildNodes()
-    }
-
-    public FetchInstrCateg(): string | undefined {
-        return this._instrInfo.instr_categ
-    }
-
-    public FetchUniqueID(): string | undefined {
-        return this._instrInfo.io_type.toString() + ":" + this._modSerial
-    }
-
-    public FetchConnectionAddr(): string {
-        return this._instrInfo.instr_address
-    }
-
-    public FetchInstrIOType(): IoType {
-        return this._instrInfo.io_type
-    }
-
-    public updateFriendlyName() {
-        const connections: Array<InstrInfo> =
-            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
-            []
-
-        let friendly_name = ""
-        const res_instr = connections.find(
-            (x: InstrInfo) =>
-                x.io_type == this._instrInfo.io_type &&
-                x.model + "#" + x.serial_number == this._modSerial,
-        )
-        if (res_instr != undefined) {
-            friendly_name = res_instr.friendly_name
-        } else {
-            //default friendly name
-            friendly_name = this._modSerial
-        }
-
-        super.updateLabelVal(friendly_name)
-    }
-
-    public addDefaultFriendlyName() {
-        this._instrInfo.friendly_name = DiscoveryHelper.createModelSerial(
-            this._instrInfo,
-        )
-    }
-
-    public fetchModelSerial(): string {
-        return this._modSerial
-    }
-
-    public fetchSaveStatus(): boolean {
-        return this._saveStatus
-    }
-
-    public fetchInstrInfo(): InstrInfo {
-        return this._instrInfo
-    }
-
-    /**
-     * Used to update connection address, _instrInfo object
-     *
-     * @param instrInfo - latest instrument details
-     */
-    public updateConnectionAddress(instrInfo: InstrInfo) {
-        if (this._instrInfo.instr_address != instrInfo.instr_address) {
-            //instrInfo also needs to be updated
-            this._instrInfo = instrInfo
-        }
-
-        if (this._instrInfo.instr_address != this.children[0].label) {
-            //instrument address needs to be updated
-            this.children[0] = new InstrNode(this._instrInfo.instr_address)
-        }
-    }
-
-    private addChildNodes() {
-        //for loop with child nodes - remaining
-        this.children.push(new InstrNode(this._instrInfo.instr_address))
-
-        this.children.push(new InstrNode("Model: " + this._instrInfo.model))
-        this.children.push(
-            new InstrNode("Port: " + (this._instrInfo.socket_port ?? "NA")),
-        )
-        this.children.push(
-            new InstrNode("Serial No: " + this._instrInfo.serial_number),
-        )
-    }
-}
-
-interface IRootNodeProvider {
-    GetInstrumentNode(info: InstrInfo): InstrNode | undefined
-}
-
-class NodeProvider implements IRootNodeProvider {
-    constructor(ioNode: IONode) {
-        this.ioNode = ioNode
-    }
-    private ioNode: IONode | undefined
-    GetInstrumentNode(instr: InstrInfo): IONode | undefined {
-        if (!this.ioNode?.IsSupported(instr.io_type)) return undefined
-
-        this.updateIONode(instr)
-        if (this.ioNode?.children.length == 0) return undefined
-        return this.ioNode
-    }
-
-    private updateIONode(instr: InstrInfo) {
-        this.ioNode?.AddInstrument(instr)
-    }
-
-    /**
-     * Used to update saved list to latest and clear discovered instruments
-     * if the same are saved by the user
-     *
-     * @param saved_list - list of current saved instruments
-     * @param do_clear - if discovered instruments need to be cleared or not
-     */
-    public updateSavedList(saved_list: string[], do_clear: boolean) {
-        if (do_clear) {
-            this.ioNode?.ClearSavedDuplicateInstr(saved_list)
-        }
-        this.ioNode?.updateSavedList(saved_list)
-    }
-}
-
-class LanNodeProvider extends NodeProvider {
-    constructor() {
-        super(new LanNode())
-    }
-}
-
-class USBNodeProvider extends NodeProvider {
-    constructor() {
-        super(new USBNode())
-    }
-}
-
-class VisaNodeProvider extends NodeProvider {
-    constructor() {
-        super(new VisaNode())
-    }
-}
-
-class SNodeprovider implements IRootNodeProvider {
-    constructor(ioNode: SIONode) {
-        this.ioNode = ioNode
-    }
-    private ioNode: SIONode | undefined
-    GetInstrumentNode(instr: InstrInfo): SIONode | undefined {
-        if (!this.ioNode?.IsSupported(instr.io_type)) return undefined
-
-        this.updateIONode(instr)
-        if (this.ioNode?.children.length == 0) return undefined
-        return this.ioNode
-    }
-
-    private updateIONode(instr: InstrInfo) {
-        this.ioNode?.AddInstrument(instr)
-    }
-
-    /**
-     * Used to remove saved lan and usb child nodes
-     *
-     * @param instrID - unique ID of instrument to be removed
-     */
-    public removeInstrFromSavedNode(instrID: string) {
-        this.ioNode?.innerRemInstrFromSavedNode(instrID)
-    }
-}
-
-/**
- * Used to create Lan, Usb nodes for saved instruments
- */
-class SIONode extends InstrNode {
-    constructor(label: string, supported_type: IoType, isExpandable?: boolean) {
-        super(label, isExpandable)
-        this.supported_type = supported_type
-    }
-
-    private instrInList: string[] = []
-    private supported_type: IoType = IoType.Lan
-
-    public IsSupported(type: IoType): boolean {
-        return this.supported_type == type
-    }
-
-    public AddInstrument(instr: InstrInfo) {
-        if (instr.io_type != this.supported_type) return
-        let found = false
-        const unique_id = DiscoveryHelper.createUniqueID(instr)
-
-        this.instrInList.forEach((element) => {
-            if (element == unique_id) {
-                found = true
-            }
-        })
-
-        //if found == true, extract the element and check if ip is same and modify
-        if (found) {
-            this.children.forEach((child) => {
-                const res = child as IOInstrNode
-                if (res.FetchUniqueID() == unique_id) {
-                    res.updateConnectionAddress(instr)
-                    return
-                }
-            })
-        }
-
-        if (!found) {
-            this.instrInList.push(unique_id)
-            this.children.push(new IOInstrNode(instr, true))
-        }
-
-        this.children.forEach((child) => {
-            const res = child as IOInstrNode
-            if (res != undefined) {
-                res.updateFriendlyName()
-            }
-        })
-    }
-
-    /**
-     * Used to remove saved lan and usb child nodes
-     *
-     * @param instrID - unique ID of instrument to be removed
-     */
-    public innerRemInstrFromSavedNode(instrID: string) {
-        const idx1 = this.instrInList.indexOf(instrID)
-        if (idx1 > -1) {
-            this.instrInList.splice(idx1, 1)
-        }
-        let idx2 = -1
-        for (let i = 0; i < this.children.length; i++) {
-            const res = this.children[i] as IOInstrNode
-            if (res.FetchUniqueID() == instrID) {
-                idx2 = i
                 break
-            }
+            case ConnectionStatus.Inactive:
+                this.command = undefined
+                break
+            case ConnectionStatus.Connected:
+                this.command = undefined
+                break
         }
 
-        if (idx2 > -1) {
-            this.children.splice(idx2, 1)
+        if (changed) {
+            this._onChangedStatus.fire(this._status)
         }
     }
-}
 
-class SLanNode extends SIONode {
-    constructor() {
-        super("LAN", IoType.Lan, true)
-    }
-}
+    async getUpdatedStatus(): Promise<void> {
+        return new Promise((resolve) => {
+            // TODO: This shouldn't use info for TCPIP. Or the kic info command needs to
+            // use the instrument lxi page for anything on TCPIP/LAN
+            const background_process = child.spawn(
+                EXECUTABLE,
+                [
+                    "--log-file",
+                    join(
+                        LOG_DIR,
+                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                    ),
+                    "info",
+                    this.type.toLowerCase(),
+                    "--json",
+                    this.addr,
+                ],
+                {
+                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                },
+            )
 
-class SUSBNode extends SIONode {
-    constructor() {
-        super("USB", IoType.Usb, true)
-    }
-}
-
-class SVisaNode extends SIONode {
-    constructor() {
-        super("VISA", IoType.Visa, true)
-    }
-}
-
-class SLanNodeProvider extends SNodeprovider {
-    constructor() {
-        super(new SLanNode())
-    }
-}
-
-class SUsbNodeProvider extends SNodeprovider {
-    constructor() {
-        super(new SUSBNode())
-    }
-}
-
-class SVisaNodeProvider extends SNodeprovider {
-    constructor() {
-        super(new SVisaNode())
-    }
-}
-
-class SavedNodeProvider implements IRootNodeProvider {
-    private node_providers: IRootNodeProvider[] = []
-    private savedNode: SavedNode | undefined
-
-    //saved_list - unique combination of iotype + ":" + model + "#" + serial_num
-    private saved_list: string[] = []
-
-    private _slanNodeProvider: SLanNodeProvider | undefined
-    private _susbNodeProvider: SUsbNodeProvider | undefined
-    private _svisaNodeProvider: SVisaNodeProvider | undefined
-
-    constructor() {
-        this._slanNodeProvider = new SLanNodeProvider()
-        this._susbNodeProvider = new SUsbNodeProvider()
-        this._svisaNodeProvider = new SVisaNodeProvider()
-        this.node_providers.push(this._slanNodeProvider)
-        this.node_providers.push(this._susbNodeProvider)
-        this.node_providers.push(this._svisaNodeProvider)
-    }
-
-    GetInstrumentNode(instr: InstrInfo): InstrNode | undefined {
-        if (this.savedNode == undefined) {
-            this.savedNode = new SavedNode()
-        }
-
-        let isSaved = false
-        this.saved_list.forEach((value) => {
-            if (value.includes(DiscoveryHelper.createUniqueID(instr))) {
-                isSaved = true
-            }
-        })
-        if (isSaved) {
-            const nodeItems = this.savedNode.children
-            for (const node_provider of this.node_providers) {
-                const ret = node_provider.GetInstrumentNode(instr)
-                if (!nodeItems.includes(ret as InstrNode)) {
-                    if (ret != undefined) {
-                        nodeItems.push(ret)
-                        break
-                    }
+            setTimeout(() => {
+                if (os.platform() === "win32" && background_process.pid) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    background_process.kill("SIGINT")
                 }
-            }
-            if (nodeItems.length > 0) {
-                //to prevent empty usb, lan nodes addition
-                const tempItems: InstrNode[] = []
-                nodeItems.forEach((item) => {
-                    if (item.children.length > 0) {
-                        tempItems.push(item)
-                    }
-                })
-                this.savedNode.children = tempItems
-            }
-            if (this.savedNode.children.length > 0) {
-                return this.savedNode
-            }
-        }
-        return undefined
-    }
+            }, 1000)
 
-    public saveInstrToList(unique_id: string) {
-        if (!this.saved_list.includes(unique_id)) {
-            this.saved_list.push(unique_id)
-        }
-    }
-
-    public getSavedInstrList(): string[] {
-        return this.saved_list
-    }
-
-    public removeInstrFromList(unique_id: string) {
-        const idx = this.saved_list.indexOf(unique_id)
-        if (idx > -1) {
-            this.saved_list.splice(idx, 1)
-        }
-
-        //from slan and susb
-        if (unique_id.includes("Lan")) {
-            this._slanNodeProvider?.removeInstrFromSavedNode(unique_id)
-        } else if (unique_id.includes("Usb")) {
-            this._susbNodeProvider?.removeInstrFromSavedNode(unique_id)
-        } else if (unique_id.includes("Visa")) {
-            this._svisaNodeProvider?.removeInstrFromSavedNode(unique_id)
-        }
-    }
-}
-
-export class NewTDPModel {
-    //#region private variables
-    private discovery_list: InstrInfo[] = []
-    private connection_list: InstrInfo[] = []
-    private node_providers: IRootNodeProvider[] = []
-    private _savedNodeProvider: SavedNodeProvider | undefined
-    private _lanNodeProvider: LanNodeProvider | undefined
-    private _usbNodeProvider: USBNodeProvider | undefined
-    private _visaNodeProvider: VisaNodeProvider | undefined
-    private new_instr: InstrInfo | undefined
-
-    public is_instr_discovered = false
-    //#endregion
-
-    //#region constructor
-    constructor() {
-        //move saveNodeprov to private var
-        this._savedNodeProvider = new SavedNodeProvider()
-        this._lanNodeProvider = new LanNodeProvider()
-        this._usbNodeProvider = new USBNodeProvider()
-        this._visaNodeProvider = new VisaNodeProvider()
-        //this.node_providers.push(this._savedNodeProvider)
-        this.node_providers.push(this._lanNodeProvider)
-        this.node_providers.push(this._usbNodeProvider)
-        this.node_providers.push(this._visaNodeProvider)
-
-        this.fetchPersistedInstrList()
-    }
-    //#endregion
-
-    //#region public methods
-
-    public getContent(): Thenable<string> {
-        return this.connect().then(() => {
-            return new Promise(() => {
-                rpcClient.requestAdvanced(jsonRPCRequest).then(
-                    (jsonRPCResponse: JSONRPCResponse) => {
-                        if (jsonRPCResponse.error) {
-                            console.log(
-                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
-                            )
-                        } else {
-                            this.parseDiscoveredInstruments(jsonRPCResponse)
-                        }
-                    },
-                    () => {
-                        console.log("RPC Instr List Fetch failed!")
-                    },
-                )
-                //todo
+            let changes = false
+            background_process?.on("close", () => {
+                const new_status =
+                    background_process.exitCode === 0
+                        ? ConnectionStatus.Active
+                        : ConnectionStatus.Inactive
+                if (this.status !== new_status) {
+                    this.status = new_status
+                    changes = true
+                }
+                if (changes) {
+                    this._onChangedStatus.fire(this.status)
+                }
+                resolve()
             })
         })
     }
+}
 
-    public getChildren(node: InstrNode): InstrNode[] {
-        return node.children
+/**
+ * A class used to indicate the start of the Inactive Instruments section of the instrument
+ * list. This class stores no data and is simply a sentinel.
+ */
+export class InactiveInstrumentList extends vscode.TreeItem {
+    constructor() {
+        super("Offline Instruments", vscode.TreeItemCollapsibleState.Collapsed)
+    }
+}
+
+/**
+ * Information describing an instrument that is either saved or discovered.
+ */
+export class Instrument extends vscode.TreeItem {
+    private _name: string = ""
+    private _connections: Connection[] = []
+    private _info: IIDNInfo = {
+        vendor: "",
+        model: "",
+        serial_number: "",
+        firmware_rev: "",
+    }
+    private _status = ConnectionStatus.Inactive
+    private _category: string = ""
+
+    private _onChanged = new vscode.EventEmitter<void>()
+
+    readonly onChanged: vscode.Event<void> = this._onChanged.event
+    private _saved: boolean = false
+
+    static from(info: InstrInfo) {
+        const n = new Instrument(
+            {
+                firmware_rev: info.firmware_revision,
+                model: info.model,
+                serial_number: info.serial_number,
+                vendor: info.manufacturer,
+            },
+            info.friendly_name.length == 0 ? undefined : info.friendly_name,
+        )
+        n._category = info.instr_categ
+        n._connections.push(Connection.from(info))
+
+        return n
     }
 
-    public roots(): Thenable<InstrNode[]> {
-        // dynamic tree creation
-        return this.connect().then(() => {
-            return new Promise((c) => {
-                const nodeItems: InstrNode[] = []
-                if (
-                    this.discovery_list.length < 0 &&
-                    this.connection_list.length < 0
-                ) {
-                    return c(nodeItems)
-                }
-
-                // if any saved instrument is discovered and if the instrument address
-                // has changed, we need to update it
-                this.checkForSavedInstrIPChange()
-                    .then(() => {})
-                    .catch(() => {})
-
-                this.connection_list.forEach((instr) => {
-                    const ret =
-                        this._savedNodeProvider?.GetInstrumentNode(instr)
-                    if (ret != undefined) {
-                        if (!nodeItems.includes(ret)) {
-                            nodeItems.push(ret)
-                        }
-                    }
-                })
-
-                for (const node_provider of this.node_providers) {
-                    this.discovery_list.forEach((instr) => {
-                        const ret = node_provider.GetInstrumentNode(instr)
-                        if (ret != undefined) {
-                            if (!nodeItems.includes(ret)) {
-                                nodeItems.push(ret)
-                            }
-                        }
-                    })
-                }
-
-                return c(nodeItems)
-            })
-        })
+    constructor(info: IIDNInfo, name?: string) {
+        if (!name) {
+            name = `${info.model}#${info.serial_number}`
+        }
+        super(name, vscode.TreeItemCollapsibleState.Expanded)
+        this.description = idn_to_string(info)
+        this._info = info
+        this._name = name
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
+        this.contextValue = "Instr"
+        if (instr_map.get(this._info.model) === "versatest") {
+            this.contextValue += "Versatest"
+        } else {
+            this.contextValue += "Reg"
+        }
+        this.contextValue += "Inactive"
+        this.contextValue += "Discovered"
     }
 
-    //add from connect
-    public async addFromConnectToSavedList(
-        ioType: IoType,
-        instr_details: InstrInfo,
-    ) {
+    get name(): string {
+        return this._name
+    }
+
+    set name(name: string) {
+        this._name = name
+        this.label = this._name
+        this._onChanged.fire()
+    }
+
+    get info(): IIDNInfo {
+        return this._info
+    }
+
+    get category(): string {
+        return this._category
+    }
+
+    get connections(): Connection[] {
+        return this._connections
+    }
+
+    /**
+     * Gets the ConnectionStatus of the instrument by calling `this.updateStatus`.
+     * @see updateStatus()
+     */
+    get status(): ConnectionStatus {
+        return this.updateStatus()
+    }
+
+    /**
+     * @param connection A new connection interface to add to this instrument
+     */
+    addConnection(connection: Connection): boolean {
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        if (i > -1) {
+            if (this._connections[i].status !== connection.status) {
+                this._connections[i].status = connection.status
+                this._onChanged.fire()
+            }
+            return false
+        }
+        connection.onChangedStatus(() => this.updateStatus())
+        this._connections.push(connection)
+
+        this._onChanged.fire()
+
+        return true
+    }
+
+    hasConnection(connection: Connection) {
+        const i = this._connections.findIndex(
+            (v) => v.addr === connection.addr && v.type == connection.type,
+        )
+        return i > -1
+    }
+
+    /**
+     * Check all connections to see if they are responsive. Can be run concurrently with
+     * other instrument checks.
+     */
+    async getUpdatedStatus(): Promise<void> {
+        for (const c of this._connections) {
+            await c.getUpdatedStatus()
+        }
+    }
+
+    /**
+     * Update the status of this Instrument by going through each connection interface
+     * and then determining the overall status of this instrument:
+     *
+     * @returns ConnectionStatus.Connected if any connections are Connected.
+     * @returns ConnectionStatus.Active if no connections are Connected but at least 1 is Active.
+     * @returns ConnectionStatus.Inactive otherwise.
+     */
+    updateStatus(): ConnectionStatus {
+        const status_before = this._status
+        this._status = ConnectionStatus.Inactive
+
+        // Sort the connections by address
+        this._connections.sort((a, b) => a.addr.localeCompare(b.addr))
+        // Sort the connections by status
+        // (we want to show higher values first, so invert the result)
+        this._connections.sort((a, b) => -(a.status - b.status))
+
+        for (const c of this._connections) {
+            if (c.status == ConnectionStatus.Active) {
+                this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
+            } else if (c.status == ConnectionStatus.Connected) {
+                this._status = ConnectionStatus.Connected
+
+                break //If any of the connections are connected, we show "Connected"
+            }
+        }
+
+        this.iconPath = connectionStatusIcon(this._status)
+
+        if (this._status != status_before) {
+            this._onChanged.fire()
+            switch (this._status) {
+                case ConnectionStatus.Active:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Active",
+                    )
+                    break
+                case ConnectionStatus.Inactive:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Inactive",
+                    )
+                    break
+                case ConnectionStatus.Connected:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Connected",
+                    )
+                    break
+                    break
+            }
+        }
+
+        return this._status
+    }
+
+    get saved(): boolean {
+        return this._saved
+    }
+
+    set saved(enabled: boolean) {
+        this._saved = enabled
+        const str = enabled ? "Saved" : "Discovered"
+        if (this.contextValue?.match(/Saved|Discovered/)) {
+            this.contextValue = this.contextValue?.replace(
+                /Saved|Discovered/,
+                str,
+            )
+        } else {
+            this.contextValue += str
+        }
+    }
+}
+
+export class InfoList extends vscode.TreeItem {
+    private _info?: IIDNInfo | undefined
+    constructor(info: IIDNInfo) {
+        super(
+            "Instrument Information",
+            vscode.TreeItemCollapsibleState.Collapsed,
+        )
+        this._info = info
+    }
+
+    get info(): IIDNInfo | undefined {
+        return this._info
+    }
+}
+
+export class StringData extends vscode.TreeItem {
+    constructor(text: string) {
+        super(text, vscode.TreeItemCollapsibleState.None)
+    }
+}
+
+export class InstrumentTreeDataProvider
+    implements
+        vscode.TreeDataProvider<
+            Instrument | Connection | InactiveInstrumentList | StringData
+        >
+{
+    private _instruments: Instrument[] = []
+    private instruments_discovered: boolean = false
+    private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
+        undefined
+
+    constructor() {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
-            func: `NewTDPModel.addFromConnectToSavedList("${ioType.toString()}", "${String(instr_details)}")`,
+            func: "InstrumentTreeDataProvider.constructor()",
         }
-        if (instr_details != undefined) {
-            Log.trace("Adding instrument to list", LOGLOC)
-            this._savedNodeProvider?.saveInstrToList(
-                DiscoveryHelper.createUniqueID(instr_details),
-            )
-            this.addToConnectionList(instr_details)
-
-            await this.saveInstrInfoToPersist(instr_details)
-
-            const saved_list = this._savedNodeProvider?.getSavedInstrList()
-
-            switch (ioType) {
-                case IoType.Lan:
-                    this._lanNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-                case IoType.Usb:
-                    this._usbNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-                case IoType.Visa:
-                    this._visaNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-            }
-            return
-        }
-        Log.warn("Instrument details not provided", LOGLOC)
+        Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
+        this.getSavedInstruments().catch(() => {})
+        this.configWatcherEnable(true)
     }
 
-    public async addSavedList(instr: unknown) {
-        const nodeToBeSaved = instr as IOInstrNode
-        if (nodeToBeSaved != undefined) {
-            this._savedNodeProvider?.saveInstrToList(
-                nodeToBeSaved.FetchUniqueID() ?? "",
-            )
-
-            nodeToBeSaved.addDefaultFriendlyName()
-            this.addToConnectionList(nodeToBeSaved.fetchInstrInfo())
-            const saved_list = this._savedNodeProvider?.getSavedInstrList()
-
-            await this.saveInstrInfoToPersist(nodeToBeSaved.fetchInstrInfo())
-
-            switch (nodeToBeSaved.FetchInstrIOType()) {
-                case IoType.Lan:
-                    this._lanNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-                case IoType.Usb:
-                    this._usbNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-                case IoType.Visa:
-                    this._visaNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        true,
-                    )
-                    break
-            }
+    private async updateSavedAll(instruments: Instrument[]) {
+        for (const i of instruments) {
+            await this.updateSaved(i)
         }
     }
-
-    //check for redundant entries
-    public addToConnectionList(instr: InstrInfo) {
-        let idx = -1
-        let status = "add_new"
-        if (this.connection_list.length == 0) {
-            this.connection_list.push(instr)
-            return
-        } else {
-            for (let i = 0; i < this.connection_list.length; i++) {
-                if (
-                    DiscoveryHelper.createUniqueID(instr) ==
-                    DiscoveryHelper.createUniqueID(this.connection_list[i])
-                ) {
-                    if (
-                        this.connection_list[i].instr_address !=
-                        instr.instr_address
-                    ) {
-                        idx = i
-                        status = "update"
-                        break
-                    } else {
-                        status = "no_change"
-                        break
-                    }
-                }
-            }
+    /**
+     * If the given instrument exists in the saved instrument list, add entries for any
+     * missing connections.
+     */
+    async updateSaved(instrument: Instrument) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.updateSaved()",
         }
 
-        if (status == "add_new") {
-            this.connection_list.push(instr)
-        } else if (status == "update") {
-            this.connection_list[idx] = instr
-        }
-    }
-
-    public removeSavedList(instr: unknown) {
-        const nodeToBeRemoved = instr as IOInstrNode
-        if (nodeToBeRemoved != undefined) {
-            let idx = -1
-            for (let i = 0; i < this.connection_list.length; i++) {
-                const uid = DiscoveryHelper.createUniqueID(
-                    this.connection_list[i],
-                )
-                if (uid == nodeToBeRemoved.FetchUniqueID()) {
-                    idx = i
-                    break
-                }
-            }
-
-            if (idx > -1) {
-                this.connection_list.splice(idx, 1)
-            }
-
-            this._savedNodeProvider?.removeInstrFromList(
-                nodeToBeRemoved.FetchUniqueID() ?? "",
-            )
-
-            const saved_list = this._savedNodeProvider?.getSavedInstrList()
-
-            this.removeInstrFromPersistedList(nodeToBeRemoved.fetchInstrInfo())
-            switch (nodeToBeRemoved.FetchInstrIOType()) {
-                case IoType.Lan:
-                    this._lanNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        false,
-                    )
-                    break
-                case IoType.Usb:
-                    this._usbNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        false,
-                    )
-                    break
-                case IoType.Visa:
-                    this._visaNodeProvider?.updateSavedList(
-                        saved_list ?? [],
-                        false,
-                    )
-                    break
-            }
-        }
-    }
-    //#endregion
-
-    //#region private methods
-    private connect(): Thenable<undefined> {
-        return new Promise((c) => {
-            c(void 0)
-        })
-    }
-
-    private fetchPersistedInstrList() {
-        const temp_list: InstrInfo[] =
+        Log.trace(
+            `Updating saved instrument with sn ${instrument.info.serial_number}`,
+            LOGLOC,
+        )
+        // Get all the saved entries
+        const raw: InstrInfo[] =
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
             []
 
-        this.connection_list = temp_list
+        // Find all saved entries that have the same SN as the given instrument
+        const matches = raw.filter(
+            (v) => v.serial_number === instrument.info.serial_number,
+        )
 
-        // const __info: InstrInfo = {
-        //     io_type: IoType.Lan,
-        //     instr_address: "192.168.0.1",
-        //     socket_port: "NA",
-        //     manufacturer: "KEITHLEY INSTRUMENTS LLC",
-        //     model: "VERSATEST-600",
-        //     serial_number: "TM-PQ2-23",
-        //     firmware_revision: "0.0.1",
-        //     instr_categ: "versatest",
-        //     friendly_name: "VERSATEST-600#TM-PQ2-23",
+        // Of all the connections in the given instrument, find the ones that aren't in
+        // the other list
+        const missing = instrument.connections.filter(
+            (v) => !matches.find((m) => m.instr_address === v.addr),
+        )
+
+        for (const m of missing) {
+            raw.push({
+                io_type: m.type,
+                instr_address: m.addr,
+                manufacturer: instrument.info.vendor,
+                model: instrument.info.model,
+                serial_number: instrument.info.serial_number,
+                firmware_revision: instrument.info.firmware_rev,
+                instr_categ: instrument.category,
+                friendly_name: instrument.name,
+            })
+        }
+
+        for (const r of raw) {
+            if (r.serial_number === instrument.info.serial_number) {
+                if (r.friendly_name !== instrument.name) {
+                    r.friendly_name = instrument.name
+                }
+                if (r.firmware_revision !== instrument.info.firmware_rev) {
+                    r.firmware_revision = instrument.info.firmware_rev
+                }
+            }
+        }
+
+        if (matches.length > 0) {
+            await vscode.workspace
+                .getConfiguration("tsp")
+                .update(
+                    "savedInstruments",
+                    raw,
+                    vscode.ConfigurationTarget.Global,
+                )
+        }
+    }
+
+    addOrUpdateInstruments(instruments: Instrument[]) {
+        for (const i of instruments) {
+            this.addOrUpdateInstrument(i)
+        }
+    }
+
+    addOrUpdateInstrument(instrument: Instrument) {
+        // const LOGLOC: SourceLocation = {
+        //     file: "instruments.ts",
+        //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
         // }
 
-        //this.connection_list.push(__info)
+        const found_idx = this._instruments.findIndex(
+            (v) =>
+                v.info.model === instrument.info.model &&
+                v.info.serial_number === instrument.info.serial_number,
+        )
 
-        this.connection_list.forEach((item: InstrInfo) => {
-            this._savedNodeProvider?.saveInstrToList(
-                DiscoveryHelper.createUniqueID(item),
-            )
-        })
-
-        this.node_providers.forEach((disc_node_provider) => {
-            const res_node = disc_node_provider as NodeProvider
-            res_node.updateSavedList(
-                this._savedNodeProvider?.getSavedInstrList() ?? [],
-                false,
-            )
-        })
-    }
-
-    /**
-     * Used to update saved instrument details if it is discovered with a
-     * different instrument address
-     */
-    private async checkForSavedInstrIPChange() {
-        for (let i = 0; i < this.discovery_list.length; i++) {
-            for (let j = 0; j < this.connection_list.length; j++) {
+        let changed = false
+        if (found_idx > -1) {
+            for (const c of instrument.connections) {
+                changed = this._instruments[found_idx].addConnection(c)
                 if (
-                    DiscoveryHelper.createUniqueID(this.discovery_list[i]) ==
-                        DiscoveryHelper.createUniqueID(
-                            this.connection_list[j],
-                        ) &&
-                    this.discovery_list[i].instr_address !=
-                        this.connection_list[j].instr_address
+                    this._instruments[found_idx].name != instrument.name &&
+                    !this._instruments[found_idx].saved
                 ) {
-                    this.connection_list[j].instr_address =
-                        this.discovery_list[i].instr_address
-
-                    //also update persisted list in settings.json
-                    await this.saveInstrInfoToPersist(this.connection_list[j])
-                    break
+                    this._instruments[found_idx].name = instrument.name
+                    changed = true
+                }
+                if (changed) {
+                    this._instruments[found_idx].updateStatus()
                 }
             }
+        } else {
+            instrument.onChanged(() => this.reloadTreeData())
+            this._instruments.push(instrument)
+            changed = true
         }
+
+        this.reloadTreeData()
     }
 
-    /**
-     * Used to remove saved instrument stored in settings.json file when user
-     * tries to remove it using right-click option
-     *
-     * @param instr - saved instrument that needs to be removed from settings.json file
-     */
-    private removeInstrFromPersistedList(instr: InstrInfo) {
-        try {
-            const instrList: Array<InstrInfo> =
-                vscode.workspace
-                    .getConfiguration("tsp")
-                    .get("savedInstruments") ?? []
-            const config = vscode.workspace.getConfiguration("tsp")
+    private _onDidChangeTreeData: vscode.EventEmitter<
+        | void
+        | Instrument
+        | Connection
+        | InactiveInstrumentList
+        | StringData
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
+        | null
+        | undefined
+    > = new vscode.EventEmitter<
+        | void
+        | Instrument
+        | Connection
+        | InactiveInstrumentList
+        | StringData
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
+        | null
+        | undefined
+    >()
 
-            let idx = -1
+    readonly onDidChangeTreeData: vscode.Event<
+        | void
+        | Instrument
+        | Connection
+        | InactiveInstrumentList
+        | StringData
+        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
+        | null
+        | undefined
+    > = this._onDidChangeTreeData.event
 
-            for (let i = 0; i < instrList.length; i++) {
-                if (
-                    instrList[i].io_type == instr.io_type &&
-                    instrList[i].model == instr.model &&
-                    instrList[i].serial_number == instr.serial_number
-                ) {
-                    idx = i
-                    break
-                }
-            }
-
-            if (idx > -1) {
-                instrList.splice(idx, 1)
-
-                void config.update(
-                    "savedInstruments",
-                    instrList,
-                    vscode.ConfigurationTarget.Global,
-                )
-            }
-        } catch (err_msg) {
-            void vscode.window.showErrorMessage(String(err_msg))
-            return
-        }
+    getTreeItem(
+        element: Instrument | Connection | InactiveInstrumentList | StringData,
+    ): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        return element
     }
 
-    /**
-     * Used to persist saved instrument when extension is restarted
-     *
-     * @param instr - saved instrument that needs to stored and recalled
-     */
-    private async saveInstrInfoToPersist(instr: InstrInfo) {
-        try {
-            const instrList: Array<InstrInfo> =
-                vscode.workspace
-                    .getConfiguration("tsp")
-                    .get("savedInstruments") ?? []
-            const config = vscode.workspace.getConfiguration("tsp")
-
-            const idx = instrList.findIndex((item) => {
-                return (
-                    item.io_type == instr.io_type &&
-                    item.model == instr.model &&
-                    item.serial_number == instr.serial_number
-                )
+    getChildren(
+        element?:
+            | Instrument
+            | Connection
+            | InactiveInstrumentList
+            | StringData
+            | undefined,
+    ): vscode.ProviderResult<
+        (Instrument | Connection | InactiveInstrumentList | StringData)[]
+    > {
+        // const LOGLOC: SourceLocation = {
+        //     file: "instruments.ts",
+        //     func: `InstrumentTreeDataProvider.getChildren()`,
+        // }
+        if (!element) {
+            return new Promise((resolve) => {
+                resolve([
+                    ...this._instruments.filter(
+                        (x) =>
+                            x.status == ConnectionStatus.Active ||
+                            x.status == ConnectionStatus.Connected,
+                    ),
+                    new InactiveInstrumentList(),
+                ])
             })
-
-            if (idx == -1) {
-                instrList.push(instr)
-
-                await config.update(
-                    "savedInstruments",
-                    instrList,
-                    vscode.ConfigurationTarget.Global,
-                )
-            } else {
-                //found, check if connection address has changed
-                //update
-                let doUpdate = false
-                if (instrList[idx].instr_address != instr.instr_address) {
-                    instrList[idx].instr_address = instr.instr_address
-                    doUpdate = true
-                }
-                if (instrList[idx].friendly_name != instr.friendly_name) {
-                    instrList[idx].friendly_name = instr.friendly_name
-                    doUpdate = true
-                }
-                if (doUpdate) {
-                    await config.update(
-                        "savedInstruments",
-                        instrList,
-                        vscode.ConfigurationTarget.Global,
-                    )
-                }
-            }
-            vscode.workspace.getConfiguration("tsp").get("savedInstruments")
-        } catch (err_msg) {
-            void vscode.window.showErrorMessage(String(err_msg))
-            return
         }
+        if (element instanceof Instrument) {
+            return new Promise((resolve) => {
+                resolve([...element.connections])
+            })
+        }
+
+        if (element instanceof InfoList) {
+            return new Promise((resolve) => {
+                if (!element.info) {
+                    resolve([])
+                } else {
+                    resolve([
+                        new StringData(`Model: ${element.info.model}`),
+                        new StringData(
+                            `FW Version: ${element.info.firmware_rev}`,
+                        ),
+                        new StringData(
+                            `Serial Number: ${element.info.serial_number}`,
+                        ),
+                    ])
+                }
+            })
+        }
+        if (element instanceof Connection) {
+            return new Promise((resolve) => {
+                resolve([])
+            })
+        }
+        if (element instanceof InactiveInstrumentList) {
+            return new Promise((resolve) => {
+                resolve([
+                    ...this._instruments.filter(
+                        (x) =>
+                            x.status == ConnectionStatus.Inactive ||
+                            x.status == ConnectionStatus.Ignored,
+                    ),
+                ])
+            })
+        }
+        return new Promise((resolve) => {
+            resolve([])
+        })
+    }
+
+    doWithConfigWatcherOff(cb: () => void) {
+        this.configWatcherEnable(false)
+        cb()
+        this.configWatcherEnable(true)
+    }
+    private configWatcherEnable(enabled: boolean) {
+        if (enabled && !this._savedInstrumentConfigWatcher) {
+            this._savedInstrumentConfigWatcher =
+                vscode.workspace.onDidChangeConfiguration((e) => {
+                    if (e.affectsConfiguration("tsp.savedInstrument")) {
+                        this.getSavedInstruments().catch(() => {})
+                    }
+                })
+        } else if (!enabled && this._savedInstrumentConfigWatcher) {
+            this._savedInstrumentConfigWatcher.dispose()
+            this._savedInstrumentConfigWatcher = undefined
+        }
+    }
+
+    async refresh(discovery_cb: () => Promise<void>): Promise<void> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.refresh()",
+        }
+
+        Log.trace("Refreshing Discovered list", LOGLOC)
+        await this.updateStatus()
+        await discovery_cb()
+
+        this.doWithConfigWatcherOff(() => {
+            this.updateSavedAll(this._instruments).catch(() => {})
+        })
+
+        this.instruments_discovered = false
+    }
+
+    async saveInstrument(instr: Instrument): Promise<void> {
+        //TODO Add to saved list
+        instr.saved = true
+        await this.saveInstrumentToList(instr)
+        this.reloadTreeData()
+    }
+
+    async removeInstrument(instr: Instrument): Promise<void> {
+        Log.trace(`Remove ${instr.info.serial_number}`, {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.removeInstrument()",
+        })
+        await this.removeSavedList(instr)
+        this.reloadTreeData()
+    }
+
+    reloadTreeData() {
+        // Sort the connections by name
+        this._instruments.sort((a, b) => a.name.localeCompare(b.name))
+        // Sort the connections by status
+        // (we want to show higher values first, so invert the result)
+        this._instruments.sort((a, b) => -(a.status - b.status))
+        this._onDidChangeTreeData.fire(undefined)
+    }
+
+    private async getSavedInstruments(): Promise<Instrument[]> {
+        return new Promise(() => {
+            const raw: InstrInfo[] =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+
+            this.addOrUpdateInstruments(
+                raw.map((v) => {
+                    const i = Instrument.from(v)
+                    i.saved = true
+                    return i
+                }),
+            )
+
+            return this._instruments
+        })
+    }
+
+    private async updateStatus(): Promise<void> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentTreeDataProvider.updateStatus()",
+        }
+        Log.trace("UpdateStatus", LOGLOC)
+        const parallel_info: Promise<void>[] = []
+        for (let i = 0; i < this._instruments.length; i++) {
+            Log.trace(
+                `Checking connections for ${this._instruments[i].name}`,
+                LOGLOC,
+            )
+            parallel_info.push(this._instruments[i].getUpdatedStatus())
+        }
+        await Promise.all(parallel_info)
+        return new Promise((resolve) => {
+            resolve()
+        })
+    }
+
+    /**
+     * @returns true when new instruments are discovered
+     */
+    async getContent(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            rpcClient.requestAdvanced(jsonRPCRequest).then(
+                (jsonRPCResponse: JSONRPCResponse) => {
+                    if (jsonRPCResponse.error) {
+                        reject(
+                            new Error(
+                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
+                            ),
+                        )
+                        console.log(
+                            `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
+                        )
+                    } else {
+                        this.addOrUpdateInstruments(
+                            InstrumentTreeDataProvider.parseDiscoveredInstruments(
+                                jsonRPCResponse,
+                            ).map((v: InstrInfo) => {
+                                this.instruments_discovered = true
+                                const i = Instrument.from(v)
+                                i.connections[0].status =
+                                    ConnectionStatus.Active
+                                i.updateStatus()
+                                return i
+                            }),
+                        )
+
+                        if (this.instruments_discovered) {
+                            this.reloadTreeData()
+                        }
+                    }
+
+                    //DEBUG
+                    //DEBUG
+                    //DEBUG
+                    // const example = new Instrument(
+                    //     {
+                    //         vendor: "KEITHLEY INSTRUMENTS LLC",
+                    //         firmware_rev: "0.0.1eng1165-230e88a",
+                    //         model: "TSPop",
+                    //         serial_number: "0",
+                    //     },
+                    //     "2461#04090044",
+                    // )
+                    // const example_conn_lan = new Connection(
+                    //     IoType.Lan,
+                    //     "127.0.0.1",
+                    // )
+                    // example_conn_lan.status = ConnectionStatus.Active
+
+                    // example.addConnection(example_conn_lan)
+                    // example.updateStatus()
+                    // this.addOrUpdateInstrument(example)
+                    //DEBUG
+                    //DEBUG
+                    //DEBUG
+
+                    resolve(this.instruments_discovered)
+                },
+                () => {
+                    reject(new Error("RPC Instr List Fetch failed!"))
+                    console.log("RPC Instr List Fetch failed!")
+                },
+            )
+            //todo
+        })
     }
 
     /**
@@ -1079,7 +936,10 @@ export class NewTDPModel {
      * @param jsonRPCResponse - json rpc response whose result needs to be parsed
      * to extract the discovered instrument details
      */
-    private parseDiscoveredInstruments(jsonRPCResponse: JSONRPCResponse) {
+    private static parseDiscoveredInstruments(
+        jsonRPCResponse: JSONRPCResponse,
+    ): InstrInfo[] {
+        const discovery_list: InstrInfo[] = []
         const res: unknown = jsonRPCResponse.result
         if (typeof res === "string") {
             console.log("JSON RPC Instr list: " + res)
@@ -1087,197 +947,215 @@ export class NewTDPModel {
 
             //need to remove the last newline element??
             instrList?.forEach((instr) => {
+                let new_instr: InstrInfo | undefined = undefined
                 if (instr.length > 0) {
                     const obj = plainToInstance(InstrInfo, JSON.parse(instr))
                     //console.log(obj.fetch_uid())
 
-                    if (this.discovery_list.length == 0) {
-                        this.discovery_list.push(obj)
-                        this.is_instr_discovered = true
+                    if (discovery_list.length == 0) {
+                        discovery_list.push(obj)
                     } else {
                         let idx = -1
-                        this.new_instr = undefined
+                        new_instr = undefined
 
-                        for (let i = 0; i < this.discovery_list.length; i++) {
-                            this.new_instr = undefined
+                        for (let i = 0; i < discovery_list.length; i++) {
+                            new_instr = undefined
                             if (
                                 DiscoveryHelper.createUniqueID(
-                                    this.discovery_list[i],
+                                    discovery_list[i],
                                 ) == DiscoveryHelper.createUniqueID(obj)
                             ) {
                                 if (
-                                    this.discovery_list[i].instr_address !=
+                                    discovery_list[i].instr_address !=
                                     obj.instr_address
                                 ) {
                                     idx = i
-                                    this.new_instr = obj
+                                    new_instr = obj
                                     break
                                 } else {
                                     break
                                 }
                             } else {
-                                this.new_instr = obj
+                                new_instr = obj
                             }
                         }
 
-                        if (this.new_instr != undefined) {
+                        if (new_instr != undefined) {
                             if (idx > -1) {
-                                this.discovery_list[idx] = this.new_instr
+                                discovery_list[idx] = new_instr
                             } else {
-                                this.discovery_list.push(this.new_instr)
+                                discovery_list.push(new_instr)
                             }
-                            this.is_instr_discovered = true
                         }
                     }
                 }
             })
         }
-    }
-    //#endregion
-}
-
-type newTDP = vscode.TreeDataProvider<InstrNode>
-
-export class InstrTDP implements newTDP {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private _onDidChangeTreeData: vscode.EventEmitter<any> =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        new vscode.EventEmitter<any>()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    readonly onDidChangeTreeData: vscode.Event<any> =
-        this._onDidChangeTreeData.event
-
-    private instrModel: NewTDPModel | undefined
-    constructor(model: NewTDPModel) {
-        this.instrModel = model
-    }
-    getTreeItem(
-        element: InstrNode,
-    ): vscode.TreeItem | Thenable<vscode.TreeItem> {
-        let expandableState = vscode.TreeItemCollapsibleState.None
-
-        //Created TSP-481 to focus the newly connected instrument info in "Instruments" pane
-        if (element.children.length > 0) {
-            if (element.isExpandable) {
-                expandableState = vscode.TreeItemCollapsibleState.Expanded
-            } else {
-                expandableState = vscode.TreeItemCollapsibleState.Collapsed
-            }
-        } else {
-            expandableState = vscode.TreeItemCollapsibleState.None
-        }
-
-        const treeItem = new vscode.TreeItem(element.label, expandableState)
-
-        if (element.children.length > 0) {
-            const main_node = element as IOInstrNode
-            //ToDo: showNestedMenu used to identify IOInstrNode
-            if (main_node != undefined && main_node.showNestedMenu) {
-                let cv = ""
-                if (main_node.fetchSaveStatus() == false) {
-                    cv = "NotSaved"
-                } else {
-                    cv = "ToRemove"
-                }
-
-                const categ = main_node.FetchInstrCateg()
-
-                cv += categ?.includes("versatest")
-                    ? "VersatestInstr"
-                    : "RegInstr"
-
-                treeItem.contextValue = cv
-                return treeItem
-            } else {
-                return treeItem
-            }
-        } else {
-            return treeItem
-        }
+        return discovery_list
     }
 
-    getChildren(
-        element?: InstrNode | undefined,
-    ): vscode.ProviderResult<InstrNode[]> {
-        return element
-            ? this.instrModel?.getChildren(element)
-            : this.instrModel?.roots()
-    }
-
-    public refresh(): void {
-        if (this.instrModel != undefined) {
-            void this.instrModel.getContent()
-            if (this.instrModel.is_instr_discovered) {
-                this.reloadTreeData()
-                this.instrModel.is_instr_discovered = false
+    private static getAllIndices(
+        list: Array<InstrInfo>,
+        pred: (item: InstrInfo) => boolean,
+    ): number[] {
+        const indices: Array<number> = new Array<number>()
+        for (let i = 0; i < list.length; i++) {
+            if (pred(list[i])) {
+                indices.push(i)
             }
         }
+        return indices
     }
-
-    /**
-     * Used to save the instrument from right-click menu option
-     *
-     * @param instr - instrument to be saved
-     */
-    public async saveInstrument(instr: unknown): Promise<void> {
-        await this.instrModel?.addSavedList(instr)
-        this.reloadTreeData()
-    }
-
-    /**
-     * Used to save the instrument during connection
-     *
-     * @param instr_to_save - instrument to be saved
-     * @param ioType - ioType can be lan, usb etc.
-     * @param instr_details - additional info of instrument to be saved
-     */
-    public async saveInstrumentFromConnect(
-        ioType: IoType,
-        instr_details: InstrInfo,
-    ): Promise<void> {
-        const LOGLOC: SourceLocation = {
+    private async removeSavedList(instr: Instrument) {
+        const LOGLOC = {
             file: "instruments.ts",
-            func: `InstrTDP.saveInstrumentFromConnect("${ioType.toString()}", "${String(instr_details)}")`,
+            func: "InstrumentTreeDataProvider.removeInstrument()",
         }
-        Log.trace("Add from connect to saved list", LOGLOC)
-        await this.instrModel?.addFromConnectToSavedList(ioType, instr_details)
-        this.reloadTreeData()
-    }
+        try {
+            const instrList: Array<InstrInfo> =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+            const config = vscode.workspace.getConfiguration("tsp")
 
-    public removeInstrument(instr: unknown): void {
-        this.instrModel?.removeSavedList(instr)
-        this.reloadTreeData()
-    }
+            const matching_instruments_indices =
+                InstrumentTreeDataProvider.getAllIndices(instrList, (v) => {
+                    return (
+                        v.model == instr.info.model &&
+                        v.serial_number == instr.info.serial_number
+                    )
+                })
+            Log.trace(
+                `Removing ${matching_instruments_indices.length} instances of ${instr.info.serial_number}`,
+                LOGLOC,
+            )
 
-    public reloadTreeData() {
-        setTimeout(() => {
-            this._onDidChangeTreeData.fire(undefined)
-        }, 200)
+            for (const idx of matching_instruments_indices.reverse()) {
+                Log.trace(`Removing ${JSON.stringify(instrList[idx])}`, LOGLOC)
+                instrList.splice(idx, 1)
+            }
+
+            await config.update(
+                "savedInstruments",
+                instrList,
+                vscode.ConfigurationTarget.Global,
+            )
+        } catch (err_msg) {
+            vscode.window.showErrorMessage(String(err_msg))
+        }
+    }
+    private async saveInstrumentToList(instr: Instrument) {
+        try {
+            const instrList: Array<InstrInfo> =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("savedInstruments") ?? []
+            const config = vscode.workspace.getConfiguration("tsp")
+
+            for (const i of instr.connections) {
+                const matching_instruments_indices =
+                    InstrumentTreeDataProvider.getAllIndices(instrList, (v) => {
+                        return (
+                            v.model == instr.info.model &&
+                            v.serial_number == instr.info.serial_number &&
+                            v.io_type == i.type &&
+                            (i.type == IoType.Visa
+                                ? v.instr_address.substring(0, 4) ==
+                                  i.addr.substring(0, 4)
+                                : true)
+                        )
+                    })
+                if (matching_instruments_indices.length == 0) {
+                    instrList.push({
+                        io_type: i.type,
+                        instr_address: i.addr,
+                        manufacturer: instr.info.vendor,
+                        model: instr.info.model,
+                        serial_number: instr.info.serial_number,
+                        firmware_revision: instr.info.firmware_rev,
+                        instr_categ: instr_map.get(instr.info.model) ?? "",
+                        friendly_name: instr.name,
+                        socket_port: i.type == IoType.Lan ? "5025" : undefined,
+                    })
+                } else {
+                    for (const m of matching_instruments_indices) {
+                        if (
+                            instrList[m].io_type == IoType.Visa &&
+                            instrList[m].instr_address.substring(0, 4) ==
+                                i.addr.substring(0, 4)
+                        ) {
+                            instrList[m].instr_address = i.addr
+                        } else {
+                            instrList[m].instr_address = i.addr
+                        }
+                    }
+                }
+            }
+            await config.update(
+                "savedInstruments",
+                instrList,
+                vscode.ConfigurationTarget.Global,
+            )
+        } catch (err_msg) {
+            vscode.window.showErrorMessage(String(err_msg))
+        }
     }
 }
 
 export class InstrumentsExplorer {
-    private InstrumentsDiscoveryViewer: vscode.TreeView<InstrNode>
-    private treeDataProvider?: InstrTDP
+    private InstrumentsDiscoveryViewer: vscode.TreeView<
+        Instrument | Connection | InactiveInstrumentList
+    >
+    private treeDataProvider?: InstrumentTreeDataProvider
     private intervalID?: NodeJS.Timeout
     private _kicProcessMgr: KicProcessMgr
+    private _discoveryInProgress: boolean = false
 
     constructor(
         context: vscode.ExtensionContext,
         kicProcessMgr: KicProcessMgr,
     ) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentExplorer.constructor()",
+        }
         this._kicProcessMgr = kicProcessMgr
-        const tdpModel = new NewTDPModel()
-        const treeDataProvider = new InstrTDP(tdpModel)
 
-        this.InstrumentsDiscoveryViewer =
-            vscode.window.createTreeView<InstrNode>("InstrumentsExplorer", {
-                treeDataProvider,
+        Log.trace("Instantiating TDP", LOGLOC)
+        const treeDataProvider = new InstrumentTreeDataProvider()
+        Log.trace("Refreshing TDP", LOGLOC)
+        treeDataProvider
+            .refresh(async () => await this.startDiscovery())
+            .catch((e) => {
+                Log.error(
+                    `Problem starting Instrument List data provider: ${e}`,
+                    LOGLOC,
+                )
             })
+
+        this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
+            Instrument | Connection | InactiveInstrumentList
+        >("InstrumentsExplorer", {
+            treeDataProvider,
+        })
+
+        this.InstrumentsDiscoveryViewer.message =
+            "Checking saved instrument connections..."
 
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            this.startDiscovery()
+            this.InstrumentsDiscoveryViewer.message =
+                "Checking saved instrument connections..."
+            this.treeDataProvider
+                ?.refresh(async () => {
+                    await this.startDiscovery()
+                })
+                .then(
+                    () => {},
+                    (e) => {
+                        Log.error(`Unable to refresh instrument explorer: ${e}`)
+                    },
+                )
         })
         vscode.commands.registerCommand(
             "InstrumentsExplorer.openInstrumentsDiscoveryResource",
@@ -1288,56 +1166,57 @@ export class InstrumentsExplorer {
             () => void 0,
         )
 
-        const upgradefw = vscode.commands.registerCommand(
+        const upgradeFw = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeFirmware",
-            async (e) => {
+            async (e: Connection) => {
                 await this.upgradeFirmware(e)
             },
         )
 
         const upgradeMainframe = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeMainframe",
-            async (e) => {
+            async (e: Connection) => {
                 await this.upgradeMainframe(e)
             },
         )
 
         const upgradeSlot1 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot1",
-            async (e) => {
+            async (e: Connection) => {
                 await this.upgradeSlot1(e)
             },
         )
 
         const upgradeSlot2 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot2",
-            async (e) => {
+            async (e: Connection) => {
                 await this.upgradeSlot2(e)
             },
         )
 
         const upgradeSlot3 = vscode.commands.registerCommand(
             "InstrumentsExplorer.upgradeSlot3",
-            async (e) => {
+            async (e: Connection) => {
                 await this.upgradeSlot3(e)
             },
         )
 
         const saveInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.save",
-            async (e) => {
+            async (e: Instrument) => {
+                console.log(e)
                 await this.saveInstrument(e)
             },
         )
 
         const removeInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.remove",
-            (e) => {
-                this.removeInstrument(e)
+            async (e: Instrument) => {
+                await this.removeInstrument(e)
             },
         )
 
-        context.subscriptions.push(upgradefw)
+        context.subscriptions.push(upgradeFw)
         context.subscriptions.push(upgradeMainframe)
         context.subscriptions.push(upgradeSlot1)
         context.subscriptions.push(upgradeSlot2)
@@ -1345,108 +1224,129 @@ export class InstrumentsExplorer {
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
 
-        this.startDiscovery()
-    }
-
-    private startDiscovery() {
-        if (this.InstrumentsDiscoveryViewer.message == "") {
-            const discover = cp.spawn(
-                DISCOVER_EXECUTABLE,
-                [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date()
-                            .toISOString()
-                            .substring(0, 10)}-kic-discover.log`,
-                    ),
-                    "all",
-                    "--timeout",
-                    DISCOVERY_TIMEOUT.toString(),
-                    "--exit",
-                ],
-                //,
-                // {
-                //     detached: true,
-                //     stdio: "ignore",
-                // }
+        this.treeDataProvider
+            ?.refresh(async () => await this.startDiscovery())
+            .then(
+                () => {},
+                (e: Error) => {
+                    Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
+                },
             )
-
-            discover.on("exit", () => {
-                this.InstrumentsDiscoveryViewer.message = ""
-                clearInterval(this.intervalID)
-            })
-
-            //subprocess.unref()
-
-            this.InstrumentsDiscoveryViewer.message =
-                "Instruments Discovery in progress..."
-
-            //this.treeDataProvider?.clear()
-
-            this.intervalID = setInterval(() => {
-                this.treeDataProvider?.refresh()
-            }, 1000)
-        }
     }
 
-    public async rename(item: unknown) {
+    private startDiscovery(): Promise<void> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentExplorer.startDiscovery()",
+        }
+        return new Promise<void>((resolve) => {
+            if (!this._discoveryInProgress) {
+                this._discoveryInProgress = true
+                const discover = child.spawn(
+                    DISCOVER_EXECUTABLE,
+                    [
+                        "--log-file",
+                        join(
+                            LOG_DIR,
+                            `${new Date()
+                                .toISOString()
+                                .substring(0, 10)}-kic-discover.log`,
+                        ),
+                        "all",
+                        "--timeout",
+                        DISCOVERY_TIMEOUT.toString(),
+                        "--exit",
+                    ],
+                    //,
+                    // {
+                    //     detached: true,
+                    //     stdio: "ignore",
+                    // }
+                )
+
+                discover.on("exit", (code) => {
+                    if (code) {
+                        Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
+                    }
+                    this.InstrumentsDiscoveryViewer.message = ""
+                    clearInterval(this.intervalID)
+                    this._discoveryInProgress = false
+                    resolve()
+                })
+
+                //subprocess.unref()
+
+                this.InstrumentsDiscoveryViewer.message =
+                    "Discovering new instrument connections..."
+
+                //this.treeDataProvider?.clear()
+
+                this.intervalID = setInterval(() => {
+                    this.treeDataProvider?.getContent().then(
+                        () => {},
+                        () => {},
+                    )
+                }, 1000)
+            }
+        })
+    }
+
+    public async rename(item: Instrument) {
         //if (typeof item === typeof InstrDiscoveryNode) {
-        const input_item = item as IOInstrNode
-        const ip_str = await vscode.window.showInputBox({
-            placeHolder: "Enter new friendly name",
+        const name = await vscode.window.showInputBox({
+            placeHolder: "Enter new name",
         })
         if (
-            ip_str !== null &&
-            ip_str !== undefined &&
-            ip_str.length > 0 &&
-            input_item != undefined
+            name !== null &&
+            name !== undefined &&
+            name.length > 0 &&
+            item !== undefined
         ) {
-            await FriendlyNameMgr.checkandAddFriendlyName(
-                input_item.fetchInstrInfo(),
-                ip_str,
-            )
-            this.treeDataProvider?.reloadTreeData()
+            Log.trace(`Changing name from ${item.name} to ${name}`, {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.rename()",
+            })
+            item.name = name
+            this.treeDataProvider?.addOrUpdateInstrument(item)
+            this.treeDataProvider?.doWithConfigWatcherOff(() => {
+                this.treeDataProvider?.updateSaved(item).catch(() => {})
+            })
+        } else {
+            Log.warn("Item not defined", {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.rename()",
+            })
         }
     }
 
-    public reset(item: unknown) {
+    public reset(item: Connection) {
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
         })
 
-        const inputNode = item as IOInstrNode
-
-        if (kicTerminals.length == 0 && inputNode != undefined) {
+        if (kicTerminals.length == 0 && item != undefined) {
             //reset using the "kic reset" command
-            const connectionType = inputNode.FetchInstrIOType()
-            console.log(
-                "Connection address: " + inputNode.FetchConnectionAddr(),
-            )
-
-            let connection_type = "lan"
-            if (connectionType == IoType.Visa) {
-                connection_type = "visa"
-            }
+            const connectionType = item.type
+            console.log("Connection address: " + item.addr)
 
             //Start the connection process to reset
             //The process is expected to exit after sending the cli reset command
-            cp.spawn(EXECUTABLE, [
+            child.spawn(EXECUTABLE, [
                 "--log-file",
                 join(
                     LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
                 "reset",
-                connection_type,
-                inputNode.FetchConnectionAddr(),
+                connectionType.toLowerCase(),
+                item.addr,
             ])
         } else {
             //Use the existing terminal to reset
             for (const kicCell of this._kicProcessMgr.kicList) {
-                if (inputNode != undefined) {
-                    if (inputNode.FetchConnectionAddr() == kicCell.connAddr) {
+                if (item != undefined) {
+                    if (item.addr == kicCell.connAddr) {
                         kicCell.sendTextToTerminal(".reset\n")
                     }
                 }
@@ -1454,84 +1354,39 @@ export class InstrumentsExplorer {
         }
     }
 
-    public fetchConnectionArgs(
-        item: object,
-    ): [connection_str: string, model_serial?: string] {
-        const resNode = item as IOInstrNode
-        if (resNode != undefined) {
-            const conn_name =
-                resNode.label + "@" + resNode.FetchConnectionAddr()
-            switch (resNode.FetchInstrIOType()) {
-                case IoType.Lan:
-                    return [conn_name]
-                case IoType.Usb:
-                    return [conn_name, resNode.fetchModelSerial()]
-                case IoType.Visa:
-                    return [conn_name, resNode.fetchModelSerial()]
-            }
-        }
-        return [""]
+    private async upgradeFirmware(e: Connection) {
+        await this.genericUpgradeFW(e, 0)
     }
 
-    private async upgradeFirmware(_e: unknown) {
-        await this.genericUpgradeFW(_e, 0)
+    public async saveWhileConnect(instrument: Instrument) {
+        await this.treeDataProvider?.saveInstrument(instrument)
     }
 
-    public async saveWhileConnect(
-        ip: string,
-        ioType: IoType,
-        info: string,
-        friendly_name: string,
-        port: string | undefined,
-    ) {
-        const LOGLOC: SourceLocation = {
-            file: "instruments.ts",
-            func: `InstrumentExplorer.saveWhileConnect("${ip}", "${ioType.toString()}", "${info}", "${friendly_name}", "${port}")`,
-        }
-        const _info = <IIDNInfo>JSON.parse(info)
-        const __info = new InstrInfo()
-        __info.io_type = ioType
-        __info.instr_address = ip
-        __info.socket_port = port
-        __info.manufacturer = _info.vendor
-        __info.model = _info.model
-        __info.serial_number = _info.serial_number
-        __info.firmware_revision = _info.firmware_rev
-        __info.friendly_name = friendly_name
-        __info.instr_categ = ""
-
-        const categ = instr_map.get(_info.model)
-        if (categ != undefined) __info.instr_categ = categ
-
-        Log.trace("Saving Instrument", LOGLOC)
-
-        await this.treeDataProvider?.saveInstrumentFromConnect(ioType, __info)
-    }
-
-    private async saveInstrument(instr: unknown) {
+    private async saveInstrument(instr: Instrument) {
         await this.treeDataProvider?.saveInstrument(instr)
     }
 
     //from connect
 
-    private removeInstrument(instr: unknown) {
-        this.treeDataProvider?.removeInstrument(instr)
+    private async removeInstrument(instr: Instrument) {
+        instr.saved = false
+        await this.treeDataProvider?.removeInstrument(instr)
     }
 
-    private async upgradeMainframe(_e: unknown) {
-        await this.genericUpgradeFW(_e, 0)
+    private async upgradeMainframe(e: Connection) {
+        await this.genericUpgradeFW(e, 0)
     }
 
-    private async upgradeSlot1(_e: unknown) {
-        await this.genericUpgradeFW(_e, 1)
+    private async upgradeSlot1(e: Connection) {
+        await this.genericUpgradeFW(e, 1)
     }
 
-    private async upgradeSlot2(_e: unknown) {
-        await this.genericUpgradeFW(_e, 2)
+    private async upgradeSlot2(e: Connection) {
+        await this.genericUpgradeFW(e, 2)
     }
 
-    private async upgradeSlot3(_e: unknown) {
-        await this.genericUpgradeFW(_e, 3)
+    private async upgradeSlot3(e: Connection) {
+        await this.genericUpgradeFW(e, 3)
     }
 
     /**
@@ -1540,7 +1395,7 @@ export class InstrumentsExplorer {
      * @param is_module - whether instrument contains a module or not
      * @param slot - the slot to upgrade if any
      */
-    private async genericUpgradeFW(_e: unknown, slot = 0) {
+    private async genericUpgradeFW(e: Connection, slot = 0) {
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
@@ -1551,11 +1406,9 @@ export class InstrumentsExplorer {
             )
             return
         } else {
-            const inputNode = _e as IOInstrNode
-
             for (const kicCell of this._kicProcessMgr.kicList) {
-                if (inputNode != undefined) {
-                    if (inputNode.FetchConnectionAddr() == kicCell.connAddr) {
+                if (e != undefined) {
+                    if (e.addr == kicCell.connAddr) {
                         const fw_file = await vscode.window.showOpenDialog({
                             filters: {
                                 "All files (*.*)": ["*"],

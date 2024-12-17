@@ -1,61 +1,52 @@
 import { join } from "node:path"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
-import {
-    CONNECTION_RE,
-    ConnectionHelper,
-    IoType,
-    KicProcessMgr,
-} from "./resourceManager"
+import { ConnectionHelper, IoType, KicProcessMgr } from "./resourceManager"
 import { createTerminal } from "./extension"
 import { Log, SourceLocation } from "./logging"
 
 export class CommunicationManager {
     public connectionRE = /(?:(\w+)@)?(\d+.*)/
     private _kicProcessMgr: KicProcessMgr
-    private _connHelper: ConnectionHelper
 
     constructor(
         context: vscode.ExtensionContext,
         kicProcessMgr: KicProcessMgr,
-        conneHelper: ConnectionHelper,
     ) {
-        this._connHelper = conneHelper
         this._kicProcessMgr = kicProcessMgr
         const rclick = vscode.commands.registerCommand(
             "tsp.sendFile",
-            async (e) => {
+            async (e: vscode.Uri) => {
                 await this.sendScript(e)
             },
         )
         const configureTspLanguage = vscode.commands.registerCommand(
             "tsp.configureTspLanguage",
-            async (e) => {
+            async (e: vscode.Uri) => {
                 await this.fetchAndUpdateInstrumentTspLinkConfiguration(e)
             },
         )
-        const kic_openterminal = vscode.window.onDidOpenTerminal(
+        const kicOpenTerminal = vscode.window.onDidOpenTerminal(
             async () => await this.terminalAction(),
         )
-        const kic_closeterminal = vscode.window.onDidCloseTerminal(
+        const kicCloseTerminal = vscode.window.onDidCloseTerminal(
             async (e) => await this.handleTerminalCloseAction(e),
         )
         const sendFileToAllInstr = vscode.commands.registerCommand(
             "tsp.sendFileToAllInstr",
-            (e) => {
+            (e: vscode.Uri) => {
                 this.sendScriptToAllInstruments(e)
             },
         )
-        context.subscriptions.push(kic_openterminal)
-        context.subscriptions.push(kic_closeterminal)
+        context.subscriptions.push(kicOpenTerminal)
+        context.subscriptions.push(kicCloseTerminal)
         context.subscriptions.push(rclick)
         context.subscriptions.push(sendFileToAllInstr)
         context.subscriptions.push(configureTspLanguage)
     }
 
     // Sends script to terminal
-    private async sendScript(_e: unknown) {
-        const uriObject = _e as vscode.Uri
+    private async sendScript(uriObject: vscode.Uri) {
         const filePath = `.script "${uriObject.fsPath}"`
         await this.handleSendTextToTerminal(filePath).then(
             () => {
@@ -77,8 +68,7 @@ export class CommunicationManager {
      * active terminals are terminals with instrument connection
      * this command is enabled when there is more than one instrument connected
      */
-    private sendScriptToAllInstruments(_e: unknown) {
-        const uriObject = _e as vscode.Uri
+    private sendScriptToAllInstruments(uriObject: vscode.Uri) {
         const filePath = `.script "${uriObject.fsPath}"`
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
@@ -95,8 +85,9 @@ export class CommunicationManager {
      * for connection, if multiple terminal are available then it will ask for select one
      * @param _e command event
      */
-    private async fetchAndUpdateInstrumentTspLinkConfiguration(_e: unknown) {
-        const uriObject = _e as vscode.Uri
+    private async fetchAndUpdateInstrumentTspLinkConfiguration(
+        uriObject: vscode.Uri,
+    ) {
         const text = `.nodes "${join(uriObject.fsPath, "config.tsp.json")}"`
         await this.handleSendTextToTerminal(text)
         void vscode.window.showInformationMessage(
@@ -124,7 +115,7 @@ export class CommunicationManager {
                 const options: vscode.InputBoxOptions = {
                     prompt: "Enter instrument IP address or VISA resource string",
                     validateInput:
-                        this._connHelper.instrConnectionStringValidator,
+                        ConnectionHelper.instrConnectionStringValidator,
                 }
                 const Ip = await vscode.window.showInputBox(options)
                 let isConnSuccessful = false
@@ -133,7 +124,7 @@ export class CommunicationManager {
                 if (Ip == undefined) {
                     return Promise.reject(new Error("IP is undefined"))
                 } else {
-                    await createTerminal(Ip, undefined, text).then(
+                    createTerminal(Ip).then(
                         () => {
                             isConnSuccessful = true
                         },
@@ -199,76 +190,22 @@ export class CommunicationManager {
         term_name: string,
         connType: IoType,
         address: string,
-        filePath?: string,
-    ): Promise<[info: string, verified_name?: string]> {
+        additional_terminal_args?: string[],
+    ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "extension.ts",
-            func: `CommunicationManager.createTerminal("${term_name}", "${connType.toString()}", "${address}", "${filePath ?? ""}")`,
+            func: `CommunicationManager.createTerminal("${term_name}", "${connType.toString()}", "${address}", "[${additional_terminal_args?.join(",") ?? ""}]")`,
         }
-        let res: [string, string?] = ["", undefined]
-        const maxerr: number =
-            vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
+        //const maxerr: number =
+        //    vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
 
-        switch (connType) {
-            case IoType.Lan:
-                {
-                    Log.trace("Connecting via LAN", LOGLOC)
-                    const parts = address.match(CONNECTION_RE)
-                    if (parts == null) return ["", undefined]
-                    const ip_addr = parts[2]
-                    const ip = ip_addr.split(":")[0] //take only IPv4 address, don't include socket.
-                    res = await this._kicProcessMgr.createKicCell(
-                        term_name,
-                        ip,
-                        "lan",
-                        maxerr,
-                        filePath,
-                    )
-                }
-                break
-            case IoType.Usb:
-                {
-                    Log.trace("Connecting via USB", LOGLOC)
-                    let unique_string = address
-                    const string_split = address.split("@")
-                    if (string_split.length > 1) {
-                        unique_string = string_split[1]
-                    }
-                    res = await this._kicProcessMgr.createKicCell(
-                        term_name,
-                        unique_string,
-                        "usb",
-                        undefined,
-                        filePath,
-                    )
-                }
-                break
-            case IoType.Visa:
-                {
-                    Log.trace("Connecting via VISA", LOGLOC)
-                    let unique_string = address
-                    const string_split = address.split("@")
-                    if (string_split.length > 1) {
-                        unique_string = string_split[1]
-                    }
-                    res = await this._kicProcessMgr.createKicCell(
-                        term_name,
-                        unique_string,
-                        "visa",
-                        undefined,
-                        filePath,
-                    )
-                }
-                break
-        }
-
-        // if (term != undefined) {
-        //     term.show()
-        //     if (filePath != undefined) {
-        //         term.sendText(filePath)
-        //     }
-        // }
-        return res
+        Log.trace(`Connecting via ${connType.toUpperCase()}`, LOGLOC)
+        await this._kicProcessMgr.createKicCell(
+            term_name,
+            address,
+            connType,
+            additional_terminal_args,
+        )
     }
 
     private async terminalAction() {
