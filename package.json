@@ -361,38 +361,38 @@
             "view/item/context": [
                 {
                     "command": "InstrumentsExplorer.rename",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/"
                 },
                 {
                     "command": "InstrumentsExplorer.reset",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/"
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /NULL/"
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*RegInstr/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Reg.*Connected.*/",
                     "group": "upgrade"
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeMainframe",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*VersatestInstr/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Versatest.*Connected.*/",
                     "group": "upgrade"
                 },
                 {
                     "submenu": "modulesubmenu",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*VersatestInstr/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Versatest.*Connected.*/",
                     "group": "upgrade"
                 },
                 {
                     "command": "InstrumentsExplorer.save",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /NotSaved.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Discovered.*/"
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/"
                 }
             ],
             "modulesubmenu": [
