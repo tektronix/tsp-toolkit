@@ -20,7 +20,7 @@ import {
 import { LOG_DIR } from "./utility"
 import { Log, SourceLocation } from "./logging"
 
-const DISCOVERY_TIMEOUT = 5
+const DISCOVERY_TIMEOUT = 2
 
 let nextID = 0
 const createID = () => nextID++
@@ -196,6 +196,10 @@ export class Connection extends vscode.TreeItem {
 
     set status(status: ConnectionStatus) {
         this.iconPath = connectionStatusIcon(status)
+        let changed = false
+        if (this._status != status) {
+            changed = true
+        }
         this._status = status
         switch (this._status) {
             case ConnectionStatus.Active:
@@ -212,6 +216,10 @@ export class Connection extends vscode.TreeItem {
             case ConnectionStatus.Connected:
                 this.command = undefined
                 break
+        }
+
+        if (changed) {
+            this._onChangedStatus.fire(this._status)
         }
     }
 }
@@ -240,6 +248,10 @@ export class Instrument extends vscode.TreeItem {
     }
     private _status = ConnectionStatus.Inactive
     private _category: string = ""
+
+    private _onChanged = new vscode.EventEmitter<void>()
+
+    readonly onChanged: vscode.Event<void> = this._onChanged.event
 
     static from(info: InstrInfo) {
         const n = new Instrument(
@@ -273,6 +285,14 @@ export class Instrument extends vscode.TreeItem {
                 `* Firmware Rev: ${info.firmware_rev}`,
             ].join("\n"),
         )
+        this.contextValue = "Instr"
+        if (instr_map.get(this._info.model) === "versatest") {
+            this.contextValue += "Versatest"
+        } else {
+            this.contextValue += "Reg"
+        }
+        this.contextValue += "Inactive"
+        this.contextValue += "Discovered"
     }
 
     get name(): string {
@@ -306,17 +326,23 @@ export class Instrument extends vscode.TreeItem {
     /**
      * @param connection A new connection interface to add to this instrument
      */
-    addConnection(connection: Connection) {
+    addConnection(connection: Connection): boolean {
         const i = this._connections.findIndex(
             (v) => v.addr === connection.addr && v.type == connection.type,
         )
         if (i > -1) {
             if (this._connections[i].status !== connection.status) {
                 this._connections[i].status = connection.status
+                this._onChanged.fire()
             }
-            return true
+            return false
         }
+        connection.onChangedStatus(() => this.updateStatus())
         this._connections.push(connection)
+
+        this._onChanged.fire()
+
+        return true
     }
 
     hasConnection(connection: Connection) {
@@ -335,18 +361,60 @@ export class Instrument extends vscode.TreeItem {
      * @returns ConnectionStatus.Inactive otherwise.
      */
     updateStatus(): ConnectionStatus {
+        const status_before = this._status
         this._status = ConnectionStatus.Inactive
         for (const c of this._connections) {
             if (c.status == ConnectionStatus.Active) {
                 this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
             } else if (c.status == ConnectionStatus.Connected) {
                 this._status = ConnectionStatus.Connected
+
                 break //If any of the connections are connected, we show "Connected"
             }
         }
+
         this.iconPath = connectionStatusIcon(this._status)
 
+        if (this._status != status_before) {
+            this._onChanged.fire()
+            switch (this._status) {
+                case ConnectionStatus.Active:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Active",
+                    )
+                    break
+                case ConnectionStatus.Inactive:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Inactive",
+                    )
+                    break
+                case ConnectionStatus.Connected:
+                    this.contextValue = this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Connected",
+                    )
+                    break
+                    break
+            }
+        }
+
         return this._status
+    }
+
+    saved(enabled: boolean): Instrument {
+        const str = enabled ? "Saved" : "Discovered"
+        if (this.contextValue?.match(/Saved|Discovered/)) {
+            this.contextValue = this.contextValue?.replace(
+                /Saved|Discovered/,
+                str,
+            )
+        } else {
+            this.contextValue += str
+        }
+
+        return this
     }
 }
 
@@ -399,15 +467,20 @@ export class InstrumentTreeDataProvider
      * missing connections.
      */
     private async updateSaved(instrument: Instrument) {
+        // Get all the saved entries
         const raw: InstrInfo[] =
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
             []
+
+        // Find all saved entries that have the same SN as the given instrument
         const matches = raw.filter(
             (v) => v.serial_number === instrument.info.serial_number,
         )
 
-        const missing = instrument.connections.filter((v) =>
-            matches.find((m) => m.instr_address === v.addr),
+        // Of all the connections in the given instrument, find the ones that aren't in
+        // the other list
+        const missing = instrument.connections.filter(
+            (v) => !matches.find((m) => m.instr_address === v.addr),
         )
 
         for (const m of missing) {
@@ -455,6 +528,7 @@ export class InstrumentTreeDataProvider
                 }
                 if (this._instruments[found_idx].name != instrument.name) {
                     this._instruments[found_idx].name = instrument.name
+                    await this.updateSaved(this._instruments[found_idx])
                     changed = true
                 }
                 if (changed) {
@@ -462,6 +536,7 @@ export class InstrumentTreeDataProvider
                 }
             }
         } else {
+            instrument.onChanged(() => this.reloadTreeData())
             this._instruments.push(instrument)
             changed = true
         }
@@ -583,7 +658,8 @@ export class InstrumentTreeDataProvider
         }
 
         Log.trace("Refreshing Discovered list", LOGLOC)
-        await Promise.allSettled([discovery_cb(), this.updateStatus()])
+        await this.updateStatus()
+        await discovery_cb()
 
         this.instruments_discovered = false
     }
@@ -615,7 +691,7 @@ export class InstrumentTreeDataProvider
                     .get("savedInstruments") ?? []
 
             this.addOrUpdateInstruments(
-                raw.map((v) => Instrument.from(v)),
+                raw.map((v) => Instrument.from(v).saved(true)),
             ).catch((e) => {
                 Log.error(`Unable to update instruments: ${e}`, LOGLOC)
             })
@@ -1078,6 +1154,10 @@ export class InstrumentsExplorer {
     }
 
     private startDiscovery(): Promise<void> {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentExplorer.startDiscovery()",
+        }
         return new Promise<void>((resolve) => {
             if (this.InstrumentsDiscoveryViewer.message == "") {
                 const discover = child.spawn(
@@ -1102,7 +1182,10 @@ export class InstrumentsExplorer {
                     // }
                 )
 
-                discover.on("exit", () => {
+                discover.on("exit", (code) => {
+                    if (code) {
+                        Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
+                    }
                     this.InstrumentsDiscoveryViewer.message = ""
                     clearInterval(this.intervalID)
                     resolve()
