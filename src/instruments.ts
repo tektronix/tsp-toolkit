@@ -759,7 +759,12 @@ export class InstrumentTreeDataProvider
         })
     }
 
-    configWatcherEnable(enabled: boolean) {
+    doWithConfigWatcherOff(cb: () => void) {
+        this.configWatcherEnable(false)
+        cb()
+        this.configWatcherEnable(true)
+    }
+    private configWatcherEnable(enabled: boolean) {
         if (enabled && !this._savedInstrumentConfigWatcher) {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
@@ -783,9 +788,9 @@ export class InstrumentTreeDataProvider
         await this.updateStatus()
         await discovery_cb()
 
-        this.configWatcherEnable(false)
-        await this.updateSavedAll(this._instruments)
-        this.configWatcherEnable(true)
+        this.doWithConfigWatcherOff(() => {
+            this.updateSavedAll(this._instruments).catch(() => {})
+        })
 
         this.instruments_discovered = false
     }
@@ -1303,9 +1308,9 @@ export class InstrumentsExplorer {
             })
             item.name = name
             this.treeDataProvider?.addOrUpdateInstrument(item)
-            this.treeDataProvider?.configWatcherEnable(false)
-            await this.treeDataProvider?.updateSaved(item)
-            this.treeDataProvider?.configWatcherEnable(true)
+            this.treeDataProvider?.doWithConfigWatcherOff(() => {
+                this.treeDataProvider?.updateSaved(item).catch(() => {})
+            })
         } else {
             Log.warn("Item not defined", {
                 file: "instruments.ts",
