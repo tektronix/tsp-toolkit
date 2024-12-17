@@ -430,6 +430,13 @@ export class Instrument extends vscode.TreeItem {
     updateStatus(): ConnectionStatus {
         const status_before = this._status
         this._status = ConnectionStatus.Inactive
+
+        // Sort the connections by address
+        this._connections.sort((a, b) => a.addr.localeCompare(b.addr))
+        // Sort the connections by status
+        // (we want to show higher values first, so invert the result)
+        this._connections.sort((a, b) => -(a.status - b.status))
+
         for (const c of this._connections) {
             if (c.status == ConnectionStatus.Active) {
                 this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
@@ -743,6 +750,11 @@ export class InstrumentTreeDataProvider
     }
 
     reloadTreeData() {
+        // Sort the connections by name
+        this._instruments.sort((a, b) => a.name.localeCompare(b.name))
+        // Sort the connections by status
+        // (we want to show higher values first, so invert the result)
+        this._instruments.sort((a, b) => -(a.status - b.status))
         this._onDidChangeTreeData.fire(undefined)
     }
 
