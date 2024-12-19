@@ -22,6 +22,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - support dynamically creating enums for configured nodes
 - handling dynamically creating enums for trigger.model.setblock() command parameter
 
+### Changed
+
+- Change location of TSP Resources sections in Walkthrough and README
+
 ### Fixed
 - making sure that node[N].execute(), node[N].getglobal() and node[N].setglobal() only visible in TSP-Link systems
 
