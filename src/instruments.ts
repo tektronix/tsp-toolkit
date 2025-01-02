@@ -180,7 +180,8 @@ export class Connection extends vscode.TreeItem {
         super(addr, vscode.TreeItemCollapsibleState.None)
         this._type = conn_type
         this._addr = addr
-        this.iconPath = connectionStatusIcon(this._status)
+        this.contextValue = "Conn"
+        this.status = ConnectionStatus.Inactive
     }
 
     get type(): IoType {
@@ -202,6 +203,7 @@ export class Connection extends vscode.TreeItem {
             changed = true
         }
         this._status = status
+
         switch (this._status) {
             case ConnectionStatus.Active:
                 this.command = {
@@ -210,12 +212,36 @@ export class Connection extends vscode.TreeItem {
                     arguments: [this],
                     tooltip: "Connect to this interface",
                 }
+                this.contextValue = this.contextValue?.match(
+                    /Connected|Active|Inactive/,
+                )
+                    ? this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Active",
+                    )
+                    : this.contextValue + "Active"
                 break
             case ConnectionStatus.Inactive:
                 this.command = undefined
+                this.contextValue = this.contextValue?.match(
+                    /Connected|Active|Inactive/,
+                )
+                    ? this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Inactive",
+                    )
+                    : this.contextValue + "Active"
                 break
             case ConnectionStatus.Connected:
                 this.command = undefined
+                this.contextValue = this.contextValue?.match(
+                    /Connected|Active|Inactive/,
+                )
+                    ? this.contextValue?.replace(
+                        /Connected|Active|Inactive/,
+                        "Connected",
+                    )
+                    : this.contextValue + "Active"
                 break
         }
 
@@ -1320,6 +1346,10 @@ export class InstrumentsExplorer {
     }
 
     public reset(item: Connection) {
+        const LOGLOC: SourceLocation = {
+            file: "instruments.ts",
+            func: "InstrumentsExplorer.reset()",
+        }
         const kicTerminals = vscode.window.terminals.filter((t) => {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
@@ -1328,7 +1358,7 @@ export class InstrumentsExplorer {
         if (kicTerminals.length == 0 && item != undefined) {
             //reset using the "kic reset" command
             const connectionType = item.type
-            console.log("Connection address: " + item.addr)
+            Log.trace("Connection address: " + item.addr, LOGLOC)
 
             //Start the connection process to reset
             //The process is expected to exit after sending the cli reset command
