@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -181,7 +181,8 @@
             {
                 "command": "tsp.openTerminalIP",
                 "title": "Connect",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(plug)"
             },
             {
                 "command": "InstrumentsExplorer.refresh",
@@ -201,11 +202,13 @@
             },
             {
                 "command": "InstrumentsExplorer.rename",
-                "title": "Rename"
+                "title": "Rename",
+                "icon": "$(edit)"
             },
             {
                 "command": "InstrumentsExplorer.reset",
-                "title": "Reset"
+                "title": "Reset",
+                "icon": "$(debug-restart)"
             },
             {
                 "command": "InstrumentsExplorer.upgradeSlot1",
@@ -245,7 +248,8 @@
             {
                 "command": "InstrumentsExplorer.remove",
                 "title": "Remove",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
@@ -363,15 +367,18 @@
             "view/item/context": [
                 {
                     "command": "InstrumentsExplorer.rename",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.reset",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/"
+                    "when": "view == InstrumentsExplorer && (viewItem =~ /Conn.*Connected.*/ || viewItem =~ /Conn.*Active.*/ )",
+                    "group": "inline"
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /NULL/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Conn.*Active.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
@@ -394,7 +401,8 @@
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "group": "inline"
                 }
             ],
             "modulesubmenu": [
