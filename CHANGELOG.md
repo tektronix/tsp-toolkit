@@ -22,8 +22,17 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - support dynamically creating enums for configured nodes
 - handling dynamically creating enums for trigger.model.setblock() command parameter
 
+### Changed
+
+- Change location of TSP Resources sections in Walkthrough and README
+
 ### Fixed
-- making sure that node[N].execute(), node[N].getglobal() and node[N].setglobal() only visible in TSP-Link systems
+- making sure that node[N].execute(), node[N].getglobal() and node[N].setglobal() only
+  visible in TSP-Link systems
+- **tsp-toolkit-kic-cli:** be sure not to call TSP commands when getting instrument
+  information since the instrument (TTI) could be in a non-TSP language mode.
+- **tsp-toolkit-kic-cli:** change the language of an instrument when getting instrument
+  information
 
 ## [1.1.0]
 

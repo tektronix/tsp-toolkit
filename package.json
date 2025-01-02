@@ -43,8 +43,24 @@
                 "description": "This guide will walk you through some setup and the features of the Keithley TSP™ Toolkit.",
                 "when": "true",
                 "icon": "./resources/TSP_Toolkit_128x128.png",
-                "featuredFor": ["**/*.tsp"],
+                "featuredFor": [
+                    "**/*.tsp"
+                ],
                 "steps": [
+                    {
+                        "id": "resources",
+                        "title": "TSP Resources",
+                        "description": "- [Application Note: How to write scripts for TSP](https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp%29)\n- [TSP page on Tek.com](https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation)\n- [TSP video series](https://www.youtube.com/@tektronix/search?query=TSP)",
+                        "media": {
+                            "image": "./resources/walkthrough/TSPResources.png",
+                            "altText": "TSP Product Page"
+                        },
+                        "completionEvents": [
+                            "onLink:https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)",
+                            "onLink:https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation",
+                            "onLink:https://www.youtube.com/@tektronix/search?query=TSP"
+                        ]
+                    },
                     {
                         "id": "windows-deps",
                         "title": "Install Dependencies",
@@ -139,20 +155,6 @@
                         },
                         "completionEvents": [
                             "onLink:https://github.com/tektronix/keithley/"
-                        ]
-                    },
-                    {
-                        "id": "resources",
-                        "title": "Additional TSP Resources",
-                        "description": "- [Application Note: How to write scripts for TSP](https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp%29)\n- [TSP page on Tek.com](https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation)\n- [TSP video series](https://www.youtube.com/@tektronix/search?query=TSP)",
-                        "media": {
-                            "image": "./resources/walkthrough/TSPResources.png",
-                            "altText": "TSP Product Page"
-                        },
-                        "completionEvents": [
-                            "onLink:https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)",
-                            "onLink:https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation",
-                            "onLink:https://www.youtube.com/@tektronix/search?query=TSP"
                         ]
                     }
                 ]
@@ -454,8 +456,8 @@
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
         "@types/chai": "4.3.18",
-        "@types/mocha": "10.0.7",
-        "@types/node": "22.5.0",
+        "@types/mocha": "10.0.10",
+        "@types/node": "22.10.2",
         "@types/node-fetch": "3.0.2",
         "@types/vscode": "1.92.0",
         "@typescript-eslint/eslint-plugin": "8.3.0",
@@ -469,7 +471,7 @@
         "eslint-plugin-jsdoc": "50.2.2",
         "eslint-plugin-prettier": "5.2.1",
         "license-checker": "25.0.1",
-        "mocha": "^9.2.2",
+        "mocha": "^10.8.2",
         "nyc": "15.1.0",
         "prettier": "3.3.3",
         "source-map-support": "0.5.21",
@@ -489,9 +491,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-linux-x64": "0.19.1-0",
-        "@tektronix/kic-cli-win32-x64": "0.19.1-0",
-        "@tektronix/kic-cli-darwin-arm64": "0.19.1-0"
+        "@tektronix/kic-cli-darwin-arm64": "0.19.1",
+        "@tektronix/kic-cli-linux-x64": "0.19.1",
+        "@tektronix/kic-cli-win32-x64": "0.19.1"
     },
     "extensionDependencies": [
         "sumneko.lua"

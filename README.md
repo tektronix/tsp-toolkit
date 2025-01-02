@@ -13,6 +13,15 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 <a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
 
+## Resources and Tutorials
+
+- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
+- [TSP Landing Page on Tek.com][tsp]
+- [TSP Video Series][tsp-video-series]
+- [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
+- [TSP Script Example Repository][tsp-script-examples]
+
+
 ## Installed Extensions
 
 Keithley TSP Toolkit will automatically install the [sumneko.lua][sumneko]
@@ -87,15 +96,6 @@ then it is possible to have TSP Toolkit automatically configure your project for
 3. Open `tspConfig/config.tsp.json`
 4. Enter your instrument model name for the `"self"` attribute in the JSON.
 
-
-
-## Resources and Tutorials
-
-- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
-- [TSP Landing Page on Tek.com][tsp]
-- [TSP Video Series][tsp-video-series]
-- [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
-- [TSP Script Example Repository][tsp-script-examples]
 
 ## Feature Details
 
