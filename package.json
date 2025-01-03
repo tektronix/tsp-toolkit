@@ -372,12 +372,12 @@
                 },
                 {
                     "command": "InstrumentsExplorer.reset",
-                    "when": "view == InstrumentsExplorer && (viewItem =~ /Conn.*Connected.*/ || viewItem =~ /Conn.*Active.*/ )",
+                    "when": "view == InstrumentsExplorer && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
                     "group": "inline"
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Conn.*Active.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Active.*/",
                     "group": "inline"
                 },
                 {

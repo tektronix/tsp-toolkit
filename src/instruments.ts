@@ -159,6 +159,32 @@ function connectionStatusIcon(status: ConnectionStatus): vscode.ThemeIcon {
     return new vscode.ThemeIcon("warning")
 }
 
+function statusToString(status: ConnectionStatus): string {
+    switch (status) {
+        case ConnectionStatus.Ignored:
+            return "Ignored"
+        case ConnectionStatus.Inactive:
+            return "Inactive"
+        case ConnectionStatus.Active:
+            return "Active"
+        case ConnectionStatus.Connected:
+            return "Connected"
+    }
+}
+function contextValueStatus(
+    contextValue: string,
+    status: ConnectionStatus,
+): string {
+    if (contextValue.match(/Connected|Active|Inactive/)) {
+        return contextValue.replace(
+            /Connected|Active|Inactive/,
+            statusToString(status),
+        )
+    } else {
+        return contextValue + statusToString(status)
+    }
+}
+
 /**
  * A tree item that holds the details of an instrument connection interface/protocol
  */
@@ -180,7 +206,7 @@ export class Connection extends vscode.TreeItem {
         super(addr, vscode.TreeItemCollapsibleState.None)
         this._type = conn_type
         this._addr = addr
-        this.contextValue = "Conn"
+        this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
     }
 
@@ -198,52 +224,16 @@ export class Connection extends vscode.TreeItem {
 
     set status(status: ConnectionStatus) {
         this.iconPath = connectionStatusIcon(status)
+        this.contextValue = contextValueStatus(
+            this.contextValue ?? "CONN",
+            status,
+        )
+
         let changed = false
         if (this._status != status) {
             changed = true
         }
         this._status = status
-
-        switch (this._status) {
-            case ConnectionStatus.Active:
-                this.command = {
-                    title: "Connect",
-                    command: "tsp.openTerminalIP",
-                    arguments: [this],
-                    tooltip: "Connect to this interface",
-                }
-                this.contextValue = this.contextValue?.match(
-                    /Connected|Active|Inactive/,
-                )
-                    ? this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Active",
-                    )
-                    : this.contextValue + "Active"
-                break
-            case ConnectionStatus.Inactive:
-                this.command = undefined
-                this.contextValue = this.contextValue?.match(
-                    /Connected|Active|Inactive/,
-                )
-                    ? this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Inactive",
-                    )
-                    : this.contextValue + "Active"
-                break
-            case ConnectionStatus.Connected:
-                this.command = undefined
-                this.contextValue = this.contextValue?.match(
-                    /Connected|Active|Inactive/,
-                )
-                    ? this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Connected",
-                    )
-                    : this.contextValue + "Active"
-                break
-        }
 
         if (changed) {
             this._onChangedStatus.fire(this._status)
@@ -479,28 +469,11 @@ export class Instrument extends vscode.TreeItem {
         this.iconPath = connectionStatusIcon(this._status)
 
         if (this._status != status_before) {
+            this.contextValue = contextValueStatus(
+                this.contextValue ?? "Instr",
+                this._status,
+            )
             this._onChanged.fire()
-            switch (this._status) {
-                case ConnectionStatus.Active:
-                    this.contextValue = this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Active",
-                    )
-                    break
-                case ConnectionStatus.Inactive:
-                    this.contextValue = this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Inactive",
-                    )
-                    break
-                case ConnectionStatus.Connected:
-                    this.contextValue = this.contextValue?.replace(
-                        /Connected|Active|Inactive/,
-                        "Connected",
-                    )
-                    break
-                    break
-            }
         }
 
         return this._status
