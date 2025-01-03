@@ -195,6 +195,8 @@ export class Connection extends vscode.TreeItem {
 
     private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
 
+    private _terminal: vscode.Terminal | undefined = undefined
+
     readonly onChangedStatus: vscode.Event<ConnectionStatus> =
         this._onChangedStatus.event
 
@@ -242,6 +244,35 @@ export class Connection extends vscode.TreeItem {
             this._status = status
             this._onChangedStatus.fire(this._status)
         }
+    }
+
+    connect() {
+        this.status = ConnectionStatus.Connected
+        if (!this._terminal) {
+            //TODO create terminal
+        } else {
+            this.showTerminal()
+        }
+    }
+
+    showTerminal() {
+        if (this._terminal) {
+            this._terminal.show()
+        }
+    }
+
+    reset() {
+        this._terminal?.sendText(".reset")
+    }
+
+    upgrade() {
+        //TODO OPTIONS
+        this._terminal?.sendText(".upgrade ")
+    }
+
+    abort() {
+        this._terminal?.sendText("")
+        this._terminal?.sendText(".abort")
     }
 
     async getUpdatedStatus(): Promise<void> {
@@ -510,6 +541,8 @@ export class Instrument extends vscode.TreeItem {
             this.contextValue += str
         }
     }
+
+    rename() {}
 }
 
 export class InfoList extends vscode.TreeItem {

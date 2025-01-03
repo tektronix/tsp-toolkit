@@ -182,7 +182,7 @@
                 "command": "tsp.openTerminalIP",
                 "title": "Connect",
                 "category": "TSP",
-                "icon": "$(terminal)"
+                "icon": "$(run)"
             },
             {
                 "command": "InstrumentsExplorer.refresh",
@@ -199,6 +199,11 @@
                     "light": "resources/light/connect.svg",
                     "dark": "resources/dark/connect.svg"
                 }
+            },
+            {
+                "command": "InstrumentsExplorer.showTerm",
+                "title": "Show Terminal",
+                "icon": "$(terminal)"
             },
             {
                 "command": "InstrumentsExplorer.rename",
@@ -375,6 +380,11 @@
                 {
                     "command": "InstrumentsExplorer.reset",
                     "when": "view == InstrumentsExplorer && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
+                    "group": "inline"
+                },
+                {
+                    "command": "InstrumentsExplorer.showTerm",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Connected.*/",
                     "group": "inline"
                 },
                 {

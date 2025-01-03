@@ -251,6 +251,35 @@ export async function createTerminal(
     return Promise.resolve(true)
 }
 
+function registerCommands(
+    context: vscode.ExtensionContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    commands: { name: string; cb: (...args: any[]) => any; thisArgs?: any }[],
+) {
+    for (const c of commands) {
+        registerCommand(context, c.name, c.cb, c.thisArgs)
+    }
+}
+
+function registerCommand(
+    context: vscode.ExtensionContext,
+    name: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cb: (...args: any[]) => any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    thisArgs?: any,
+) {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: "registerCommand()",
+    }
+    Log.trace(`Registering '${name}' command`, LOGLOC)
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(name, cb, thisArgs),
+    )
+}
+
 // Called when the extension is activated.
 export function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
@@ -276,59 +305,37 @@ export function activate(context: vscode.ExtensionContext) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    Log.trace("Registering `tsp.openTerminal` command", LOGLOC)
-    const openTerminal = vscode.commands.registerCommand(
-        "tsp.openTerminal",
-        pickConnection,
-    )
-
-    Log.trace("Registering `InstrumentExplorer.connect` command", LOGLOC)
-    const add_new_connection = vscode.commands.registerCommand(
-        "InstrumentsExplorer.connect",
-        async () => {
-            await pickConnection("New Connection")
+    registerCommands(context, [
+        { name: "tsp.openTerminal", cb: pickConnection },
+        { name: "tsp.openTerminalIP", cb: connectCmd },
+        {
+            name: "InstrumentExplorer.connect",
+            cb: async () => {
+                await pickConnection("New Connection")
+            },
         },
-    )
+        {
+            name: "InstrumentsExplorer.showTerm",
+            cb: (conn: Connection) => {
+                conn.showTerminal()
+            },
+        },
+        {
+            name: "InstrumentsExplorer.rename",
+            cb: async (e: Instrument) => {
+                await startRename(e)
+            },
+        },
+        {
+            name: "InstrumentsExplorer.reset",
+            cb: async (e: Connection) => {
+                await startReset(e)
+            },
+        },
+    ])
 
     Log.trace("Setting up HelpDocumentWebView", LOGLOC)
-    context.subscriptions.push(add_new_connection)
-
     HelpDocumentWebView.createOrShow(context)
-
-    //TODO: connect `.terminate` in ki-comms
-    // const terminateAll = vscode.commands.registerCommand(
-    //     "tsp.terminateAll",
-    //     startTerminateAllConn
-    // )
-
-    //TODO add the following back into the package.json file after terminate is added to ki-comms
-    /*
-            {
-                "command": "tsp.terminateAll",
-                "title": "Terminate All Existing Connections to an Instrument",
-                "category": "TSP"
-            },
-    */
-
-    Log.trace("Registering `tsp.openTerminalIP` command", LOGLOC)
-    vscode.commands.registerCommand("tsp.openTerminalIP", connectCmd)
-
-    Log.trace("Registering `InstrumentExplorer.rename` command", LOGLOC)
-    vscode.commands.registerCommand(
-        "InstrumentsExplorer.rename",
-        async (e: Instrument) => {
-            await startRename(e)
-        },
-    )
-
-    vscode.commands.registerCommand(
-        "InstrumentsExplorer.reset",
-        async (e: Connection) => {
-            await startReset(e)
-        },
-    )
-
-    context.subscriptions.push(openTerminal)
 
     //TODO: Connect `.terminate` in ki-comms
     //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
