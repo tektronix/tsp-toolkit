@@ -5,6 +5,7 @@ import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { Log, SourceLocation } from "./logging"
+import { Connection, ConnectionStatus } from "./instruments"
 //import { LoggerManager } from "./logging"
 
 export const CONNECTION_RE =
@@ -229,6 +230,7 @@ export class KicProcessMgr {
         addr: string,
         connType: IoType,
         additional_terminal_args?: string[],
+        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
@@ -242,6 +244,7 @@ export class KicProcessMgr {
             addr,
             connType,
             additional_terminal_args,
+            connection,
         )
         this.debugTermPid = newCell.terminalPid
         this._kicList.push(newCell)
@@ -348,6 +351,7 @@ export class KicCell extends EventEmitter {
         addr: string,
         connType: IoType,
         additional_terminal_args?: string[],
+        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
@@ -405,6 +409,9 @@ export class KicCell extends EventEmitter {
         this._term?.show(false)
         vscode.window.onDidCloseTerminal((t) => {
             Log.info("Terminal closed", LOGLOC)
+            if (connection) {
+                connection.status = ConnectionStatus.Active
+            }
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string

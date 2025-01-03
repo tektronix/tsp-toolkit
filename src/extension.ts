@@ -8,7 +8,12 @@ import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
 import { CommunicationManager } from "./communicationmanager"
 //import { TerminationManager } from "./terminationManager"
-import { Connection, Instrument, InstrumentsExplorer } from "./instruments"
+import {
+    Connection,
+    ConnectionStatus,
+    Instrument,
+    InstrumentsExplorer,
+} from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
@@ -40,8 +45,17 @@ let _kicProcessMgr: KicProcessMgr
  * @returns None
  */
 export async function createTerminal(
-    connection_string: string,
+    connection: Connection | string,
 ): Promise<boolean> {
+    let connection_string = ""
+
+    if (connection instanceof Connection) {
+        connection_string = connection.addr
+        connection.status = ConnectionStatus.Connected
+    } else {
+        connection_string = connection
+    }
+
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
         func: `createTerminal("${connection_string}")`,
@@ -74,9 +88,15 @@ export async function createTerminal(
                 if (background_process) {
                     background_process?.kill("SIGTERM")
                 }
+                if (connection instanceof Connection) {
+                    connection.status = ConnectionStatus.Active
+                }
             })
             //Dump output queue if enabled
             if (cancel.isCancellationRequested) {
+                if (connection instanceof Connection) {
+                    connection.status = ConnectionStatus.Active
+                }
                 return new Promise((resolve) => resolve(false))
             }
 
@@ -126,6 +146,9 @@ export async function createTerminal(
             Log.trace("Getting instrument information", LOGLOC)
 
             if (cancel.isCancellationRequested) {
+                if (connection instanceof Connection) {
+                    connection.status = ConnectionStatus.Active
+                }
                 return new Promise((resolve) => resolve(false))
             }
             background_process = child.spawn(
@@ -203,6 +226,9 @@ export async function createTerminal(
 
             //Connect terminal
             if (cancel.isCancellationRequested) {
+                if (connection instanceof Connection) {
+                    connection.status = ConnectionStatus.Active
+                }
                 return new Promise((resolve) => resolve(false))
             }
             await _activeConnectionManager?.createTerminal(
@@ -210,6 +236,7 @@ export async function createTerminal(
                 connection_details.type,
                 connection_details.addr,
                 additional_terminal_args,
+                connection instanceof Connection ? connection : undefined,
             )
 
             Log.trace(`Connected to ${connection_details.name}`, LOGLOC)
@@ -651,7 +678,7 @@ function connectCmd(def: Connection) {
 
     if (_activeConnectionManager?.connectionRE.test(connection_str)) {
         Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
-        void createTerminal(connection_str)
+        void createTerminal(def)
     } else {
         Log.error(
             "Connection string is invalid. Unable to connect to instrument.",

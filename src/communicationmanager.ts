@@ -4,6 +4,7 @@ import { EXECUTABLE } from "./kic-cli"
 import { ConnectionHelper, IoType, KicProcessMgr } from "./resourceManager"
 import { createTerminal } from "./extension"
 import { Log, SourceLocation } from "./logging"
+import { Connection } from "./instruments"
 
 export class CommunicationManager {
     public connectionRE = /(?:(\w+)@)?(\d+.*)/
@@ -191,6 +192,7 @@ export class CommunicationManager {
         connType: IoType,
         address: string,
         additional_terminal_args?: string[],
+        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "extension.ts",
@@ -205,6 +207,7 @@ export class CommunicationManager {
             address,
             connType,
             additional_terminal_args,
+            connection,
         )
     }
 

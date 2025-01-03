@@ -229,13 +229,17 @@ export class Connection extends vscode.TreeItem {
             status,
         )
 
-        let changed = false
-        if (this._status != status) {
-            changed = true
-        }
-        this._status = status
+        Log.trace(`Set contextValue to ${this.contextValue}`, {
+            file: "instruments.ts",
+            func: "Connection.status() set",
+        })
 
-        if (changed) {
+        if (this._status != status) {
+            Log.trace("firing _onChangedStatus", {
+                file: "instruments.ts",
+                func: "Connection.status() set",
+            })
+            this._status = status
             this._onChangedStatus.fire(this._status)
         }
     }
@@ -338,7 +342,7 @@ export class Instrument extends vscode.TreeItem {
             info.friendly_name.length == 0 ? undefined : info.friendly_name,
         )
         n._category = info.instr_categ
-        n._connections.push(Connection.from(info))
+        n.addConnection(Connection.from(info))
 
         return n
     }
@@ -409,11 +413,18 @@ export class Instrument extends vscode.TreeItem {
         if (i > -1) {
             if (this._connections[i].status !== connection.status) {
                 this._connections[i].status = connection.status
-                this._onChanged.fire()
+                //this._onChanged.fire()
             }
             return false
         }
-        connection.onChangedStatus(() => this.updateStatus())
+        connection.onChangedStatus(() => {
+            Log.trace("Connection Status updated", {
+                file: "instruments.ts",
+                func: "Instrument.addConnection(): connection.onChangedStatus()",
+            })
+            this.updateStatus()
+        }, this)
+
         this._connections.push(connection)
 
         this._onChanged.fire()
@@ -473,6 +484,10 @@ export class Instrument extends vscode.TreeItem {
                 this.contextValue ?? "Instr",
                 this._status,
             )
+            Log.trace("status changed, firing _onChanged", {
+                file: "instruments.ts",
+                func: "Instrument.updateStatus()",
+            })
             this._onChanged.fire()
         }
 
@@ -643,7 +658,13 @@ export class InstrumentTreeDataProvider
                 }
             }
         } else {
-            instrument.onChanged(() => this.reloadTreeData())
+            instrument.onChanged(() => {
+                Log.trace("Instrument changed, reloading tree data", {
+                    file: "instruments.ts",
+                    func: "InstrumentTreeDataProvider.addOrUpdateInstrument(): instrument.onChanged()",
+                })
+                this.reloadTreeData()
+            })
             this._instruments.push(instrument)
             changed = true
         }

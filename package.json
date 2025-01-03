@@ -182,7 +182,7 @@
                 "command": "tsp.openTerminalIP",
                 "title": "Connect",
                 "category": "TSP",
-                "icon": "$(plug)"
+                "icon": "$(terminal)"
             },
             {
                 "command": "InstrumentsExplorer.refresh",
@@ -208,7 +208,7 @@
             {
                 "command": "InstrumentsExplorer.reset",
                 "title": "Reset",
-                "icon": "$(debug-restart)"
+                "icon": "$(discard)"
             },
             {
                 "command": "InstrumentsExplorer.upgradeSlot1",
@@ -228,12 +228,14 @@
             {
                 "command": "InstrumentsExplorer.upgradeFirmware",
                 "title": "Upgrade Firmware",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(chip)"
             },
             {
                 "command": "InstrumentsExplorer.upgradeMainframe",
                 "title": "Upgrade Mainframe",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(chip)"
             },
             {
                 "command": "tsp.configureTspLanguage",
@@ -383,12 +385,12 @@
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Reg.*Connected.*/",
-                    "group": "upgrade"
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeMainframe",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Versatest.*Connected.*/",
-                    "group": "upgrade"
+                    "group": "inline"
                 },
                 {
                     "submenu": "modulesubmenu",
