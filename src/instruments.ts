@@ -577,6 +577,16 @@ export class InstrumentTreeDataProvider
     private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
         undefined
 
+    private static _instance: InstrumentTreeDataProvider | undefined = undefined
+
+    static get instance(): InstrumentTreeDataProvider {
+        if (!InstrumentTreeDataProvider._instance) {
+            InstrumentTreeDataProvider._instance =
+                new InstrumentTreeDataProvider()
+        }
+        return InstrumentTreeDataProvider._instance
+    }
+
     constructor() {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
@@ -611,15 +621,22 @@ export class InstrumentTreeDataProvider
             vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
             []
 
-        // Find all saved entries that have the same SN as the given instrument
-        const matches = raw.filter(
-            (v) => v.serial_number === instrument.info.serial_number,
-        )
-
         // Of all the connections in the given instrument, find the ones that aren't in
         // the other list
-        const missing = instrument.connections.filter(
-            (v) => !matches.find((m) => m.instr_address === v.addr),
+        const missing = instrument.connections.filter((v) => {
+            for (const m of raw) {
+                if (
+                    m.serial_number === instrument.info.serial_number &&
+                    m.instr_address === v.addr
+                ) {
+                    return false
+                }
+            }
+            return true
+        })
+        Log.trace(
+            `Checked\nRaw: ${raw.map((e) => e.instr_address).join(", ")}\nMissing: ${instrument.connections.map((e) => e.addr).join(", ")}`,
+            LOGLOC,
         )
 
         for (const m of missing) {
@@ -646,15 +663,9 @@ export class InstrumentTreeDataProvider
             }
         }
 
-        if (matches.length > 0) {
-            await vscode.workspace
-                .getConfiguration("tsp")
-                .update(
-                    "savedInstruments",
-                    raw,
-                    vscode.ConfigurationTarget.Global,
-                )
-        }
+        await vscode.workspace
+            .getConfiguration("tsp")
+            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
     }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
@@ -851,7 +862,8 @@ export class InstrumentTreeDataProvider
     async saveInstrument(instr: Instrument): Promise<void> {
         //TODO Add to saved list
         instr.saved = true
-        await this.saveInstrumentToList(instr)
+        //await this.saveInstrumentToList(instr)
+        await this.updateSaved(instr)
         this.reloadTreeData()
     }
 
@@ -1175,7 +1187,7 @@ export class InstrumentsExplorer {
         this._kicProcessMgr = kicProcessMgr
 
         Log.trace("Instantiating TDP", LOGLOC)
-        const treeDataProvider = new InstrumentTreeDataProvider()
+        const treeDataProvider = InstrumentTreeDataProvider.instance
         Log.trace("Refreshing TDP", LOGLOC)
         treeDataProvider
             .refresh(async () => await this.startDiscovery())

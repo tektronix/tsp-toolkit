@@ -13,6 +13,7 @@ import {
     ConnectionStatus,
     Instrument,
     InstrumentsExplorer,
+    InstrumentTreeDataProvider,
 } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
@@ -47,31 +48,34 @@ let _kicProcessMgr: KicProcessMgr
 export async function createTerminal(
     connection: Connection | string,
 ): Promise<boolean> {
-    let connection_string = ""
-
-    if (connection instanceof Connection) {
-        connection_string = connection.addr
-        connection.status = ConnectionStatus.Connected
-    } else {
-        connection_string = connection
-    }
-
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
-        func: `createTerminal("${connection_string}")`,
+        func: `createTerminal("${JSON.stringify(connection)}")`,
     }
+    let name = ""
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
-    const connection_details =
-        ConnectionHelper.parseConnectionString(connection_string)
+    if (typeof connection === "string") {
+        const connection_details =
+            ConnectionHelper.parseConnectionString(connection)
 
-    if (!connection_details) {
-        return Promise.reject(new Error("Unable to parse connection string"))
+        if (!connection_details) {
+            return Promise.reject(
+                new Error("Unable to parse connection string"),
+            )
+        }
+        Log.debug(
+            `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
+            LOGLOC,
+        )
+        name = connection_details.name
+        connection = new Connection(
+            connection_details.type,
+            connection_details.addr,
+        )
     }
 
-    Log.debug(
-        `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
-        LOGLOC,
-    )
+    const conn: Connection = connection
+
     //LAN
     Log.trace("Creating terminal", LOGLOC)
     await vscode.window.withProgress(
@@ -82,6 +86,7 @@ export async function createTerminal(
         },
         async (progress, cancel) => {
             let background_process: child.ChildProcess | undefined = undefined
+            conn.status = ConnectionStatus.Connected
 
             cancel.onCancellationRequested(() => {
                 Log.info("Connection cancelled by user", LOGLOC)
@@ -122,8 +127,8 @@ export async function createTerminal(
                         `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
                     "dump",
-                    connection_details.type.toLowerCase(),
-                    connection_details.addr,
+                    conn.type.toLowerCase(),
+                    conn.addr,
                     "--output",
                     dump_path,
                 ])
@@ -160,9 +165,9 @@ export async function createTerminal(
                         `${new Date().toISOString().substring(0, 10)}-kic.log`,
                     ),
                     "info",
-                    connection_details.type.toLowerCase(),
+                    conn.type.toLowerCase(),
                     "--json",
-                    connection_details.addr,
+                    conn.addr,
                 ],
                 {
                     env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
@@ -194,24 +199,19 @@ export async function createTerminal(
 
             if (info_string == "") {
                 Log.error(
-                    `Unable to connect to instrument at ${connection_details.addr}: could not get instrument information`,
+                    `Unable to connect to instrument at ${conn.addr}: could not get instrument information`,
                     LOGLOC,
                 )
                 vscode.window.showErrorMessage(
-                    `Unable to connect to instrument at ${connection_details.addr}: could not get instrument information`,
+                    `Unable to connect to instrument at ${conn.addr}: could not get instrument information`,
                 )
                 return new Promise((resolve) => resolve(false))
             }
 
             const info = <IIDNInfo>JSON.parse(info_string)
 
-            const inst = new Instrument(
-                info,
-                connection_details.name != ""
-                    ? connection_details.name
-                    : undefined,
-            )
-            connection_details.name = inst.name
+            const inst = new Instrument(info, name !== "" ? name : undefined)
+            inst.addConnection(conn)
 
             const additional_terminal_args = []
 
@@ -232,20 +232,21 @@ export async function createTerminal(
                 return new Promise((resolve) => resolve(false))
             }
             await _activeConnectionManager?.createTerminal(
-                connection_details.name,
-                connection_details.type,
-                connection_details.addr,
+                inst.name,
+                conn.type,
+                conn.addr,
                 additional_terminal_args,
                 connection instanceof Connection ? connection : undefined,
             )
 
-            Log.trace(`Connected to ${connection_details.name}`, LOGLOC)
+            Log.trace(`Connected to ${inst.name}`, LOGLOC)
 
             progress.report({
                 message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
             })
             Log.trace("Saving connection", LOGLOC)
             await _instrExplorer.saveWhileConnect(inst)
+            InstrumentTreeDataProvider.instance.addOrUpdateInstrument(inst)
         },
     )
     return Promise.resolve(true)
@@ -309,7 +310,7 @@ export function activate(context: vscode.ExtensionContext) {
         { name: "tsp.openTerminal", cb: pickConnection },
         { name: "tsp.openTerminalIP", cb: connectCmd },
         {
-            name: "InstrumentExplorer.connect",
+            name: "InstrumentsExplorer.connect",
             cb: async () => {
                 await pickConnection("New Connection")
             },
