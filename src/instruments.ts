@@ -558,25 +558,21 @@ export class StringData extends vscode.TreeItem {
     }
 }
 
-export class InstrumentTreeDataProvider
-    implements
-        vscode.TreeDataProvider<
-            Instrument | Connection | InactiveInstrumentList | StringData
-        >
-{
+type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
+
+export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
     private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
         undefined
 
-    private static _instance: InstrumentTreeDataProvider | undefined = undefined
+    private static _instance: InstrumentProvider | undefined = undefined
 
-    static get instance(): InstrumentTreeDataProvider {
-        if (!InstrumentTreeDataProvider._instance) {
-            InstrumentTreeDataProvider._instance =
-                new InstrumentTreeDataProvider()
+    static get instance(): InstrumentProvider {
+        if (!InstrumentProvider._instance) {
+            InstrumentProvider._instance = new InstrumentProvider()
         }
-        return InstrumentTreeDataProvider._instance
+        return InstrumentProvider._instance
     }
 
     constructor() {
@@ -945,7 +941,7 @@ export class InstrumentTreeDataProvider
                         )
                     } else {
                         this.addOrUpdateInstruments(
-                            InstrumentTreeDataProvider.parseDiscoveredInstruments(
+                            InstrumentProvider.parseDiscoveredInstruments(
                                 jsonRPCResponse,
                             ).map((v: InstrInfo) => {
                                 this.instruments_discovered = true
@@ -1087,7 +1083,7 @@ export class InstrumentTreeDataProvider
             const config = vscode.workspace.getConfiguration("tsp")
 
             const matching_instruments_indices =
-                InstrumentTreeDataProvider.getAllIndices(raw, (v) => {
+                InstrumentProvider.getAllIndices(raw, (v) => {
                     return (
                         v.model == instr.info.model &&
                         v.serial_number == instr.info.serial_number
@@ -1122,7 +1118,7 @@ export class InstrumentTreeDataProvider
 
             for (const i of instr.connections) {
                 const matching_instruments_indices =
-                    InstrumentTreeDataProvider.getAllIndices(instrList, (v) => {
+                    InstrumentProvider.getAllIndices(instrList, (v) => {
                         return (
                             v.model == instr.info.model &&
                             v.serial_number == instr.info.serial_number &&
@@ -1174,7 +1170,7 @@ export class InstrumentsExplorer {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
         Instrument | Connection | InactiveInstrumentList
     >
-    private treeDataProvider?: InstrumentTreeDataProvider
+    private treeDataProvider?: InstrumentProvider
     private intervalID?: NodeJS.Timeout
     private _kicProcessMgr: KicProcessMgr
     private _discoveryInProgress: boolean = false
@@ -1190,7 +1186,7 @@ export class InstrumentsExplorer {
         this._kicProcessMgr = kicProcessMgr
 
         Log.trace("Instantiating TDP", LOGLOC)
-        const treeDataProvider = InstrumentTreeDataProvider.instance
+        const treeDataProvider = InstrumentProvider.instance
         Log.trace("Refreshing TDP", LOGLOC)
         treeDataProvider
             .refresh(async () => await this.startDiscovery())

@@ -12,8 +12,8 @@ import {
     Connection,
     ConnectionStatus,
     Instrument,
+    InstrumentProvider,
     InstrumentsExplorer,
-    InstrumentTreeDataProvider,
 } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
@@ -205,8 +205,8 @@ export async function createTerminal(
 
             const inst = new Instrument(info, name !== "" ? name : undefined)
             inst.addConnection(conn)
-            InstrumentTreeDataProvider.instance.addOrUpdateInstrument(inst)
-            await InstrumentTreeDataProvider.instance.saveInstrument(inst)
+            InstrumentProvider.instance.addOrUpdateInstrument(inst)
+            await InstrumentProvider.instance.saveInstrument(inst)
             conn.status = ConnectionStatus.Connected
 
             const additional_terminal_args = []
