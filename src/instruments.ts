@@ -237,10 +237,6 @@ export class Connection extends vscode.TreeItem {
         })
 
         if (this._status != status) {
-            Log.trace("firing _onChangedStatus", {
-                file: "instruments.ts",
-                func: "Connection.status() set",
-            })
             this._status = status
             this._onChangedStatus.fire(this._status)
         }
@@ -515,10 +511,6 @@ export class Instrument extends vscode.TreeItem {
                 this.contextValue ?? "Instr",
                 this._status,
             )
-            Log.trace("status changed, firing _onChanged", {
-                file: "instruments.ts",
-                func: "Instrument.updateStatus()",
-            })
             this._onChanged.fire()
         }
 
@@ -634,10 +626,6 @@ export class InstrumentTreeDataProvider
             }
             return true
         })
-        Log.trace(
-            `Checked\nRaw: ${raw.map((e) => e.instr_address).join(", ")}\nMissing: ${instrument.connections.map((e) => e.addr).join(", ")}`,
-            LOGLOC,
-        )
 
         for (const m of missing) {
             raw.push({
@@ -892,6 +880,14 @@ export class InstrumentTreeDataProvider
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
 
+            this.addOrUpdateInstruments(
+                raw.map((v) => {
+                    const i = Instrument.from(v)
+                    i.saved = true
+                    return i
+                }),
+            )
+
             const to_remove = this._instruments.filter((v) => {
                 for (const r of raw) {
                     if (r.serial_number === v.info.serial_number) {
@@ -905,17 +901,8 @@ export class InstrumentTreeDataProvider
                 this._instruments = this._instruments.filter(
                     (i) => i.info.serial_number !== r.info.serial_number,
                 )
+                this.reloadTreeData()
             }
-
-            this.addOrUpdateInstruments(
-                raw.map((v) => {
-                    const i = Instrument.from(v)
-                    i.saved = true
-                    return i
-                }),
-            )
-
-            // TODO Find the ones to remove
 
             return this._instruments
         })
@@ -926,7 +913,6 @@ export class InstrumentTreeDataProvider
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.updateStatus()",
         }
-        Log.trace("UpdateStatus", LOGLOC)
         const parallel_info: Promise<void>[] = []
         for (let i = 0; i < this._instruments.length; i++) {
             Log.trace(
