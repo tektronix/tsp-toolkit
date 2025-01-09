@@ -379,7 +379,7 @@
                 },
                 {
                     "command": "InstrumentsExplorer.reset",
-                    "when": "view == InstrumentsExplorer && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
                     "group": "inline"
                 },
                 {
@@ -389,7 +389,7 @@
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Active.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/",
                     "group": "inline"
                 },
                 {

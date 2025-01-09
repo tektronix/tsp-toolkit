@@ -210,6 +210,16 @@ export class Connection extends vscode.TreeItem {
         this._addr = addr
         this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
+        this.enable(true)
+    }
+
+    enable(enable: boolean) {
+        const term = enable ? "Enabled" : "Disabled"
+        if (this.contextValue && this.contextValue?.match(/Disabled|Enabled/)) {
+            return this.contextValue.replace(/Disabled|Enabled/, term)
+        } else {
+            return this.contextValue + term
+        }
     }
 
     get type(): IoType {
@@ -512,6 +522,14 @@ export class Instrument extends vscode.TreeItem {
                 this._status,
             )
             this._onChanged.fire()
+        }
+
+        if (this._status == ConnectionStatus.Connected) {
+            this._connections
+                .filter((c) => c.status !== ConnectionStatus.Connected)
+                .map((c) => c.enable(false))
+        } else if (this._status === ConnectionStatus.Active) {
+            this._connections.map((c) => c.enable(true))
         }
 
         return this._status
