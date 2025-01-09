@@ -17,11 +17,9 @@ import {
 } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
-    ConnectionDetails,
     ConnectionHelper,
     FriendlyNameMgr,
     IIDNInfo,
-    IoType,
     KicProcessMgr,
 } from "./resourceManager"
 import { getNodeDetails } from "./tspConfigJsonParser"
@@ -54,6 +52,7 @@ export async function createTerminal(
     }
     let name = ""
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
+    // Always create a connection.
     if (typeof connection === "string") {
         const connection_details =
             ConnectionHelper.parseConnectionString(connection)
@@ -93,15 +92,11 @@ export async function createTerminal(
                 if (background_process) {
                     background_process?.kill("SIGTERM")
                 }
-                if (connection instanceof Connection) {
-                    connection.status = ConnectionStatus.Active
-                }
+                conn.status = ConnectionStatus.Active
             })
             //Dump output queue if enabled
             if (cancel.isCancellationRequested) {
-                if (connection instanceof Connection) {
-                    connection.status = ConnectionStatus.Active
-                }
+                conn.status = ConnectionStatus.Active
                 return new Promise((resolve) => resolve(false))
             }
 
@@ -151,9 +146,7 @@ export async function createTerminal(
             Log.trace("Getting instrument information", LOGLOC)
 
             if (cancel.isCancellationRequested) {
-                if (connection instanceof Connection) {
-                    connection.status = ConnectionStatus.Active
-                }
+                conn.status = ConnectionStatus.Active
                 return new Promise((resolve) => resolve(false))
             }
             background_process = child.spawn(
@@ -212,6 +205,9 @@ export async function createTerminal(
 
             const inst = new Instrument(info, name !== "" ? name : undefined)
             inst.addConnection(conn)
+            InstrumentTreeDataProvider.instance.addOrUpdateInstrument(inst)
+            await InstrumentTreeDataProvider.instance.saveInstrument(inst)
+            conn.status = ConnectionStatus.Connected
 
             const additional_terminal_args = []
 
@@ -226,27 +222,18 @@ export async function createTerminal(
 
             //Connect terminal
             if (cancel.isCancellationRequested) {
-                if (connection instanceof Connection) {
-                    connection.status = ConnectionStatus.Active
-                }
+                conn.status = ConnectionStatus.Active
                 return new Promise((resolve) => resolve(false))
             }
-            await _activeConnectionManager?.createTerminal(
-                inst.name,
-                conn.type,
-                conn.addr,
-                additional_terminal_args,
-                connection instanceof Connection ? connection : undefined,
-            )
+            Log.trace("Saving connection", LOGLOC)
+
+            await _activeConnectionManager?.createTerminal(inst.name, conn)
 
             Log.trace(`Connected to ${inst.name}`, LOGLOC)
 
             progress.report({
                 message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
             })
-            Log.trace("Saving connection", LOGLOC)
-            await _instrExplorer.saveWhileConnect(inst)
-            InstrumentTreeDataProvider.instance.addOrUpdateInstrument(inst)
         },
     )
     return Promise.resolve(true)
@@ -711,13 +698,13 @@ const base_api = {
 
     async fetchConnDetails(
         term_pid: Thenable<number | undefined> | undefined,
-    ): Promise<ConnectionDetails | undefined> {
+    ): Promise<Connection | undefined> {
         if (_kicProcessMgr != undefined) {
             const kicCell = _kicProcessMgr.kicList.find(
                 (x) => x.terminalPid == term_pid,
             )
 
-            const connDetails = kicCell?.connDetails
+            const connDetails = kicCell?.connection
             kicCell?.sendTextToTerminal(".exit")
             let found = false
             await kicCell?.getTerminalState().then(
@@ -739,14 +726,9 @@ const base_api = {
         }
     },
 
-    async restartConnAfterDbg(instr: ConnectionDetails) {
-        if (instr != undefined) {
-            await _kicProcessMgr.createKicCell(
-                instr.Name,
-                instr.ConnAddr,
-                instr.ConnType as IoType,
-                [],
-            )
+    async restartConnAfterDbg(name: string, connection: Connection) {
+        if (connection != undefined) {
+            await _kicProcessMgr.createKicCell(name, connection)
         }
     },
 }

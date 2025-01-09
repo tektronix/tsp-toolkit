@@ -1,7 +1,7 @@
 import { join } from "node:path"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
-import { ConnectionHelper, IoType, KicProcessMgr } from "./resourceManager"
+import { ConnectionHelper, KicProcessMgr } from "./resourceManager"
 import { createTerminal } from "./extension"
 import { Log, SourceLocation } from "./logging"
 import { Connection } from "./instruments"
@@ -189,25 +189,21 @@ export class CommunicationManager {
      */
     public async createTerminal(
         term_name: string,
-        connType: IoType,
-        address: string,
+        connection: Connection,
         additional_terminal_args?: string[],
-        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "extension.ts",
-            func: `CommunicationManager.createTerminal("${term_name}", "${connType.toString()}", "${address}", "[${additional_terminal_args?.join(",") ?? ""}]")`,
+            func: `CommunicationManager.createTerminal("${term_name}", "${JSON.stringify(connection)}", "[${additional_terminal_args?.join(",") ?? ""}]")`,
         }
         //const maxerr: number =
         //    vscode.workspace.getConfiguration("tsp").get("errorLimit") ?? 0
 
-        Log.trace(`Connecting via ${connType.toUpperCase()}`, LOGLOC)
+        Log.trace(`Connecting via ${connection.type.toUpperCase()}`, LOGLOC)
         await this._kicProcessMgr.createKicCell(
             term_name,
-            address,
-            connType,
-            additional_terminal_args,
             connection,
+            additional_terminal_args,
         )
     }
 

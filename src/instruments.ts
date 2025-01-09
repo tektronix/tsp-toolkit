@@ -832,7 +832,7 @@ export class InstrumentTreeDataProvider
         if (enabled && !this._savedInstrumentConfigWatcher) {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
-                    if (e.affectsConfiguration("tsp.savedInstrument")) {
+                    if (e.affectsConfiguration("tsp.savedInstruments")) {
                         this.getSavedInstruments().catch(() => {})
                     }
                 })
@@ -892,6 +892,21 @@ export class InstrumentTreeDataProvider
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
 
+            const to_remove = this._instruments.filter((v) => {
+                for (const r of raw) {
+                    if (r.serial_number === v.info.serial_number) {
+                        return false
+                    }
+                }
+                return true
+            })
+
+            for (const r of to_remove) {
+                this._instruments = this._instruments.filter(
+                    (i) => i.info.serial_number !== r.info.serial_number,
+                )
+            }
+
             this.addOrUpdateInstruments(
                 raw.map((v) => {
                     const i = Instrument.from(v)
@@ -899,6 +914,8 @@ export class InstrumentTreeDataProvider
                     return i
                 }),
             )
+
+            // TODO Find the ones to remove
 
             return this._instruments
         })
@@ -1077,14 +1094,14 @@ export class InstrumentTreeDataProvider
             func: "InstrumentTreeDataProvider.removeInstrument()",
         }
         try {
-            const instrList: Array<InstrInfo> =
+            const raw: Array<InstrInfo> =
                 vscode.workspace
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
             const config = vscode.workspace.getConfiguration("tsp")
 
             const matching_instruments_indices =
-                InstrumentTreeDataProvider.getAllIndices(instrList, (v) => {
+                InstrumentTreeDataProvider.getAllIndices(raw, (v) => {
                     return (
                         v.model == instr.info.model &&
                         v.serial_number == instr.info.serial_number
@@ -1096,13 +1113,13 @@ export class InstrumentTreeDataProvider
             )
 
             for (const idx of matching_instruments_indices.reverse()) {
-                Log.trace(`Removing ${JSON.stringify(instrList[idx])}`, LOGLOC)
-                instrList.splice(idx, 1)
+                Log.trace(`Removing ${JSON.stringify(raw[idx])}`, LOGLOC)
+                raw.splice(idx, 1)
             }
 
             await config.update(
                 "savedInstruments",
-                instrList,
+                raw,
                 vscode.ConfigurationTarget.Global,
             )
         } catch (err_msg) {
@@ -1415,7 +1432,7 @@ export class InstrumentsExplorer {
             //Use the existing terminal to reset
             for (const kicCell of this._kicProcessMgr.kicList) {
                 if (item != undefined) {
-                    if (item.addr == kicCell.connAddr) {
+                    if (item.addr === kicCell.connection?.addr) {
                         kicCell.sendTextToTerminal(".reset\n")
                     }
                 }
@@ -1477,7 +1494,7 @@ export class InstrumentsExplorer {
         } else {
             for (const kicCell of this._kicProcessMgr.kicList) {
                 if (e != undefined) {
-                    if (e.addr == kicCell.connAddr) {
+                    if (e.addr === kicCell.connection?.addr) {
                         const fw_file = await vscode.window.showOpenDialog({
                             filters: {
                                 "All files (*.*)": ["*"],

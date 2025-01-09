@@ -194,7 +194,7 @@ export class KicProcessMgr {
     private _kicList = new Array<KicCell>()
     public debugTermPid: Thenable<number | undefined> | undefined
     public doReconnect = false
-    private _reconnectInstrDetails: ConnectionDetails | undefined
+    private _reconnectConnection: { name: string; conn: Connection } | undefined
     public firstInstrDetails: ConnectionDetails | undefined
 
     constructor() {}
@@ -206,7 +206,10 @@ export class KicProcessMgr {
         }
         Log.trace("Disposing KicProcessMgr...", LOGLOC)
         for (const k of this._kicList) {
-            Log.trace(`Killing ${await k.terminalPid}: ${k.connAddr}`, LOGLOC)
+            Log.trace(
+                `Killing ${await k.terminalPid}: ${k.connection?.addr}`,
+                LOGLOC,
+            )
             await k.dispose()
         }
 
@@ -227,24 +230,20 @@ export class KicProcessMgr {
      */
     public async createKicCell(
         name: string,
-        addr: string,
-        connType: IoType,
+        connection: Connection,
         additional_terminal_args?: string[],
-        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
-            func: `KicProcessMgr.createKicCell("${name}", "${addr}", "${connType}", "[${additional_terminal_args?.join(",")}]")`,
+            func: `KicProcessMgr.createKicCell("${name}", "${JSON.stringify(connection)}", "[${additional_terminal_args?.join(",")}]")`,
         }
         Log.trace("Creating Kic Cell", LOGLOC)
         const newCell = new KicCell()
 
         await newCell.initializeComponents(
             name,
-            addr,
-            connType,
-            additional_terminal_args,
             connection,
+            additional_terminal_args,
         )
         this.debugTermPid = newCell.terminalPid
         this._kicList.push(newCell)
@@ -252,12 +251,11 @@ export class KicProcessMgr {
     }
 
     public async restartConnectionAfterDebug() {
-        if (this._reconnectInstrDetails != undefined) {
+        if (this._reconnectConnection != undefined) {
             try {
                 await this.createKicCell(
-                    this._reconnectInstrDetails.Name,
-                    this._reconnectInstrDetails.ConnAddr,
-                    this._reconnectInstrDetails.ConnType as IoType,
+                    this._reconnectConnection.name,
+                    this._reconnectConnection.conn,
                 )
             } catch (error) {
                 const details = `Unable to reconnect after debugging: ${error?.toString()}`
@@ -294,8 +292,7 @@ export class KicProcessMgr {
 export class KicCell extends EventEmitter {
     private _term: vscode.Terminal | undefined
     public terminalPid: Thenable<number | undefined> | undefined
-    private _uniqueID = ""
-    private _connDetails: ConnectionDetails | undefined
+    private _connection: Connection | undefined
     public isTerminalClosed = false
     private sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -311,7 +308,7 @@ export class KicCell extends EventEmitter {
         const pid = await this._term?.processId
         if (pid !== undefined) {
             Log.trace(
-                `Killing PID ${pid}, connection to ${this.connAddr}`,
+                `Killing PID ${pid}, connection to ${this._connection?.addr}`,
                 LOGLOC,
             )
             process.kill(pid)
@@ -325,9 +322,9 @@ export class KicCell extends EventEmitter {
             file: "resourceManager.ts",
             func: "KicCell.reset()",
         }
-        if (this._connDetails) {
+        if (this._connection) {
             Log.debug(
-                `Resetting instrument at ${this._connDetails.ConnAddr}`,
+                `Resetting instrument at ${this._connection.addr}`,
                 LOGLOC,
             )
             child.spawnSync(EXECUTABLE, [
@@ -337,8 +334,8 @@ export class KicCell extends EventEmitter {
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
                 "reset",
-                this._connDetails.ConnType,
-                this._connDetails.ConnAddr,
+                this._connection.type.toLowerCase(),
+                this._connection.addr,
             ])
         }
     }
@@ -348,18 +345,15 @@ export class KicCell extends EventEmitter {
      * */
     public async initializeComponents(
         name: string,
-        addr: string,
-        connType: IoType,
+        connection: Connection,
         additional_terminal_args?: string[],
-        connection?: Connection | undefined,
     ): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "resourceManager.ts",
-            func: `KicCell.initializeComponents("${name}", "${addr}", "${connType}", "[${additional_terminal_args?.join(",")}]")`,
+            func: `KicCell.initializeComponents("${name}", "${JSON.stringify(connection)}", "[${additional_terminal_args?.join(",")}]")`,
         }
         Log.trace("Initializing components", LOGLOC)
-        this._uniqueID = addr
-        this._connDetails = new ConnectionDetails(name, addr, connType)
+        this._connection = connection
 
         const terminal_args = [
             "--log-file",
@@ -368,8 +362,8 @@ export class KicCell extends EventEmitter {
                 `${new Date().toISOString().substring(0, 10)}-kic.log`,
             ),
             "connect",
-            connType.toLowerCase(),
-            addr,
+            this._connection.type.toLowerCase(),
+            this._connection.addr,
         ]
 
         if (additional_terminal_args) {
@@ -409,8 +403,8 @@ export class KicCell extends EventEmitter {
         this._term?.show(false)
         vscode.window.onDidCloseTerminal((t) => {
             Log.info("Terminal closed", LOGLOC)
-            if (connection) {
-                connection.status = ConnectionStatus.Active
+            if (this._connection) {
+                this._connection.status = ConnectionStatus.Active
             }
             if (
                 t.creationOptions.iconPath !== undefined &&
@@ -451,16 +445,12 @@ export class KicCell extends EventEmitter {
         }, 0)
     }
 
-    public get connAddr(): string {
-        return this._uniqueID
-    }
-
     public sendTextToTerminal(input: string) {
         this._term?.sendText(input)
     }
 
-    public get connDetails(): ConnectionDetails | undefined {
-        return this._connDetails
+    public get connection(): Connection | undefined {
+        return this._connection
     }
 }
 
