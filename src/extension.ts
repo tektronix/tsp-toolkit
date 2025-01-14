@@ -42,7 +42,7 @@ export async function createTerminal(
 ): Promise<boolean> {
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
-        func: `createTerminal("${JSON.stringify(connection)}")`,
+        func: "createTerminal()",
     }
     let name = ""
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
@@ -226,7 +226,7 @@ export function deactivate() {
 
 //Request the instrument to be reset
 function startReset(def: Connection): Promise<void> {
-    return Promise.resolve(_instrExplorer.reset(def))
+    return Promise.resolve(def.reset())
 }
 
 function updateExtensionSettings() {

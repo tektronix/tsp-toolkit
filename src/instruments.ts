@@ -200,6 +200,7 @@ export class Connection extends vscode.TreeItem {
     private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
 
     private _terminal: vscode.Terminal | undefined = undefined
+    private _background_process: child.ChildProcess | undefined = undefined
 
     readonly onChangedStatus: vscode.Event<ConnectionStatus> =
         this._onChangedStatus.event
@@ -260,6 +261,106 @@ export class Connection extends vscode.TreeItem {
         }
     }
 
+    async getInfo(): Promise<IIDNInfo | null> {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
+        Log.trace("Getting instrument information", LOGLOC)
+
+        this._background_process = child.spawn(
+            EXECUTABLE,
+            [
+                "--log-file",
+                join(
+                    LOG_DIR,
+                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                ),
+                "info",
+                this.type.toLowerCase(),
+                "--json",
+                this.addr,
+            ],
+            {
+                env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+            },
+        )
+        const info_string = await new Promise<string>((resolve) => {
+            let data = ""
+            this._background_process?.stderr?.on("data", (chunk) => {
+                Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+            })
+            this._background_process?.stdout?.on("data", (chunk) => {
+                Log.trace(`Info process received: ${chunk}`, LOGLOC)
+                data += chunk
+            })
+            this._background_process?.on("close", () => {
+                Log.trace(
+                    `Info process exited with code: ${this._background_process?.exitCode}`,
+                    LOGLOC,
+                )
+                resolve(data)
+            })
+        })
+
+        const exit_code = this._background_process.exitCode
+
+        this._background_process = undefined
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
+            LOGLOC,
+        )
+
+        if (info_string === "") {
+            Log.error(
+                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                LOGLOC,
+            )
+            vscode.window.showErrorMessage(
+                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+            )
+            return null
+        }
+
+        return <IIDNInfo>JSON.parse(info_string)
+    }
+
+    async dumpOutputQueue(): Promise<string | undefined> {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.dumpOutputQueue()",
+        }
+        let dump_path: string | undefined = undefined
+        Log.info("Dumping data from instrument output queue", LOGLOC)
+        const dump_dir = mkdtempSync(join(os.tmpdir(), "tsp-toolkit-"))
+        dump_path = join(dump_dir, "dump-output")
+
+        Log.trace(`Dumping data to ${dump_path}`, LOGLOC)
+
+        this._background_process = child.spawn(EXECUTABLE, [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "dump",
+            this.type.toLowerCase(),
+            this.addr,
+            "--output",
+            dump_path,
+        ])
+
+        await new Promise<void>((resolve) => {
+            this._background_process?.on("close", () => {
+                Log.trace(
+                    `Dump process exited with code: ${this._background_process?.exitCode}`,
+                    LOGLOC,
+                )
+                this._background_process = undefined
+                resolve()
+            })
+        })
+        return dump_path
+    }
+
     async connect(name?: string) {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         this.status = ConnectionStatus.Connected
@@ -273,14 +374,12 @@ export class Connection extends vscode.TreeItem {
                     title: "Connecting to instrument",
                 },
                 async (progress, cancel) => {
-                    let background_process: child.ChildProcess | undefined =
-                        undefined
                     this.status = ConnectionStatus.Connected
 
                     cancel.onCancellationRequested(() => {
                         Log.info("Connection cancelled by user", LOGLOC)
-                        if (background_process) {
-                            background_process?.kill("SIGTERM")
+                        if (this._background_process) {
+                            this._background_process?.kill("SIGTERM")
                         }
                         this.status = ConnectionStatus.Active
                     })
@@ -289,8 +388,7 @@ export class Connection extends vscode.TreeItem {
                         this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
-
-                    let dump_path: string | undefined = undefined
+                    let dump_path = undefined
                     if (
                         vscode.workspace
                             .getConfiguration("tsp")
@@ -300,104 +398,23 @@ export class Connection extends vscode.TreeItem {
                             message:
                                 "Dumping data from instrument output queue",
                         })
-                        Log.info(
-                            "Dumping data from instrument output queue",
-                            LOGLOC,
-                        )
-                        const dump_dir = mkdtempSync(
-                            join(os.tmpdir(), "tsp-toolkit-"),
-                        )
-                        dump_path = join(dump_dir, "dump-output")
-
-                        Log.trace(`Dumping data to ${dump_path}`, LOGLOC)
-
-                        background_process = child.spawn(EXECUTABLE, [
-                            "--log-file",
-                            join(
-                                LOG_DIR,
-                                `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                            ),
-                            "dump",
-                            this.type.toLowerCase(),
-                            this.addr,
-                            "--output",
-                            dump_path,
-                        ])
-
-                        await new Promise<void>((resolve) => {
-                            background_process?.on("close", () => {
-                                Log.trace(
-                                    `Dump process exited with code: ${background_process?.exitCode}`,
-                                    LOGLOC,
-                                )
-                                resolve()
-                            })
-                        })
+                        dump_path = await this.dumpOutputQueue()
                     }
 
                     //Get instrument info
                     progress.report({
                         message: "Getting instrument information",
                     })
-                    Log.trace("Getting instrument information", LOGLOC)
-
                     if (cancel.isCancellationRequested) {
                         this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
-                    background_process = child.spawn(
-                        EXECUTABLE,
-                        [
-                            "--log-file",
-                            join(
-                                LOG_DIR,
-                                `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                            ),
-                            "info",
-                            this.type.toLowerCase(),
-                            "--json",
-                            this.addr,
-                        ],
-                        {
-                            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                        },
-                    )
-                    const info_string = await new Promise<string>((resolve) => {
-                        let data = ""
-                        background_process?.stderr?.on("data", (chunk) => {
-                            Log.trace(`Info stderr: ${chunk}`, LOGLOC)
-                        })
-                        background_process?.stdout?.on("data", (chunk) => {
-                            Log.trace(`Info process received: ${chunk}`, LOGLOC)
-                            data += chunk
-                        })
-                        background_process?.on("close", () => {
-                            Log.trace(
-                                `Info process exited with code: ${background_process?.exitCode}`,
-                                LOGLOC,
-                            )
-                            resolve(data)
-                        })
-                    })
-                    const exit_code = background_process.exitCode
 
-                    Log.trace(
-                        `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
-                        LOGLOC,
-                    )
+                    const info = await this.getInfo()
 
-                    if (info_string === "") {
-                        Log.error(
-                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
-                            LOGLOC,
-                        )
-                        vscode.window.showErrorMessage(
-                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
-                        )
+                    if (!info) {
                         return new Promise((resolve) => resolve(false))
                     }
-
-                    const info = <IIDNInfo>JSON.parse(info_string)
 
                     if (!this._parent) {
                         this._parent = new Instrument(
@@ -457,7 +474,7 @@ export class Connection extends vscode.TreeItem {
 
                     Log.trace("Starting VSCode Terminal", LOGLOC)
                     this._terminal = vscode.window.createTerminal({
-                        name: name,
+                        name: this._parent.name,
                         shellPath: EXECUTABLE,
                         shellArgs: terminal_args,
                         isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
@@ -487,6 +504,7 @@ export class Connection extends vscode.TreeItem {
                     vscode.window.onDidCloseTerminal((t) => {
                         Log.info("Terminal closed", LOGLOC)
                         this.status = ConnectionStatus.Active
+                        this._terminal = undefined
                         if (
                             t.creationOptions.iconPath !== undefined &&
                             // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -499,7 +517,7 @@ export class Connection extends vscode.TreeItem {
                         ) {
                             setTimeout(() => {
                                 Log.trace("Resetting closed instrument", LOGLOC)
-                                this.reset()
+                                this.reset().catch(() => {})
                             }, 500)
                         }
                     })
@@ -522,13 +540,67 @@ export class Connection extends vscode.TreeItem {
         }
     }
 
-    reset() {
-        this._terminal?.sendText(".reset")
+    async reset() {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.reset()",
+        }
+        if (this._terminal) {
+            Log.debug("Terminal exists, sending .reset", LOGLOC)
+            this._terminal?.sendText(".reset")
+            return
+        }
+        if (this._background_process) {
+            //wait for a background process slot to open up if it is busy
+            Log.debug(
+                "Terminal doesn't exist and background process is busy. Waiting...",
+                LOGLOC,
+            )
+            await new Promise<void>((r) =>
+                this._background_process?.on("close", () => r()),
+            )
+            Log.debug(
+                "... Background process finished starting new reset call in background process",
+                LOGLOC,
+            )
+        }
+        this._background_process = child.spawn(EXECUTABLE, [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "reset",
+            this.type.toLowerCase(),
+            this.addr,
+        ])
+
+        await new Promise<void>((resolve) => {
+            this._background_process?.on("close", () => {
+                Log.trace(
+                    `Reset process exited with code: ${this._background_process?.exitCode}`,
+                    LOGLOC,
+                )
+                this._background_process = undefined
+                resolve()
+            })
+        })
     }
 
-    upgrade() {
+    async upgrade(filepath: string, slot?: number) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.upgrade()",
+        }
         //TODO OPTIONS
-        this._terminal?.sendText(".upgrade ")
+        if (!this._terminal) {
+            await this.connect()
+        }
+        Log.debug("Terminal exists, sending .upgrade", LOGLOC)
+        this._terminal?.sendText(
+            `.upgrade ${slot ? `--slot ${slot}` : ""} ${filepath}`,
+        )
+        return
     }
 
     abort() {
