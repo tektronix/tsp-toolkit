@@ -110,7 +110,7 @@ export class FriendlyNameMgr {
                 const instr = connections[i]
                 if (
                     io_type === instr.io_type &&
-                    model_serial == instr.model + "#" + instr.serial_number
+                    model_serial === instr.model + "#" + instr.serial_number
                 ) {
                     unique_name = instr.friendly_name
                     found = true
@@ -124,7 +124,7 @@ export class FriendlyNameMgr {
             let counter = 1
             let uniqueString = baseString
 
-            while (connections.some((i) => i.friendly_name == uniqueString)) {
+            while (connections.some((i) => i.friendly_name === uniqueString)) {
                 uniqueString = baseString + "_" + String(counter)
                 counter++
             }
@@ -161,8 +161,8 @@ export class FriendlyNameMgr {
         const index = connections.findIndex(
             (i) =>
                 i.io_type === instr.io_type &&
-                i.model == instr.model &&
-                i.serial_number == instr.serial_number,
+                i.model === instr.model &&
+                i.serial_number === instr.serial_number,
         )
         if (index !== -1) {
             //update
@@ -256,7 +256,7 @@ export class KicProcessMgr {
     }
 
     public async restartConnectionAfterDebug() {
-        if (this._reconnectConnection != undefined) {
+        if (this._reconnectConnection !== undefined) {
             try {
                 await this.createKicCell(
                     this._reconnectConnection.name,
@@ -435,7 +435,7 @@ export class KicCell extends EventEmitter {
     public async getTerminalState(): Promise<string> {
         const max_attempts = 60
         for (let i = 0; i < max_attempts; i++) {
-            if (this.isTerminalClosed == true) {
+            if (this.isTerminalClosed === true) {
                 return Promise.resolve("terminal is closed")
             } else {
                 await this.sleep(500)

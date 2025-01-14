@@ -122,7 +122,7 @@ export class CommunicationManager {
                 let isConnSuccessful = false
                 let err_msg = ""
 
-                if (Ip == undefined) {
+                if (Ip === undefined) {
                     return Promise.reject(new Error("IP is undefined"))
                 } else {
                     createTerminal(Ip).then(
@@ -162,11 +162,11 @@ export class CommunicationManager {
                     )[1]
                 kicDict[k] = t
             })
-            if ((await vscode.window.showInputBox(options)) != undefined) {
+            if ((await vscode.window.showInputBox(options)) !== undefined) {
                 const selectedTerm = await vscode.window.showQuickPick(
                     Object.keys(kicDict),
                 )
-                if (selectedTerm != undefined) {
+                if (selectedTerm !== undefined) {
                     kicDict[selectedTerm]?.sendText(text)
                     return Promise.resolve(true)
                 }
@@ -225,7 +225,7 @@ export class CommunicationManager {
         const index_arr: number[] = []
 
         this._kicProcessMgr.kicList.forEach((kicCell, idx) => {
-            if (kicCell.terminalPid == e.processId) {
+            if (kicCell.terminalPid === e.processId) {
                 kicCell.isTerminalClosed = true
                 //#ToDo: is the next line needed?
                 //kicCell.writeToChild(".exit\n")

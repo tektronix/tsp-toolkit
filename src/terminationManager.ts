@@ -14,13 +14,13 @@ export class TerminationManager {
                     t.creationOptions as vscode.TerminalOptions
                 )?.shellPath?.toString() === EXECUTABLE,
         )
-        if (kicTerminals.length == 0) {
+        if (kicTerminals.length === 0) {
             const options: vscode.InputBoxOptions = {
                 prompt: "No instrument found to terminate, do you want to enter the IP?",
                 value: "Yes",
             }
             const res = await vscode.window.showInputBox(options)
-            if (res?.toUpperCase() == "YES") {
+            if (res?.toUpperCase() === "YES") {
                 const options: vscode.InputBoxOptions = {
                     prompt: "Enter instrument IP to terminate",
                 }
@@ -28,7 +28,7 @@ export class TerminationManager {
                 //console.log(Ip)
                 this.createTerminal(Ip as string)
             }
-        } else if (kicTerminals.length == 1) {
+        } else if (kicTerminals.length === 1) {
             kicTerminals[0].sendText(".terminate")
         } else if (kicTerminals.length > 1) {
             const options: vscode.InputBoxOptions = {
@@ -40,18 +40,18 @@ export class TerminationManager {
             kicTerminals.forEach((t) => {
                 const k: string =
                     t.name +
-                        ":" +
-                        (
-                            (t.creationOptions as vscode.TerminalOptions)
-                                ?.shellArgs as string[]
-                        )[1] ?? ""
+                    ":" +
+                    (
+                        (t.creationOptions as vscode.TerminalOptions)
+                            ?.shellArgs as string[]
+                    )[1]
                 kicDict[k] = t
             })
-            if ((await vscode.window.showInputBox(options)) != undefined) {
+            if ((await vscode.window.showInputBox(options)) !== undefined) {
                 const selectedTerm = await vscode.window.showQuickPick(
                     Object.keys(kicDict),
                 )
-                if (selectedTerm != undefined) {
+                if (selectedTerm !== undefined) {
                     kicDict[selectedTerm]?.sendText(".terminate")
                 }
             }
@@ -60,8 +60,8 @@ export class TerminationManager {
 
     createTerminal(instrumentIp: string) {
         const parts = instrumentIp.match(CONNECTION_RE)
-        if (parts == null) return
-        const name = typeof parts[1] == "undefined" ? "KIC" : parts[1]
+        if (parts === null) return
+        const name = typeof parts[1] === "undefined" ? "KIC" : parts[1]
         const ip = parts[2]
 
         const term = vscode.window.createTerminal({

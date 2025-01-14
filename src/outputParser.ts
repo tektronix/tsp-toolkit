@@ -84,7 +84,7 @@ export class OutputParser {
         parser.ontext = function (content: string) {
             if (has_output_resumed) {
                 output = output.concat(content)
-            } else if (tag_count == 1) {
+            } else if (tag_count === 1) {
                 outer: {
                     let element_found = false
                     OutputParser.exception_list.forEach((element) => {

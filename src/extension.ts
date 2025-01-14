@@ -197,7 +197,7 @@ export async function createTerminal(
                 LOGLOC,
             )
 
-            if (info_string == "") {
+            if (info_string === "") {
                 Log.error(
                     `Unable to connect to instrument at ${conn.addr}: could not get instrument information`,
                     LOGLOC,
@@ -410,7 +410,7 @@ function updateExtensionSettings() {
                     ...["Remove", "Ignore"],
                 )
                 .then((selection) => {
-                    if (selection == "Remove") {
+                    if (selection === "Remove") {
                         Log.info(
                             `User chose to remove \`${setting}\`. Removing.`,
                             LOGLOC,
@@ -639,7 +639,7 @@ async function pickConnection(connection_info?: string): Promise<void> {
 
 async function connect(inIp: string, shouldPrompt?: boolean): Promise<void> {
     let Ip: string | undefined = inIp
-    if (shouldPrompt == true) {
+    if (shouldPrompt) {
         const options: vscode.InputBoxOptions = {
             prompt: "Connect to instrument?",
             value: inIp,
@@ -704,9 +704,9 @@ const base_api = {
     async fetchConnDetails(
         term_pid: Thenable<number | undefined> | undefined,
     ): Promise<Connection | undefined> {
-        if (_kicProcessMgr != undefined) {
+        if (_kicProcessMgr !== undefined) {
             const kicCell = _kicProcessMgr.kicList.find(
-                (x) => x.terminalPid == term_pid,
+                (x) => x.terminalPid === term_pid,
             )
 
             const connDetails = kicCell?.connection
@@ -732,7 +732,7 @@ const base_api = {
     },
 
     async restartConnAfterDbg(name: string, connection: Connection) {
-        if (connection != undefined) {
+        if (connection !== undefined) {
             await _kicProcessMgr.createKicCell(name, connection)
         }
     },

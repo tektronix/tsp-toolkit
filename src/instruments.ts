@@ -247,7 +247,7 @@ export class Connection extends vscode.TreeItem {
             func: "Connection.status() set",
         })
 
-        if (this._status != status) {
+        if (this._status !== status) {
             this._status = status
             this._onChangedStatus.fire(this._status)
         }
@@ -377,7 +377,7 @@ export class Instrument extends vscode.TreeItem {
                 serial_number: info.serial_number,
                 vendor: info.manufacturer,
             },
-            info.friendly_name.length == 0 ? undefined : info.friendly_name,
+            info.friendly_name.length === 0 ? undefined : info.friendly_name,
         )
         n._category = info.instr_categ
         n.addConnection(Connection.from(info))
@@ -446,7 +446,7 @@ export class Instrument extends vscode.TreeItem {
      */
     addConnection(connection: Connection): boolean {
         const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type == connection.type,
+            (v) => v.addr === connection.addr && v.type === connection.type,
         )
         if (i > -1) {
             if (this._connections[i].status !== connection.status) {
@@ -472,7 +472,7 @@ export class Instrument extends vscode.TreeItem {
 
     hasConnection(connection: Connection) {
         const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type == connection.type,
+            (v) => v.addr === connection.addr && v.type === connection.type,
         )
         return i > -1
     }
@@ -506,9 +506,9 @@ export class Instrument extends vscode.TreeItem {
         this._connections.sort((a, b) => -(a.status - b.status))
 
         for (const c of this._connections) {
-            if (c.status == ConnectionStatus.Active) {
+            if (c.status === ConnectionStatus.Active) {
                 this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
-            } else if (c.status == ConnectionStatus.Connected) {
+            } else if (c.status === ConnectionStatus.Connected) {
                 this._status = ConnectionStatus.Connected
 
                 break //If any of the connections are connected, we show "Connected"
@@ -517,7 +517,7 @@ export class Instrument extends vscode.TreeItem {
 
         this.iconPath = connectionStatusIcon(this._status)
 
-        if (this._status != status_before) {
+        if (this._status !== status_before) {
             this.contextValue = contextValueStatus(
                 this.contextValue ?? "Instr",
                 this._status,
@@ -525,7 +525,7 @@ export class Instrument extends vscode.TreeItem {
             this._onChanged.fire()
         }
 
-        if (this._status == ConnectionStatus.Connected) {
+        if (this._status === ConnectionStatus.Connected) {
             this._connections
                 .filter((c) => c.status !== ConnectionStatus.Connected)
                 .map((c) => c.enable(false))
@@ -694,7 +694,7 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
             for (const c of instrument.connections) {
                 changed = this._instruments[found_idx].addConnection(c)
                 if (
-                    this._instruments[found_idx].name != instrument.name &&
+                    this._instruments[found_idx].name !== instrument.name &&
                     !this._instruments[found_idx].saved
                 ) {
                     this._instruments[found_idx].name = instrument.name
@@ -775,8 +775,8 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                 resolve([
                     ...this._instruments.filter(
                         (x) =>
-                            x.status == ConnectionStatus.Active ||
-                            x.status == ConnectionStatus.Connected,
+                            x.status === ConnectionStatus.Active ||
+                            x.status === ConnectionStatus.Connected,
                     ),
                     new InactiveInstrumentList(),
                 ])
@@ -815,8 +815,8 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                 resolve([
                     ...this._instruments.filter(
                         (x) =>
-                            x.status == ConnectionStatus.Inactive ||
-                            x.status == ConnectionStatus.Ignored,
+                            x.status === ConnectionStatus.Inactive ||
+                            x.status === ConnectionStatus.Ignored,
                     ),
                 ])
             })
@@ -1029,7 +1029,7 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                     const obj = plainToInstance(InstrInfo, JSON.parse(instr))
                     //console.log(obj.fetch_uid())
 
-                    if (discovery_list.length == 0) {
+                    if (discovery_list.length === 0) {
                         discovery_list.push(obj)
                     } else {
                         let idx = -1
@@ -1040,7 +1040,7 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                             if (
                                 DiscoveryHelper.createUniqueID(
                                     discovery_list[i],
-                                ) == DiscoveryHelper.createUniqueID(obj)
+                                ) === DiscoveryHelper.createUniqueID(obj)
                             ) {
                                 if (
                                     discovery_list[i].instr_address !=
@@ -1057,7 +1057,7 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                             }
                         }
 
-                        if (new_instr != undefined) {
+                        if (new_instr !== undefined) {
                             if (idx > -1) {
                                 discovery_list[idx] = new_instr
                             } else {
@@ -1098,8 +1098,8 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
             const matching_instruments_indices =
                 InstrumentProvider.getAllIndices(raw, (v) => {
                     return (
-                        v.model == instr.info.model &&
-                        v.serial_number == instr.info.serial_number
+                        v.model === instr.info.model &&
+                        v.serial_number === instr.info.serial_number
                     )
                 })
             Log.trace(
@@ -1133,16 +1133,16 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                 const matching_instruments_indices =
                     InstrumentProvider.getAllIndices(instrList, (v) => {
                         return (
-                            v.model == instr.info.model &&
-                            v.serial_number == instr.info.serial_number &&
-                            v.io_type == i.type &&
-                            (i.type == IoType.Visa
+                            v.model === instr.info.model &&
+                            v.serial_number === instr.info.serial_number &&
+                            v.io_type === i.type &&
+                            (i.type === IoType.Visa
                                 ? v.instr_address.substring(0, 4) ==
                                   i.addr.substring(0, 4)
                                 : true)
                         )
                     })
-                if (matching_instruments_indices.length == 0) {
+                if (matching_instruments_indices.length === 0) {
                     instrList.push({
                         io_type: i.type,
                         instr_address: i.addr,
@@ -1152,12 +1152,12 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                         firmware_revision: instr.info.firmware_rev,
                         instr_categ: instr_map.get(instr.info.model) ?? "",
                         friendly_name: instr.name,
-                        socket_port: i.type == IoType.Lan ? "5025" : undefined,
+                        socket_port: i.type === IoType.Lan ? "5025" : undefined,
                     })
                 } else {
                     for (const m of matching_instruments_indices) {
                         if (
-                            instrList[m].io_type == IoType.Visa &&
+                            instrList[m].io_type === IoType.Visa &&
                             instrList[m].instr_address.substring(0, 4) ==
                                 i.addr.substring(0, 4)
                         ) {
@@ -1406,7 +1406,7 @@ export class InstrumentsExplorer {
             return to?.shellPath?.toString() === EXECUTABLE
         })
 
-        if (kicTerminals.length == 0 && item != undefined) {
+        if (kicTerminals.length === 0 && item !== undefined) {
             //reset using the "kic reset" command
             const connectionType = item.type
             Log.trace("Connection address: " + item.addr, LOGLOC)
@@ -1426,7 +1426,7 @@ export class InstrumentsExplorer {
         } else {
             //Use the existing terminal to reset
             for (const kicCell of this._kicProcessMgr.kicList) {
-                if (item != undefined) {
+                if (item !== undefined) {
                     if (item.addr === kicCell.connection?.addr) {
                         kicCell.sendTextToTerminal(".reset\n")
                     }
@@ -1481,14 +1481,14 @@ export class InstrumentsExplorer {
             const to = t.creationOptions as vscode.TerminalOptions
             return to?.shellPath?.toString() === EXECUTABLE
         })
-        if (kicTerminals.length == 0) {
+        if (kicTerminals.length === 0) {
             void vscode.window.showInformationMessage(
                 "Not connected to any instrument. Cannot proceed.",
             )
             return
         } else {
             for (const kicCell of this._kicProcessMgr.kicList) {
-                if (e != undefined) {
+                if (e !== undefined) {
                     if (e.addr === kicCell.connection?.addr) {
                         const fw_file = await vscode.window.showOpenDialog({
                             filters: {
