@@ -29,6 +29,17 @@ export enum IoType {
     Visa = "Visa",
 }
 
+export function toIoType(str: string): IoType {
+    switch (str.toUpperCase().trim()) {
+        case "LAN":
+            return IoType.Lan
+        case "VISA":
+            return IoType.Visa
+        default:
+            throw Error(`Unknown IoType "${str.trim()}"`)
+    }
+}
+
 /**
  * io_type - Lan, Usb etc.
  * instr_address - connection address of instrument
@@ -174,16 +185,10 @@ export class FriendlyNameMgr {
     }
 }
 
-export class ConnectionDetails {
-    Name: string
-    ConnAddr: string
-    ConnType: string
-
-    constructor(name: string, connAddr: string, connType: string) {
-        this.Name = name
-        this.ConnAddr = connAddr
-        this.ConnType = connType
-    }
+export interface ConnectionDetails {
+    name: string
+    addr: string
+    type: IoType
 }
 
 /**
@@ -281,11 +286,11 @@ export class KicProcessMgr {
         this.doReconnect = false
 
         const details = ConnectionHelper.parseConnectionString(addr)
-        this.firstInstrDetails = new ConnectionDetails(
-            details?.name ?? "",
-            details?.addr ?? addr,
-            details?.type.toString() ?? "lan",
-        )
+        this.firstInstrDetails = {
+            name: details?.name ?? "",
+            addr: details?.addr ?? addr,
+            type: toIoType(details?.type.toString() ?? "Lan"),
+        }
     }
 }
 
@@ -465,13 +470,9 @@ export class ConnectionHelper {
         }
         return undefined
     }
-    public static parseConnectionString(connection_string: string):
-        | {
-              name: string
-              type: IoType
-              addr: string
-          }
-        | undefined {
+    public static parseConnectionString(
+        connection_string: string,
+    ): ConnectionDetails | undefined {
         let name = ""
         let addr = connection_string
         if (connection_string.split("@").length > 1) {

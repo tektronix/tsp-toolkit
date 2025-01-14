@@ -52,7 +52,7 @@ export async function createTerminal(
     }
     let name = ""
     //'example@5e6:2461@2' OR 'example@127.0.0.1'
-    // Always create a connection.
+    // Always create a Connection.
     if (typeof connection === "string") {
         const connection_details =
             ConnectionHelper.parseConnectionString(connection)
@@ -66,11 +66,18 @@ export async function createTerminal(
             `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
             LOGLOC,
         )
+        const existing =
+            InstrumentProvider.instance.getConnection(connection_details)
+
+        if (existing) {
+            connection = existing
+        } else {
+            connection = new Connection(
+                connection_details.type,
+                connection_details.addr,
+            )
+        }
         name = connection_details.name
-        connection = new Connection(
-            connection_details.type,
-            connection_details.addr,
-        )
     }
 
     const conn: Connection = connection
@@ -325,10 +332,6 @@ export function activate(context: vscode.ExtensionContext) {
     Log.trace("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
 
-    //TODO: Connect `.terminate` in ki-comms
-    //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
-    //context.subscriptions.push(rclick)
-
     Log.trace(
         "Checking to see if workspace folder contains `*.tsp` files",
         LOGLOC,
@@ -577,10 +580,12 @@ async function pickConnection(connection_info?: string): Promise<void> {
         )
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
-        quickPick.placeholder = "Enter instrument IP in <insName>@<IP> format"
+        quickPick.title = "HELLO"
+        quickPick.placeholder =
+            "Enter instrument IP address or VISA resource string"
         if (options.length > 0) {
             quickPick.placeholder =
-                "Select connection from existing list or enter instrument IP in <insName>@<IP> format"
+                "Select connection from existing list or enter instrument IP address or VISA resource string"
         }
 
         quickPick.onDidChangeValue((value) => {

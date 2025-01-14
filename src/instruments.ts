@@ -12,6 +12,7 @@ import {
 import { plainToInstance } from "class-transformer"
 import { DISCOVER_EXECUTABLE, EXECUTABLE } from "./kic-cli"
 import {
+    ConnectionDetails,
     idn_to_string,
     IIDNInfo,
     InstrInfo,
@@ -844,6 +845,26 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
         }
     }
 
+    getConnection(details: ConnectionDetails): Connection | null {
+        const matching_instruments = this._instruments.filter(
+            (i) => i.name === details.name,
+        )
+
+        for (const i of matching_instruments) {
+            for (const c of i.connections) {
+                if (
+                    c.addr === details.addr &&
+                    (c.type as string).toLowerCase() ===
+                        details.type.toLowerCase()
+                ) {
+                    return c
+                }
+            }
+        }
+
+        return null
+    }
+
     async refresh(discovery_cb: () => Promise<void>): Promise<void> {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
@@ -975,32 +996,6 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
                             this.reloadTreeData()
                         }
                     }
-
-                    //DEBUG
-                    //DEBUG
-                    //DEBUG
-                    // const example = new Instrument(
-                    //     {
-                    //         vendor: "KEITHLEY INSTRUMENTS LLC",
-                    //         firmware_rev: "0.0.1eng1165-230e88a",
-                    //         model: "TSPop",
-                    //         serial_number: "0",
-                    //     },
-                    //     "2461#04090044",
-                    // )
-                    // const example_conn_lan = new Connection(
-                    //     IoType.Lan,
-                    //     "127.0.0.1",
-                    // )
-                    // example_conn_lan.status = ConnectionStatus.Active
-
-                    // example.addConnection(example_conn_lan)
-                    // example.updateStatus()
-                    // this.addOrUpdateInstrument(example)
-                    //DEBUG
-                    //DEBUG
-                    //DEBUG
-
                     resolve(this.instruments_discovered)
                 },
                 () => {
