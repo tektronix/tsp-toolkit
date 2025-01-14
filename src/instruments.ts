@@ -2,6 +2,7 @@ import * as os from "os"
 import * as child from "child_process"
 import { join } from "path"
 
+import { mkdtempSync } from "fs"
 import * as vscode from "vscode"
 import {
     JSONRPC,
@@ -194,6 +195,8 @@ export class Connection extends vscode.TreeItem {
     private _addr: string = ""
     private _status: ConnectionStatus = ConnectionStatus.Inactive
 
+    private _parent: Instrument | undefined = undefined
+
     private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
 
     private _terminal: vscode.Terminal | undefined = undefined
@@ -216,10 +219,14 @@ export class Connection extends vscode.TreeItem {
 
     enable(enable: boolean) {
         const term = enable ? "Enabled" : "Disabled"
+        console.log(`Connection ${term}`)
         if (this.contextValue && this.contextValue?.match(/Disabled|Enabled/)) {
-            return this.contextValue.replace(/Disabled|Enabled/, term)
+            this.contextValue = this.contextValue.replace(
+                /Disabled|Enabled/,
+                term,
+            )
         } else {
-            return this.contextValue + term
+            this.contextValue = this.contextValue + term
         }
     }
 
@@ -253,10 +260,257 @@ export class Connection extends vscode.TreeItem {
         }
     }
 
-    connect() {
+    async connect(name?: string) {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         this.status = ConnectionStatus.Connected
         if (!this._terminal) {
             //TODO create terminal
+            Log.trace("Creating terminal", LOGLOC)
+            await vscode.window.withProgress(
+                {
+                    cancellable: true,
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Connecting to instrument",
+                },
+                async (progress, cancel) => {
+                    let background_process: child.ChildProcess | undefined =
+                        undefined
+                    this.status = ConnectionStatus.Connected
+
+                    cancel.onCancellationRequested(() => {
+                        Log.info("Connection cancelled by user", LOGLOC)
+                        if (background_process) {
+                            background_process?.kill("SIGTERM")
+                        }
+                        this.status = ConnectionStatus.Active
+                    })
+                    //Dump output queue if enabled
+                    if (cancel.isCancellationRequested) {
+                        this.status = ConnectionStatus.Active
+                        return new Promise((resolve) => resolve(false))
+                    }
+
+                    let dump_path: string | undefined = undefined
+                    if (
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("dumpQueueOnConnect") === true
+                    ) {
+                        progress.report({
+                            message:
+                                "Dumping data from instrument output queue",
+                        })
+                        Log.info(
+                            "Dumping data from instrument output queue",
+                            LOGLOC,
+                        )
+                        const dump_dir = mkdtempSync(
+                            join(os.tmpdir(), "tsp-toolkit-"),
+                        )
+                        dump_path = join(dump_dir, "dump-output")
+
+                        Log.trace(`Dumping data to ${dump_path}`, LOGLOC)
+
+                        background_process = child.spawn(EXECUTABLE, [
+                            "--log-file",
+                            join(
+                                LOG_DIR,
+                                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                            ),
+                            "dump",
+                            this.type.toLowerCase(),
+                            this.addr,
+                            "--output",
+                            dump_path,
+                        ])
+
+                        await new Promise<void>((resolve) => {
+                            background_process?.on("close", () => {
+                                Log.trace(
+                                    `Dump process exited with code: ${background_process?.exitCode}`,
+                                    LOGLOC,
+                                )
+                                resolve()
+                            })
+                        })
+                    }
+
+                    //Get instrument info
+                    progress.report({
+                        message: "Getting instrument information",
+                    })
+                    Log.trace("Getting instrument information", LOGLOC)
+
+                    if (cancel.isCancellationRequested) {
+                        this.status = ConnectionStatus.Active
+                        return new Promise((resolve) => resolve(false))
+                    }
+                    background_process = child.spawn(
+                        EXECUTABLE,
+                        [
+                            "--log-file",
+                            join(
+                                LOG_DIR,
+                                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                            ),
+                            "info",
+                            this.type.toLowerCase(),
+                            "--json",
+                            this.addr,
+                        ],
+                        {
+                            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+                        },
+                    )
+                    const info_string = await new Promise<string>((resolve) => {
+                        let data = ""
+                        background_process?.stderr?.on("data", (chunk) => {
+                            Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+                        })
+                        background_process?.stdout?.on("data", (chunk) => {
+                            Log.trace(`Info process received: ${chunk}`, LOGLOC)
+                            data += chunk
+                        })
+                        background_process?.on("close", () => {
+                            Log.trace(
+                                `Info process exited with code: ${background_process?.exitCode}`,
+                                LOGLOC,
+                            )
+                            resolve(data)
+                        })
+                    })
+                    const exit_code = background_process.exitCode
+
+                    Log.trace(
+                        `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
+                        LOGLOC,
+                    )
+
+                    if (info_string === "") {
+                        Log.error(
+                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                            LOGLOC,
+                        )
+                        vscode.window.showErrorMessage(
+                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                        )
+                        return new Promise((resolve) => resolve(false))
+                    }
+
+                    const info = <IIDNInfo>JSON.parse(info_string)
+
+                    if (!this._parent) {
+                        this._parent = new Instrument(
+                            info,
+                            name !== "" ? name : undefined,
+                        )
+                        this._parent.addConnection(this)
+                    }
+                    InstrumentProvider.instance.addOrUpdateInstrument(
+                        this._parent,
+                    )
+                    await InstrumentProvider.instance.saveInstrument(
+                        this._parent,
+                    )
+                    this.status = ConnectionStatus.Connected
+
+                    const additional_terminal_args = []
+
+                    if (dump_path) {
+                        Log.trace(
+                            `Showing dump content from ${dump_path}`,
+                            LOGLOC,
+                        )
+                        additional_terminal_args.push(
+                            "--dump-output",
+                            dump_path,
+                        )
+                    }
+
+                    progress.report({
+                        message: `Connecting to instrument with model ${info.model} and S/N ${info.serial_number}`,
+                    })
+
+                    //Connect terminal
+                    if (cancel.isCancellationRequested) {
+                        this.status = ConnectionStatus.Active
+                        return new Promise((resolve) => resolve(false))
+                    }
+                    Log.trace("Saving connection", LOGLOC)
+
+                    const terminal_args = [
+                        "--log-file",
+                        join(
+                            LOG_DIR,
+                            `${new Date().toISOString().substring(0, 10)}-kic.log`,
+                        ),
+                        "connect",
+                        this.type.toLowerCase(),
+                        this.addr,
+                    ]
+
+                    if (additional_terminal_args) {
+                        for (const a of additional_terminal_args) {
+                            terminal_args.push(a)
+                        }
+                    }
+
+                    Log.trace("Starting VSCode Terminal", LOGLOC)
+                    this._terminal = vscode.window.createTerminal({
+                        name: name,
+                        shellPath: EXECUTABLE,
+                        shellArgs: terminal_args,
+                        isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
+                        iconPath: {
+                            light: vscode.Uri.file(
+                                join(
+                                    __dirname,
+                                    "..",
+                                    "resources",
+                                    "light",
+                                    "tsp-terminal-icon.svg",
+                                ),
+                            ),
+                            dark: vscode.Uri.file(
+                                join(
+                                    __dirname,
+                                    "..",
+                                    "resources",
+                                    "dark",
+                                    "tsp-terminal-icon.svg",
+                                ),
+                            ),
+                        },
+                    })
+
+                    this._terminal?.show(false)
+                    vscode.window.onDidCloseTerminal((t) => {
+                        Log.info("Terminal closed", LOGLOC)
+                        this.status = ConnectionStatus.Active
+                        if (
+                            t.creationOptions.iconPath !== undefined &&
+                            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                            t.creationOptions.iconPath
+                                .toString()
+                                .search("tsp-terminal-icon") &&
+                            t.exitStatus !== undefined &&
+                            t.exitStatus.reason !==
+                                vscode.TerminalExitReason.Process
+                        ) {
+                            setTimeout(() => {
+                                Log.trace("Resetting closed instrument", LOGLOC)
+                                this.reset()
+                            }, 500)
+                        }
+                    })
+
+                    Log.trace(`Connected to ${this._parent.name}`, LOGLOC)
+
+                    progress.report({
+                        message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
+                    })
+                },
+            )
         } else {
             this.showTerminal()
         }
@@ -529,8 +783,10 @@ export class Instrument extends vscode.TreeItem {
             this._connections
                 .filter((c) => c.status !== ConnectionStatus.Connected)
                 .map((c) => c.enable(false))
-        } else if (this._status === ConnectionStatus.Active) {
-            this._connections.map((c) => c.enable(true))
+        } else {
+            for (const c of this._connections) {
+                c.enable(true)
+            }
         }
 
         return this._status
