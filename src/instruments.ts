@@ -1035,10 +1035,9 @@ export class StringData extends vscode.TreeItem {
 }
 
 type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
+type VscTdp = vscode.TreeDataProvider<TreeData>
 
-export class InstrumentProvider
-    implements vscode.TreeDataProvider<TreeData>, vscode.Disposable
-{
+export class InstrumentProvider implements VscTdp, vscode.Disposable {
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
     private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
