@@ -639,7 +639,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (!this._terminal) {
             return
         }
-        this._terminal.sendText(`.script ${filepath}`)
+        this._terminal.sendText(`.script "${filepath}"`)
     }
 
     /**
