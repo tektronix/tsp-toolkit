@@ -99,7 +99,7 @@ function registerCommand(
         file: "extension.ts",
         func: "registerCommand()",
     }
-    Log.trace(`Registering '${name}' command`, LOGLOC)
+    Log.debug(`Registering '${name}' command`, LOGLOC)
 
     context.subscriptions.push(
         vscode.commands.registerCommand(name, cb, thisArgs),
@@ -109,14 +109,12 @@ function registerCommand(
 // Called when the extension is activated.
 export function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     Log.info("TSP Toolkit activating", LOGLOC)
 
-    Log.trace("Updating extension settings", LOGLOC)
+    Log.debug("Updating extension settings", LOGLOC)
     updateExtensionSettings()
 
-    Log.trace("Creating new InstrumentExplorer", LOGLOC)
+    Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
 
     // The command has been defined in the package.json file
@@ -179,19 +177,19 @@ export function activate(context: vscode.ExtensionContext) {
         },
     ])
 
-    Log.trace("Setting up HelpDocumentWebView", LOGLOC)
+    Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
 
-    Log.trace(
+    Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
         LOGLOC,
     )
     // call function which is required to call first time while activating the plugin
     void processWorkspaceFolders()
 
-    Log.trace("Update local and global configuration for TSP", LOGLOC)
+    Log.debug("Update local and global configuration for TSP", LOGLOC)
     void configure_initial_workspace_configurations()
-    Log.trace(
+    Log.debug(
         "Subscribing to TSP configuration changes in all workspace folders",
         LOGLOC,
     )
@@ -227,7 +225,6 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     const LOGLOC = { file: "extensions.ts", func: "deactivate()" }
     Log.info("Deactivating TSP Toolkit", LOGLOC)
-    Log.trace("Closing all kic executables", LOGLOC)
     _instrExplorer.dispose()
     Log.info("Deactivation complete", LOGLOC)
 }
@@ -245,7 +242,6 @@ function updateExtensionSettings() {
     const settingsList = ["connectionList", "savedInstrumentList"]
     settingsList.forEach((setting) => {
         if (vscode.workspace.getConfiguration("tsp").get(setting)) {
-            console.log(setting)
             Log.warn(`Found deprecated setting: \`${setting}\``, LOGLOC)
             void vscode.window
                 .showInformationMessage(
@@ -261,14 +257,44 @@ function updateExtensionSettings() {
                         )
                         void vscode.workspace
                             .getConfiguration("tsp")
-                            .update(setting, undefined, true)
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.Global,
+                            )
                             .then(() => {
                                 Log.info(
-                                    `Setting \`${setting}\` removed`,
+                                    `Setting \`${setting}\` removed from Global settings`,
                                     LOGLOC,
                                 )
                                 void vscode.window.showInformationMessage(
-                                    "removed setting: " + setting,
+                                    "Removed deprecated setting: " + setting,
+                                )
+                            })
+                        void vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.Workspace,
+                            )
+                            .then(() => {
+                                Log.info(
+                                    `Setting \`${setting}\` removed from workspace`,
+                                    LOGLOC,
+                                )
+                            })
+                        void vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.WorkspaceFolder,
+                            )
+                            .then(() => {
+                                Log.info(
+                                    `Setting \`${setting}\` removed from workspace folder`,
+                                    LOGLOC,
                                 )
                             })
                     }
@@ -516,16 +542,14 @@ function connectCmd(def: Connection) {
         func: `connectCmd(${String(def)})`,
     }
 
-    Log.trace("Fetching connection args", LOGLOC)
     const connection_str = def.addr
-    Log.trace(`Connection string: '${connection_str}'`, LOGLOC)
 
     if (ConnectionHelper.parseConnectionString(connection_str)) {
-        Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
+        Log.debug("Connection string is valid. Creating Terminal", LOGLOC)
         void createTerminal(def)
     } else {
         Log.error(
-            "Connection string is invalid. Unable to connect to instrument.",
+            `Connection string "${connection_str}" is invalid. Unable to connect to instrument.`,
             LOGLOC,
         )
         void vscode.window.showErrorMessage(

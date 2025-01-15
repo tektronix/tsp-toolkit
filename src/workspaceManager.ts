@@ -3,6 +3,7 @@ import * as path from "path"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
 import { onDidChangeTspConfigFile } from "./extension"
+import { Log } from "./logging"
 
 /**
  * An array of supported model names.
@@ -87,7 +88,10 @@ function createTspFileFolder(folderPath: string) {
 
     vscode.workspace.fs.stat(nodeConfigFolderPath).then(
         async () => {
-            console.log("Folder already exists:", nodeConfigFolderPath.fsPath)
+            Log.trace(
+                `Folder already exists: "${nodeConfigFolderPath.fsPath}"`,
+                { file: "workspaceManager.ts", func: "createTspFileFolder()" },
+            )
             const tspSchema = vscode.Uri.file(
                 path.join(
                     folderPath,

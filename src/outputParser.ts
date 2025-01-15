@@ -44,7 +44,6 @@ export class OutputParser {
         //Return in case of empty input
         if (!input) return ""
 
-        //console.log(input)
         //Surround input within a tag to keep saxparser happy
         input = "<xml>" + input + "</xml>"
 

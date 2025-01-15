@@ -240,7 +240,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     enable(enable: boolean) {
         const term = enable ? "Enabled" : "Disabled"
-        console.log(`Connection ${term}`)
         if (this.contextValue && this.contextValue?.match(/Disabled|Enabled/)) {
             this.contextValue = this.contextValue.replace(
                 /Disabled|Enabled/,
@@ -270,11 +269,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             status,
         )
 
-        Log.trace(`Set contextValue to ${this.contextValue}`, {
-            file: "instruments.ts",
-            func: "Connection.status() set",
-        })
-
         if (this._status !== status) {
             this._status = status
             this._onChangedStatus.fire(this._status)
@@ -283,7 +277,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     async getInfo(): Promise<IIDNInfo | null> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
-        Log.trace("Getting instrument information", LOGLOC)
+        Log.debug("Getting instrument information", LOGLOC)
 
         this._background_process = child.spawn(
             EXECUTABLE,
@@ -308,14 +302,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
             })
             this._background_process?.stdout?.on("data", (chunk) => {
-                Log.trace(`Info process received: ${chunk}`, LOGLOC)
                 data += chunk
             })
             this._background_process?.on("close", () => {
-                Log.trace(
-                    `Info process exited with code: ${this._background_process?.exitCode}`,
-                    LOGLOC,
-                )
                 resolve(data)
             })
         })
@@ -385,8 +374,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         this.status = ConnectionStatus.Connected
         if (!this._terminal) {
-            //TODO create terminal
-            Log.trace("Creating terminal", LOGLOC)
+            Log.debug("Creating terminal", LOGLOC)
             await vscode.window.withProgress(
                 {
                     cancellable: true,
@@ -454,10 +442,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     const additional_terminal_args = []
 
                     if (dump_path) {
-                        Log.trace(
-                            `Showing dump content from ${dump_path}`,
-                            LOGLOC,
-                        )
                         additional_terminal_args.push(
                             "--dump-output",
                             dump_path,
@@ -473,7 +457,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
-                    Log.trace("Saving connection", LOGLOC)
 
                     const terminal_args = [
                         "--log-file",
@@ -492,7 +475,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         }
                     }
 
-                    Log.trace("Starting VSCode Terminal", LOGLOC)
+                    Log.debug("Starting VSCode Terminal", LOGLOC)
                     this._terminal = vscode.window.createTerminal({
                         name: this._parent.name,
                         shellPath: EXECUTABLE,
@@ -536,13 +519,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                                 vscode.TerminalExitReason.Process
                         ) {
                             setTimeout(() => {
-                                Log.trace("Resetting closed instrument", LOGLOC)
+                                Log.debug("Resetting closed instrument", LOGLOC)
                                 this.reset().catch(() => {})
                             }, 500)
                         }
                     })
 
-                    Log.trace(`Connected to ${this._parent.name}`, LOGLOC)
+                    Log.debug(`Connected to ${this._parent.name}`, LOGLOC)
 
                     progress.report({
                         message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
@@ -911,10 +894,6 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             return false
         }
         connection.onChangedStatus(() => {
-            Log.trace("Connection Status updated", {
-                file: "instruments.ts",
-                func: "Instrument.addConnection(): connection.onChangedStatus()",
-            })
             this.updateStatus()
         }, this)
 
@@ -1087,7 +1066,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.updateSaved()",
         }
 
-        Log.trace(
+        Log.debug(
             `Updating saved instrument with sn ${instrument.info.serial_number}`,
             LOGLOC,
         )
@@ -1174,10 +1153,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             }
         } else {
             instrument.onChanged(() => {
-                Log.trace("Instrument changed, reloading tree data", {
-                    file: "instruments.ts",
-                    func: "InstrumentTreeDataProvider.addOrUpdateInstrument(): instrument.onChanged()",
-                })
                 this.reloadTreeData()
             })
             this._instruments.push(instrument)
@@ -1339,7 +1314,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.refresh()",
         }
 
-        Log.trace("Refreshing Discovered list", LOGLOC)
+        Log.info("Refreshing Discovered list", LOGLOC)
         await this.updateStatus()
         await discovery_cb()
 
@@ -1351,15 +1326,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     }
 
     async saveInstrument(instr: Instrument): Promise<void> {
-        //TODO Add to saved list
         instr.saved = true
-        //await this.saveInstrumentToList(instr)
         await this.updateSaved(instr)
         this.reloadTreeData()
     }
 
     async removeInstrument(instr: Instrument): Promise<void> {
-        Log.trace(`Remove ${instr.info.serial_number}`, {
+        Log.info(`Remove ${instr.info.serial_number}`, {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.removeInstrument()",
         })
@@ -1418,7 +1391,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
         const parallel_info: Promise<void>[] = []
         for (let i = 0; i < this._instruments.length; i++) {
-            Log.trace(
+            Log.debug(
                 `Checking connections for ${this._instruments[i].name}`,
                 LOGLOC,
             )
@@ -1443,8 +1416,12 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                                 `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
                             ),
                         )
-                        console.log(
+                        Log.error(
                             `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
+                            {
+                                file: "instruments.ts",
+                                func: "InstrumentProvider.getContent()",
+                            },
                         )
                     } else {
                         this.addOrUpdateInstruments(
@@ -1468,7 +1445,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 },
                 () => {
                     reject(new Error("RPC Instr List Fetch failed!"))
-                    console.log("RPC Instr List Fetch failed!")
+                    Log.error("RPC Instr List Fetch failed!", {
+                        file: "instruments.ts",
+                        func: "InstrumentProvider.getContent()",
+                    })
                 },
             )
             //todo
@@ -1487,7 +1467,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         const discovery_list: InstrInfo[] = []
         const res: unknown = jsonRPCResponse.result
         if (typeof res === "string") {
-            console.log("JSON RPC Instr list: " + res)
             const instrList = res.split("\n")
 
             //need to remove the last newline element??
@@ -1495,7 +1474,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 let new_instr: InstrInfo | undefined = undefined
                 if (instr.length > 0) {
                     const obj = plainToInstance(InstrInfo, JSON.parse(instr))
-                    //console.log(obj.fetch_uid())
 
                     if (discovery_list.length === 0) {
                         discovery_list.push(obj)
@@ -1720,7 +1698,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
         const saveInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.save",
             async (e: Instrument) => {
-                console.log(e)
                 await this.saveInstrument(e)
             },
         )
