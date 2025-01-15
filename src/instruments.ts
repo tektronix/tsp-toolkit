@@ -18,7 +18,6 @@ import {
     IIDNInfo,
     InstrInfo,
     IoType,
-    KicProcessMgr,
 } from "./resourceManager"
 import { LOG_DIR } from "./utility"
 import { Log, SourceLocation } from "./logging"
@@ -86,6 +85,7 @@ instr_map.set("VERSATEST-300", "versatest")
 instr_map.set("VERSATEST-600", "versatest")
 instr_map.set("MP5103", "versatest")
 instr_map.set("TSP", "versatest")
+instr_map.set("TSPop", "versatest")
 
 const rpcClient: JSONRPCClient = new JSONRPCClient(
     (jsonRPCRequest) =>
@@ -190,7 +190,7 @@ function contextValueStatus(
 /**
  * A tree item that holds the details of an instrument connection interface/protocol
  */
-export class Connection extends vscode.TreeItem {
+export class Connection extends vscode.TreeItem implements vscode.Disposable {
     private _type: IoType = IoType.Lan
     private _addr: string = ""
     private _status: ConnectionStatus = ConnectionStatus.Inactive
@@ -216,6 +216,26 @@ export class Connection extends vscode.TreeItem {
         this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
         this.enable(true)
+    }
+    dispose() {
+        if (this._terminal) {
+            this._terminal.dispose()
+        }
+        if (this._background_process) {
+            if (os.platform() === "win32" && this._background_process.pid) {
+                // The following was the only configuration of options found to work.
+                // Do NOT remove the `/F` unless you have rigorously proven that it
+                // consistently works.
+                child.spawnSync("TaskKill", [
+                    "/PID",
+                    this._background_process.pid.toString(),
+                    "/T", // Terminate the specified process and any child processes
+                    "/F", // Forcefully terminate the specified processes
+                ])
+            } else {
+                this._background_process.kill("SIGINT")
+            }
+        }
     }
 
     enable(enable: boolean) {
@@ -587,26 +607,48 @@ export class Connection extends vscode.TreeItem {
         })
     }
 
+    /**
+     * Upgrade the instrument that can be connected to by this Connection.
+     *
+     * If a connection does not already exist, create one and then send the appropriate
+     * `.upgrade` command.
+     *
+     * **Note:** This could be done using the `kic upgrade` subcommand in the future. This method
+     * was chosen to maintain any possible visual loading bars that may eventually be
+     * printed to the terminal
+     *
+     * @param filepath The path to the upgrade file
+     * @param slot (optional) The slot of the mainframe to upgrade
+     */
     async upgrade(filepath: string, slot?: number) {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.upgrade()",
         }
-        //TODO OPTIONS
         if (!this._terminal) {
             await this.connect()
         }
         Log.debug("Terminal exists, sending .upgrade", LOGLOC)
         this._terminal?.sendText(
-            `.upgrade ${slot ? `--slot ${slot}` : ""} ${filepath}`,
+            `.upgrade ${slot ? `--slot ${slot}` : ""} "${filepath}"`,
         )
         return
     }
 
-    abort() {
-        this._terminal?.sendText("")
-        this._terminal?.sendText(".abort")
+    sendScript(filepath: string) {
+        if (!this._terminal) {
+            return
+        }
+        this._terminal.sendText(`.script ${filepath}`)
     }
+
+    /**
+     * NOT YET IMPLEMENTED IN KIC
+     */
+    //abort() {
+    //    this._terminal?.sendText("")
+    //    this._terminal?.sendText(".abort")
+    //}
 
     async getUpdatedStatus(): Promise<void> {
         return new Promise((resolve) => {
@@ -678,7 +720,7 @@ export class InactiveInstrumentList extends vscode.TreeItem {
 /**
  * Information describing an instrument that is either saved or discovered.
  */
-export class Instrument extends vscode.TreeItem {
+export class Instrument extends vscode.TreeItem implements vscode.Disposable {
     private _name: string = ""
     private _connections: Connection[] = []
     private _info: IIDNInfo = {
@@ -728,13 +770,19 @@ export class Instrument extends vscode.TreeItem {
             ].join("\n"),
         )
         this.contextValue = "Instr"
-        if (instr_map.get(this._info.model) === "versatest") {
+        this._category = instr_map.get(this._info.model) ?? ""
+        if (this._category === "versatest") {
             this.contextValue += "Versatest"
         } else {
             this.contextValue += "Reg"
         }
         this.contextValue += "Inactive"
         this.contextValue += "Discovered"
+    }
+    dispose() {
+        for (const c of this._connections) {
+            c.dispose()
+        }
     }
 
     get name(): string {
@@ -757,6 +805,87 @@ export class Instrument extends vscode.TreeItem {
 
     get connections(): Connection[] {
         return this._connections
+    }
+
+    sendScript(filepath: string) {
+        const connection = this._connections.find(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (!connection) {
+            return
+        }
+        connection.sendScript(filepath)
+    }
+
+    async upgrade(): Promise<void> {
+        let connection = this._connections.find(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (!connection) {
+            const label: string | undefined = await vscode.window.showQuickPick(
+                this._connections.map((c) => c.label?.toString() ?? ""),
+                { canPickMany: false },
+            )
+
+            if (!label) {
+                return
+            }
+
+            connection = this._connections.find(
+                (x) => (x.label?.toString() ?? "") === label,
+            )
+
+            if (!connection) {
+                vscode.window.showErrorMessage(
+                    "Unable to find selected connection",
+                )
+                return
+            }
+        }
+
+        let slot: number | undefined = undefined
+        if (this._category === "versatest") {
+            let num_slots = 0
+            switch (this._info.model) {
+                case "MP5103":
+                    num_slots = 3
+                    break
+                case "TSPop":
+                    num_slots = 3
+                    break
+            }
+            const slot_str = await vscode.window.showQuickPick(
+                [
+                    "Mainframe",
+                    ...[...Array(num_slots + 1).keys()]
+                        .slice(1)
+                        .map((n) => n.toString()),
+                ],
+                { canPickMany: false },
+            )
+            if (!slot_str) {
+                return
+            }
+
+            if (slot_str === "Mainframe") {
+                slot = undefined
+            } else {
+                slot = parseInt(slot_str)
+            }
+        }
+
+        const file = await vscode.window.showOpenDialog({
+            title: "Select Firmware File",
+            filters: {
+                "Firmware Files": ["x", "upg"],
+            },
+            openLabel: "Upgrade",
+        })
+        if (!file) {
+            return
+        }
+
+        await connection.upgrade(file[0].fsPath, slot)
     }
 
     /**
@@ -907,7 +1036,9 @@ export class StringData extends vscode.TreeItem {
 
 type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
 
-export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
+export class InstrumentProvider
+    implements vscode.TreeDataProvider<TreeData>, vscode.Disposable
+{
     private _instruments: Instrument[] = []
     private instruments_discovered: boolean = false
     private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
@@ -930,6 +1061,16 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
         this.getSavedInstruments().catch(() => {})
         this.configWatcherEnable(true)
+    }
+
+    dispose() {
+        for (const i of this._instruments) {
+            i.dispose()
+        }
+    }
+
+    get instruments(): Instrument[] {
+        return this._instruments
     }
 
     private async updateSavedAll(instruments: Instrument[]) {
@@ -1449,6 +1590,12 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
             vscode.window.showErrorMessage(String(err_msg))
         }
     }
+    sendToAllActiveTerminals(filepath: string) {
+        for (const i of this._instruments) {
+            i.sendScript(filepath)
+        }
+    }
+
     private async saveInstrumentToList(instr: Instrument) {
         try {
             const instrList: Array<InstrInfo> =
@@ -1507,24 +1654,24 @@ export class InstrumentProvider implements vscode.TreeDataProvider<TreeData> {
     }
 }
 
-export class InstrumentsExplorer {
+export class InstrumentsExplorer implements vscode.Disposable {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
         Instrument | Connection | InactiveInstrumentList
     >
     private treeDataProvider?: InstrumentProvider
     private intervalID?: NodeJS.Timeout
-    private _kicProcessMgr: KicProcessMgr
+    //private _kicProcessMgr: KicProcessMgr
     private _discoveryInProgress: boolean = false
 
     constructor(
         context: vscode.ExtensionContext,
-        kicProcessMgr: KicProcessMgr,
+        //  kicProcessMgr: KicProcessMgr,
     ) {
         const LOGLOC: SourceLocation = {
             file: "instruments.ts",
             func: "InstrumentExplorer.constructor()",
         }
-        this._kicProcessMgr = kicProcessMgr
+        //   this._kicProcessMgr = kicProcessMgr
 
         Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = InstrumentProvider.instance
@@ -1571,41 +1718,6 @@ export class InstrumentsExplorer {
             () => void 0,
         )
 
-        const upgradeFw = vscode.commands.registerCommand(
-            "InstrumentsExplorer.upgradeFirmware",
-            async (e: Connection) => {
-                await this.upgradeFirmware(e)
-            },
-        )
-
-        const upgradeMainframe = vscode.commands.registerCommand(
-            "InstrumentsExplorer.upgradeMainframe",
-            async (e: Connection) => {
-                await this.upgradeMainframe(e)
-            },
-        )
-
-        const upgradeSlot1 = vscode.commands.registerCommand(
-            "InstrumentsExplorer.upgradeSlot1",
-            async (e: Connection) => {
-                await this.upgradeSlot1(e)
-            },
-        )
-
-        const upgradeSlot2 = vscode.commands.registerCommand(
-            "InstrumentsExplorer.upgradeSlot2",
-            async (e: Connection) => {
-                await this.upgradeSlot2(e)
-            },
-        )
-
-        const upgradeSlot3 = vscode.commands.registerCommand(
-            "InstrumentsExplorer.upgradeSlot3",
-            async (e: Connection) => {
-                await this.upgradeSlot3(e)
-            },
-        )
-
         const saveInstrument = vscode.commands.registerCommand(
             "InstrumentsExplorer.save",
             async (e: Instrument) => {
@@ -1621,11 +1733,6 @@ export class InstrumentsExplorer {
             },
         )
 
-        context.subscriptions.push(upgradeFw)
-        context.subscriptions.push(upgradeMainframe)
-        context.subscriptions.push(upgradeSlot1)
-        context.subscriptions.push(upgradeSlot2)
-        context.subscriptions.push(upgradeSlot3)
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
 
@@ -1637,6 +1744,9 @@ export class InstrumentsExplorer {
                     Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
                 },
             )
+    }
+    dispose() {
+        this.treeDataProvider?.dispose()
     }
 
     private startDiscovery(): Promise<void> {
@@ -1724,49 +1834,6 @@ export class InstrumentsExplorer {
         }
     }
 
-    public reset(item: Connection) {
-        const LOGLOC: SourceLocation = {
-            file: "instruments.ts",
-            func: "InstrumentsExplorer.reset()",
-        }
-        const kicTerminals = vscode.window.terminals.filter((t) => {
-            const to = t.creationOptions as vscode.TerminalOptions
-            return to?.shellPath?.toString() === EXECUTABLE
-        })
-
-        if (kicTerminals.length === 0 && item !== undefined) {
-            //reset using the "kic reset" command
-            const connectionType = item.type
-            Log.trace("Connection address: " + item.addr, LOGLOC)
-
-            //Start the connection process to reset
-            //The process is expected to exit after sending the cli reset command
-            child.spawn(EXECUTABLE, [
-                "--log-file",
-                join(
-                    LOG_DIR,
-                    `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                ),
-                "reset",
-                connectionType.toLowerCase(),
-                item.addr,
-            ])
-        } else {
-            //Use the existing terminal to reset
-            for (const kicCell of this._kicProcessMgr.kicList) {
-                if (item !== undefined) {
-                    if (item.addr === kicCell.connection?.addr) {
-                        kicCell.sendTextToTerminal(".reset\n")
-                    }
-                }
-            }
-        }
-    }
-
-    private async upgradeFirmware(e: Connection) {
-        await this.genericUpgradeFW(e, 0)
-    }
-
     public async saveWhileConnect(instrument: Instrument) {
         await this.treeDataProvider?.saveInstrument(instrument)
     }
@@ -1780,68 +1847,6 @@ export class InstrumentsExplorer {
     private async removeInstrument(instr: Instrument) {
         instr.saved = false
         await this.treeDataProvider?.removeInstrument(instr)
-    }
-
-    private async upgradeMainframe(e: Connection) {
-        await this.genericUpgradeFW(e, 0)
-    }
-
-    private async upgradeSlot1(e: Connection) {
-        await this.genericUpgradeFW(e, 1)
-    }
-
-    private async upgradeSlot2(e: Connection) {
-        await this.genericUpgradeFW(e, 2)
-    }
-
-    private async upgradeSlot3(e: Connection) {
-        await this.genericUpgradeFW(e, 3)
-    }
-
-    /**
-     * Common method to upgrade firmware/mainframe/slots
-     * @param _e - tree item showing the menu
-     * @param is_module - whether instrument contains a module or not
-     * @param slot - the slot to upgrade if any
-     */
-    private async genericUpgradeFW(e: Connection, slot = 0) {
-        const kicTerminals = vscode.window.terminals.filter((t) => {
-            const to = t.creationOptions as vscode.TerminalOptions
-            return to?.shellPath?.toString() === EXECUTABLE
-        })
-        if (kicTerminals.length === 0) {
-            void vscode.window.showInformationMessage(
-                "Not connected to any instrument. Cannot proceed.",
-            )
-            return
-        } else {
-            for (const kicCell of this._kicProcessMgr.kicList) {
-                if (e !== undefined) {
-                    if (e.addr === kicCell.connection?.addr) {
-                        const fw_file = await vscode.window.showOpenDialog({
-                            filters: {
-                                "All files (*.*)": ["*"],
-                            },
-                            canSelectFolders: false,
-                            canSelectFiles: true,
-                            canSelectMany: false,
-                            openLabel: "Select firmware file to upgrade ...",
-                        })
-
-                        if (!fw_file || fw_file.length < 1) {
-                            return
-                        } else {
-                            // .update "path" --slot {number}
-                            kicCell.sendTextToTerminal(
-                                `.upgrade "${fw_file[0].fsPath}" --slot ${slot}\n
-                                `,
-                            )
-                        }
-                        return
-                    }
-                }
-            }
-        }
     }
 }
 

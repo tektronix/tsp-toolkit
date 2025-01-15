@@ -216,29 +216,8 @@
                 "icon": "$(discard)"
             },
             {
-                "command": "InstrumentsExplorer.upgradeSlot1",
-                "title": "Upgrade Slot 1",
-                "category": "TSP"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeSlot2",
-                "title": "Upgrade Slot 2",
-                "category": "TSP"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeSlot3",
-                "title": "Upgrade Slot 3",
-                "category": "TSP"
-            },
-            {
                 "command": "InstrumentsExplorer.upgradeFirmware",
                 "title": "Upgrade Firmware",
-                "category": "TSP",
-                "icon": "$(chip)"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeMainframe",
-                "title": "Upgrade Mainframe",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
@@ -339,22 +318,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeMainframe",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot1",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot2",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot3",
-                    "when": "false"
-                },
-                {
                     "command": "tsp.configureTspLanguage",
                     "when": "false"
                 },
@@ -394,18 +357,8 @@
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Reg.*Connected.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
                     "group": "inline"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeMainframe",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Versatest.*Connected.*/",
-                    "group": "inline"
-                },
-                {
-                    "submenu": "modulesubmenu",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Versatest.*Connected.*/",
-                    "group": "upgrade"
                 },
                 {
                     "command": "InstrumentsExplorer.save",
@@ -415,20 +368,6 @@
                     "command": "InstrumentsExplorer.remove",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
                     "group": "inline"
-                }
-            ],
-            "modulesubmenu": [
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot1",
-                    "group": "upgrade.Slot"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot2",
-                    "group": "upgrade.Slot"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot3",
-                    "group": "upgrade.Slot"
                 }
             ],
             "editor/title/run": [

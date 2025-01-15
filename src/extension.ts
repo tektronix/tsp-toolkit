@@ -3,8 +3,6 @@ import { join } from "path"
 import * as vscode from "vscode"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
-import { CommunicationManager } from "./communicationmanager"
-//import { TerminationManager } from "./terminationManager"
 import {
     Connection,
     Instrument,
@@ -13,9 +11,9 @@ import {
 } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
+    ConnectionDetails,
     ConnectionHelper,
     FriendlyNameMgr,
-    KicProcessMgr,
 } from "./resourceManager"
 import { getNodeDetails } from "./tspConfigJsonParser"
 import {
@@ -25,10 +23,7 @@ import {
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 
-let _activeConnectionManager: CommunicationManager
-//let _terminationMgr: TerminationManager
 let _instrExplorer: InstrumentsExplorer
-let _kicProcessMgr: KicProcessMgr
 
 /**
  * Function will create terminal with given connection details
@@ -121,17 +116,8 @@ export function activate(context: vscode.ExtensionContext) {
     Log.trace("Updating extension settings", LOGLOC)
     updateExtensionSettings()
 
-    Log.trace("Starting ConnectionHelper", LOGLOC)
-
-    Log.trace("Starting KicProcessMgr", LOGLOC)
-    _kicProcessMgr = new KicProcessMgr()
-
-    // Create an object of Communication Manager
-    Log.trace("Starting CommunicationManager", LOGLOC)
-    _activeConnectionManager = new CommunicationManager(context, _kicProcessMgr)
-    //_terminationMgr = new TerminationManager()
     Log.trace("Creating new InstrumentExplorer", LOGLOC)
-    _instrExplorer = new InstrumentsExplorer(context, _kicProcessMgr)
+    _instrExplorer = new InstrumentsExplorer(context)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
@@ -161,6 +147,34 @@ export function activate(context: vscode.ExtensionContext) {
             name: "InstrumentsExplorer.reset",
             cb: async (e: Connection) => {
                 await startReset(e)
+            },
+        },
+        {
+            name: "InstrumentsExplorer.upgradeFirmware",
+            cb: async (e: Instrument) => {
+                await e.upgrade()
+            },
+        },
+        {
+            name: "tsp.sendFileToAllInstr",
+            cb: (e: vscode.Uri) => {
+                InstrumentProvider.instance.sendToAllActiveTerminals(e.fsPath)
+            },
+        },
+        {
+            name: "tsp.sendFile",
+            cb: (e: vscode.Uri) => {
+                const term = vscode.window.activeTerminal
+                const instrument = InstrumentProvider.instance.instruments.find(
+                    (i) => i.name === term?.name,
+                )
+                if (
+                    (term?.creationOptions as vscode.TerminalOptions)
+                        .shellPath === EXECUTABLE &&
+                    instrument
+                ) {
+                    instrument.sendScript(e.fsPath)
+                }
             },
         },
     ])
@@ -214,14 +228,8 @@ export function deactivate() {
     const LOGLOC = { file: "extensions.ts", func: "deactivate()" }
     Log.info("Deactivating TSP Toolkit", LOGLOC)
     Log.trace("Closing all kic executables", LOGLOC)
-    _kicProcessMgr.dispose().then(
-        () => {
-            Log.info("Deactivation complete", LOGLOC)
-        },
-        () => {
-            Log.error("Deactivation had errors.")
-        },
-    )
+    _instrExplorer.dispose()
+    Log.info("Deactivation complete", LOGLOC)
 }
 
 //Request the instrument to be reset
@@ -486,7 +494,7 @@ async function connect(inIp: string, shouldPrompt?: boolean): Promise<void> {
         return
     }
 
-    if (_activeConnectionManager?.connectionRE.test(Ip)) {
+    if (ConnectionHelper.parseConnectionString(Ip)) {
         await createTerminal(Ip)
     } else {
         void vscode.window.showErrorMessage("Bad connection string")
@@ -512,7 +520,7 @@ function connectCmd(def: Connection) {
     const connection_str = def.addr
     Log.trace(`Connection string: '${connection_str}'`, LOGLOC)
 
-    if (_activeConnectionManager?.connectionRE.test(connection_str)) {
+    if (ConnectionHelper.parseConnectionString(connection_str)) {
         Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
         void createTerminal(def)
     } else {
@@ -537,39 +545,39 @@ const base_api = {
         return kicTerminals
     },
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     async fetchConnDetails(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         term_pid: Thenable<number | undefined> | undefined,
-    ): Promise<Connection | undefined> {
-        if (_kicProcessMgr !== undefined) {
-            const kicCell = _kicProcessMgr.kicList.find(
-                (x) => x.terminalPid === term_pid,
-            )
-
-            const connDetails = kicCell?.connection
-            kicCell?.sendTextToTerminal(".exit")
-            let found = false
-            await kicCell?.getTerminalState().then(
-                () => {
-                    found = true
-                },
-                () => {
-                    found = false
-                },
-            )
-            if (found) {
-                return Promise.resolve(connDetails)
-            }
-            return Promise.reject(
-                new Error(
-                    "Couldn't close terminal. Please check instrument state",
-                ),
-            )
-        }
+    ): Promise<ConnectionDetails | undefined> {
+        return undefined
+        // if (_kicProcessMgr !== undefined) {
+        //     const kicCell = _kicProcessMgr.kicList.find(
+        //         (x) => x.terminalPid === term_pid,
+        //     )
+        //     const connDetails = kicCell?.connection
+        //     kicCell?.sendTextToTerminal(".exit")
+        //     let found = false
+        //     await kicCell?.getTerminalState().then(
+        //         () => {
+        //             found = true
+        //         },
+        //         () => {
+        //             found = false
+        //         },
+        //     )
+        //     if (found) {
+        //         return Promise.resolve(connDetails)
+        //     }
+        //     return Promise.reject(
+        //         new Error(
+        //             "Couldn't close terminal. Please check instrument state",
+        //         ),
+        //     )
+        // }
     },
 
     async restartConnAfterDbg(name: string, connection: Connection) {
-        if (connection !== undefined) {
-            await _kicProcessMgr.createKicCell(name, connection)
-        }
+        await connection.connect(name)
     },
 }
