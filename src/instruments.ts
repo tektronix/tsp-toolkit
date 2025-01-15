@@ -275,6 +275,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
     }
 
+    get parent(): Instrument | undefined {
+        return this._parent
+    }
+
+    set parent(instr: Instrument) {
+        this._parent = instr
+    }
+
     async getInfo(): Promise<IIDNInfo | null> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
         Log.debug("Getting instrument information", LOGLOC)
@@ -550,11 +558,17 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         if (this._terminal) {
             Log.debug("Terminal exists, sending .reset", LOGLOC)
+            vscode.window.showInformationMessage(
+                `Sending reset on existing terminal for ${this._parent?.name}@${this._addr}`,
+            )
             this._terminal?.sendText(".reset")
             return
         }
         if (this._background_process) {
             //wait for a background process slot to open up if it is busy
+            vscode.window.showInformationMessage(
+                `Starting reset on ${this._parent?.name}@${this._addr}`,
+            )
             Log.debug(
                 "Terminal doesn't exist and background process is busy. Waiting...",
                 LOGLOC,
@@ -585,6 +599,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     LOGLOC,
                 )
                 this._background_process = undefined
+                vscode.window.showInformationMessage(
+                    `Reset on ${this._parent?.name}@${this._addr} complete`,
+                )
                 resolve()
             })
         })
@@ -612,6 +629,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             await this.connect()
         }
         Log.debug("Terminal exists, sending .upgrade", LOGLOC)
+        vscode.window.showInformationMessage(
+            `Starting upgrade on ${this._parent?.name}@${this._addr}${slot ? `, slot ${slot}` : ""}`,
+        )
         this._terminal?.sendText(
             `.upgrade ${slot ? `--slot ${slot}` : ""} "${filepath}"`,
         )
@@ -807,7 +827,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (!connection) {
             const label: string | undefined = await vscode.window.showQuickPick(
                 this._connections.map((c) => c.label?.toString() ?? ""),
-                { canPickMany: false },
+                { canPickMany: false, title: "Which connection?" },
             )
 
             if (!label) {
@@ -842,9 +862,9 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                     "Mainframe",
                     ...[...Array(num_slots + 1).keys()]
                         .slice(1)
-                        .map((n) => n.toString()),
+                        .map((n) => `Slot ${n}`),
                 ],
-                { canPickMany: false },
+                { canPickMany: false, title: "What do you want to upgrade?" },
             )
             if (!slot_str) {
                 return
@@ -853,7 +873,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             if (slot_str === "Mainframe") {
                 slot = undefined
             } else {
-                slot = parseInt(slot_str)
+                slot = parseInt(slot_str.substring("Slot ".length))
             }
         }
 
@@ -897,6 +917,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             this.updateStatus()
         }, this)
 
+        connection.parent = this
         this._connections.push(connection)
 
         this._onChanged.fire()
@@ -1122,6 +1143,21 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         for (const i of instruments) {
             this.addOrUpdateInstrument(i)
         }
+    }
+
+    getQuickPickOptions(): vscode.QuickPickItem[] {
+        const options: vscode.QuickPickItem[] = []
+
+        for (const i of this._instruments) {
+            for (const c of i.connections) {
+                options.push({
+                    label: `${i.name}@${c.addr}`,
+                    description: idn_to_string(i.info),
+                })
+            }
+        }
+
+        return options
     }
 
     addOrUpdateInstrument(instrument: Instrument) {

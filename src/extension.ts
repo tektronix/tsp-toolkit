@@ -10,11 +10,7 @@ import {
     InstrumentsExplorer,
 } from "./instruments"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import {
-    ConnectionDetails,
-    ConnectionHelper,
-    FriendlyNameMgr,
-} from "./resourceManager"
+import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import { getNodeDetails } from "./tspConfigJsonParser"
 import {
     configure_initial_workspace_configurations,
@@ -430,7 +426,8 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
 }
 
 async function pickConnection(connection_info?: string): Promise<void> {
-    const connections: string[] = FriendlyNameMgr.fetchConnListForPicker()
+    const options: vscode.QuickPickItem[] =
+        InstrumentProvider.instance.getQuickPickOptions()
 
     if (connection_info !== undefined) {
         const options: vscode.InputBoxOptions = {
@@ -443,14 +440,9 @@ async function pickConnection(connection_info?: string): Promise<void> {
         }
         await connect(Ip)
     } else {
-        const options: vscode.QuickPickItem[] = connections.map(
-            (connection) => ({
-                label: connection,
-            }),
-        )
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
-        quickPick.title = "HELLO"
+        quickPick.title = "Connect to an Instrument"
         quickPick.placeholder =
             "Enter instrument IP address or VISA resource string"
         if (options.length > 0) {

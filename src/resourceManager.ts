@@ -1,5 +1,3 @@
-import * as vscode from "vscode"
-
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 //export const IPV4_ADDR_RE = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/
@@ -59,24 +57,6 @@ export class InstrInfo implements IInstrInfo {
     instr_categ = ""
     friendly_name = ""
     socket_port?: string | undefined
-}
-
-//name: friendly name
-//ip: address of instrument
-export class FriendlyNameMgr {
-    public static fetchConnListForPicker(): string[] {
-        const conn_output: string[] = []
-
-        const connections: Array<InstrInfo> =
-            vscode.workspace.getConfiguration("tsp").get("savedInstruments") ??
-            []
-
-        connections.forEach((instr) => {
-            conn_output.push(instr.friendly_name + "@" + instr.instr_address)
-        })
-
-        return conn_output
-    }
 }
 
 export interface ConnectionDetails {
