@@ -420,7 +420,6 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
             new_library_settings,
             vscode.ConfigurationTarget.WorkspaceFolder,
             workspace_path,
-            true,
         )
     }
 }

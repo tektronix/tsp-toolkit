@@ -157,7 +157,6 @@ export async function updateConfiguration(
     value: unknown,
     target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
     workspace_path?: vscode.WorkspaceFolder,
-    notification?: boolean,
 ) {
     const config = workspace_path
         ? vscode.workspace.getConfiguration(undefined, workspace_path.uri)
@@ -172,11 +171,12 @@ export async function updateConfiguration(
 
     try {
         await config.update(config_name, updatedConfiguration, target)
-        if (notification) {
-            void vscode.window.showInformationMessage(
-                `${config_name} configuration updated successfully.`,
-            )
-        }
+        // DEBUG ONLY
+        // if (notification) {
+        //     void vscode.window.showInformationMessage(
+        //         `${config_name} configuration updated successfully.`,
+        //     )
+        // }
     } catch {
         void vscode.window.showErrorMessage(
             `Failed to update ${config_name} configuration`,

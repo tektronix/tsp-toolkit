@@ -139,8 +139,11 @@ export enum ConnectionStatus {
     Connected,
 }
 
-function connectionStatusIcon(status: ConnectionStatus): vscode.ThemeIcon {
+function connectionStatusIcon(
+    status: ConnectionStatus | undefined,
+): vscode.ThemeIcon {
     switch (status) {
+        case undefined:
         case ConnectionStatus.Inactive:
             return new vscode.ThemeIcon(
                 "vm-outline",
@@ -161,10 +164,11 @@ function connectionStatusIcon(status: ConnectionStatus): vscode.ThemeIcon {
     return new vscode.ThemeIcon("warning")
 }
 
-function statusToString(status: ConnectionStatus): string {
+function statusToString(status: ConnectionStatus | undefined): string {
     switch (status) {
         case ConnectionStatus.Ignored:
             return "Ignored"
+        case undefined:
         case ConnectionStatus.Inactive:
             return "Inactive"
         case ConnectionStatus.Active:
@@ -175,12 +179,12 @@ function statusToString(status: ConnectionStatus): string {
 }
 function contextValueStatus(
     contextValue: string,
-    status: ConnectionStatus,
+    status: ConnectionStatus | undefined,
 ): string {
     if (contextValue.match(/Connected|Active|Inactive/)) {
         return contextValue.replace(
             /Connected|Active|Inactive/,
-            statusToString(status),
+            statusToString(status ?? ConnectionStatus.Inactive),
         )
     } else {
         return contextValue + statusToString(status)
@@ -193,16 +197,18 @@ function contextValueStatus(
 export class Connection extends vscode.TreeItem implements vscode.Disposable {
     private _type: IoType = IoType.Lan
     private _addr: string = ""
-    private _status: ConnectionStatus = ConnectionStatus.Inactive
+    private _status: ConnectionStatus | undefined = undefined
 
     private _parent: Instrument | undefined = undefined
 
-    private _onChangedStatus = new vscode.EventEmitter<ConnectionStatus>()
+    private _onChangedStatus = new vscode.EventEmitter<
+        ConnectionStatus | undefined
+    >()
 
     private _terminal: vscode.Terminal | undefined = undefined
     private _background_process: child.ChildProcess | undefined = undefined
 
-    readonly onChangedStatus: vscode.Event<ConnectionStatus> =
+    readonly onChangedStatus: vscode.Event<ConnectionStatus | undefined> =
         this._onChangedStatus.event
 
     static from(info: InstrInfo) {
@@ -258,11 +264,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._addr
     }
 
-    get status(): ConnectionStatus {
+    get status(): ConnectionStatus | undefined {
         return this._status
     }
 
-    set status(status: ConnectionStatus) {
+    set status(status: ConnectionStatus | undefined) {
         this.iconPath = connectionStatusIcon(status)
         this.contextValue = contextValueStatus(
             this.contextValue ?? "CONN",
@@ -429,6 +435,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     const info = await this.getInfo()
 
                     if (!info) {
+                        this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
 
@@ -521,14 +528,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             // eslint-disable-next-line @typescript-eslint/no-base-to-string
                             t.creationOptions.iconPath
                                 .toString()
-                                .search("tsp-terminal-icon") &&
-                            t.exitStatus !== undefined &&
-                            t.exitStatus.reason !==
-                                vscode.TerminalExitReason.Process
+                                .search("tsp-terminal-icon")
                         ) {
                             setTimeout(() => {
                                 Log.debug("Resetting closed instrument", LOGLOC)
                                 this.reset().catch(() => {})
+                                this.status = ConnectionStatus.Active
                             }, 500)
                         }
                     })
@@ -907,7 +912,10 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             (v) => v.addr === connection.addr && v.type === connection.type,
         )
         if (i > -1) {
-            if (this._connections[i].status !== connection.status) {
+            if (
+                connection.status !== undefined &&
+                this._connections[i].status !== connection.status
+            ) {
                 this._connections[i].status = connection.status
                 //this._onChanged.fire()
             }
@@ -958,7 +966,11 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         this._connections.sort((a, b) => a.addr.localeCompare(b.addr))
         // Sort the connections by status
         // (we want to show higher values first, so invert the result)
-        this._connections.sort((a, b) => -(a.status - b.status))
+        this._connections.sort((a, b) => {
+            const a_status = a.status ?? ConnectionStatus.Inactive
+            const b_status = b.status ?? ConnectionStatus.Inactive
+            return -(a_status - b_status)
+        })
 
         for (const c of this._connections) {
             if (c.status === ConnectionStatus.Active) {
@@ -1394,7 +1406,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
             this.addOrUpdateInstruments(
                 raw.map((v) => {
-                    const i = Instrument.from(v)
+                    const i =
+                        this._instruments.find(
+                            (i) => i.info.serial_number === v.serial_number,
+                        ) ?? Instrument.from(v)
                     i.saved = true
                     return i
                 }),
