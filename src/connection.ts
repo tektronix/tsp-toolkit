@@ -186,7 +186,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    async getInfo(): Promise<IIDNInfo | null> {
+    async getInfo(timeout_ms?: number): Promise<IIDNInfo | null> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
         Log.debug("Getting instrument information", LOGLOC)
 
@@ -207,6 +207,26 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
             },
         )
+        if (timeout_ms) {
+            setTimeout(() => {
+                if (
+                    os.platform() === "win32" &&
+                    this._background_process?.pid
+                ) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        this._background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    this._background_process?.kill("SIGINT")
+                }
+            }, timeout_ms)
+        }
         const info_string = await new Promise<string>((resolve) => {
             let data = ""
             this._background_process?.stderr?.on("data", (chunk) => {
@@ -233,9 +253,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             Log.error(
                 `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
                 LOGLOC,
-            )
-            vscode.window.showErrorMessage(
-                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
             )
             return null
         }
@@ -332,6 +349,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     const info = await this.getInfo()
 
                     if (!info) {
+                        vscode.window.showErrorMessage(
+                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                        )
                         this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
@@ -547,58 +567,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     //}
 
     async getUpdatedStatus(): Promise<void> {
-        return new Promise((resolve) => {
-            // TODO: This shouldn't use info for TCPIP. Or the kic info command needs to
-            // use the instrument lxi page for anything on TCPIP/LAN
-            const background_process = child.spawn(
-                EXECUTABLE,
-                [
-                    "--log-file",
-                    join(
-                        LOG_DIR,
-                        `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                    ),
-                    "info",
-                    this.type.toLowerCase(),
-                    "--json",
-                    this.addr,
-                ],
-                {
-                    env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
-                },
-            )
-
-            setTimeout(() => {
-                if (os.platform() === "win32" && background_process.pid) {
-                    // The following was the only configuration of options found to work.
-                    // Do NOT remove the `/F` unless you have rigorously proven that it
-                    // consistently works.
-                    child.spawnSync("TaskKill", [
-                        "/PID",
-                        background_process.pid.toString(),
-                        "/T", // Terminate the specified process and any child processes
-                        "/F", // Forcefully terminate the specified processes
-                    ])
-                } else {
-                    background_process.kill("SIGINT")
-                }
-            }, 1000)
-
-            let changes = false
-            background_process?.on("close", () => {
-                const new_status =
-                    background_process.exitCode === 0
-                        ? ConnectionStatus.Active
-                        : ConnectionStatus.Inactive
-                if (this.status !== new_status) {
-                    this.status = new_status
-                    changes = true
-                }
-                if (changes) {
-                    this._onChangedStatus.fire(this.status)
-                }
-                resolve()
-            })
-        })
+        const info = await this.getInfo(1000)
+        let new_status = ConnectionStatus.Inactive
+        if (info?.serial_number === this._parent?.info.serial_number) {
+            new_status = ConnectionStatus.Active
+        }
+        if (this.status !== new_status) {
+            this.status = new_status
+            this._onChangedStatus.fire(this.status)
+        }
     }
 }
