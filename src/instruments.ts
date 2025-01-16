@@ -567,17 +567,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         if (this._terminal) {
             Log.debug("Terminal exists, sending .reset", LOGLOC)
-            vscode.window.showInformationMessage(
-                `Sending reset on existing terminal for ${this._parent?.name}@${this._addr}`,
-            )
             this._terminal?.sendText(".reset")
             return
         }
         if (this._background_process) {
             //wait for a background process slot to open up if it is busy
-            vscode.window.showInformationMessage(
-                `Starting reset on ${this._parent?.name}@${this._addr}`,
-            )
             Log.debug(
                 "Terminal doesn't exist and background process is busy. Waiting...",
                 LOGLOC,
@@ -608,9 +602,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     LOGLOC,
                 )
                 this._background_process = undefined
-                vscode.window.showInformationMessage(
-                    `Reset on ${this._parent?.name}@${this._addr} complete`,
-                )
                 resolve()
             })
         })

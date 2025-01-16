@@ -141,6 +141,7 @@ export function activate(context: vscode.ExtensionContext) {
             name: "InstrumentsExplorer.reset",
             cb: async (e: Connection) => {
                 await startReset(e)
+                vscode.window.showInformationMessage("Reset complete")
             },
         },
         {
@@ -165,7 +166,6 @@ export function activate(context: vscode.ExtensionContext) {
                     (term?.creationOptions as vscode.TerminalOptions)
                         .shellPath === EXECUTABLE
                 ) {
-                    console.log("Terminal found")
                     let connection: Connection | undefined = undefined
                     for (const i of InstrumentProvider.instance.instruments) {
                         connection = i.connections.find(
@@ -176,13 +176,10 @@ export function activate(context: vscode.ExtensionContext) {
                         }
                     }
 
-                    console.log(`Associated connection: ${connection?.addr}`)
                     if (connection) {
-                        console.log("Sending script")
                         await connection.sendScript(e.fsPath)
                     }
                 } else {
-                    console.log("Terminal NOT found")
                     const conn = await pickConnection()
                     await conn?.sendScript(e.fsPath)
                 }
