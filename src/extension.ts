@@ -30,7 +30,7 @@ let _instrExplorer: InstrumentsExplorer
  */
 export async function createTerminal(
     connection: Connection | string,
-): Promise<boolean> {
+): Promise<Connection | undefined> {
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
         func: "createTerminal()",
@@ -70,7 +70,7 @@ export async function createTerminal(
     await conn.connect(name)
 
     //LAN
-    return Promise.resolve(true)
+    return Promise.resolve(conn)
 }
 
 function registerCommands(
@@ -151,23 +151,40 @@ export function activate(context: vscode.ExtensionContext) {
         },
         {
             name: "tsp.sendFileToAllInstr",
-            cb: (e: vscode.Uri) => {
-                InstrumentProvider.instance.sendToAllActiveTerminals(e.fsPath)
+            cb: async (e: vscode.Uri) => {
+                await InstrumentProvider.instance.sendToAllActiveTerminals(
+                    e.fsPath,
+                )
             },
         },
         {
             name: "tsp.sendFile",
-            cb: (e: vscode.Uri) => {
+            cb: async (e: vscode.Uri) => {
                 const term = vscode.window.activeTerminal
-                const instrument = InstrumentProvider.instance.instruments.find(
-                    (i) => i.name === term?.name,
-                )
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
-                        .shellPath === EXECUTABLE &&
-                    instrument
+                        .shellPath === EXECUTABLE
                 ) {
-                    instrument.sendScript(e.fsPath)
+                    console.log("Terminal found")
+                    let connection: Connection | undefined = undefined
+                    for (const i of InstrumentProvider.instance.instruments) {
+                        connection = i.connections.find(
+                            (c) => c.terminal?.processId === term?.processId,
+                        )
+                        if (connection) {
+                            break
+                        }
+                    }
+
+                    console.log(`Associated connection: ${connection?.addr}`)
+                    if (connection) {
+                        console.log("Sending script")
+                        await connection.sendScript(e.fsPath)
+                    }
+                } else {
+                    console.log("Terminal NOT found")
+                    const conn = await pickConnection()
+                    await conn?.sendScript(e.fsPath)
                 }
             },
         },
@@ -424,7 +441,9 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
     }
 }
 
-async function pickConnection(connection_info?: string): Promise<void> {
+async function pickConnection(
+    connection_info?: string,
+): Promise<Connection | undefined> {
     const options: vscode.QuickPickItem[] =
         InstrumentProvider.instance.getQuickPickOptions()
 
@@ -433,11 +452,11 @@ async function pickConnection(connection_info?: string): Promise<void> {
             prompt: "Enter instrument IP address or VISA resource string",
             validateInput: ConnectionHelper.instrConnectionStringValidator,
         }
-        const Ip = await vscode.window.showInputBox(options)
-        if (Ip === undefined) {
+        const address = await vscode.window.showInputBox(options)
+        if (address === undefined) {
             return
         }
-        await connect(Ip)
+        await connect(address)
     } else {
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
@@ -458,47 +477,52 @@ async function pickConnection(connection_info?: string): Promise<void> {
             }
         })
 
-        quickPick.onDidAccept(async () => {
-            const selectedItem = quickPick.selectedItems[0]
-            quickPick.busy = true
-            try {
-                // Validate connection string
-                const validationResult =
-                    ConnectionHelper.instrConnectionStringValidator(
-                        selectedItem.label,
-                    )
-                if (validationResult) {
-                    throw new Error(validationResult)
-                }
-
-                if (
-                    options.some(
-                        (option) => option.label === selectedItem.label,
-                    )
-                ) {
-                    await createTerminal(selectedItem.label)
-                } else {
-                    const Ip = selectedItem.label
-                    if (Ip === undefined) {
-                        return
+        return new Promise<Connection | undefined>((resolve) => {
+            quickPick.onDidAccept(async () => {
+                const selectedItem = quickPick.selectedItems[0]
+                quickPick.busy = true
+                try {
+                    // Validate connection string
+                    const validationResult =
+                        ConnectionHelper.instrConnectionStringValidator(
+                            selectedItem.label,
+                        )
+                    if (validationResult) {
+                        throw new Error(validationResult)
                     }
-                    await connect(Ip)
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(
-                    `Error: ${(error as Error).message}`,
-                )
-            } finally {
-                quickPick.busy = false
-                quickPick.hide()
-            }
-        })
 
-        quickPick.show()
+                    if (
+                        options.some(
+                            (option) => option.label === selectedItem.label,
+                        )
+                    ) {
+                        resolve(await createTerminal(selectedItem.label))
+                    } else {
+                        const Ip = selectedItem.label
+                        if (Ip === undefined) {
+                            return
+                        }
+                        resolve(await connect(Ip))
+                    }
+                } catch (error) {
+                    vscode.window.showErrorMessage(
+                        `Error: ${(error as Error).message}`,
+                    )
+                } finally {
+                    quickPick.busy = false
+                    quickPick.hide()
+                }
+            })
+
+            quickPick.show()
+        })
     }
 }
 
-async function connect(inIp: string, shouldPrompt?: boolean): Promise<void> {
+async function connect(
+    inIp: string,
+    shouldPrompt?: boolean,
+): Promise<Connection | undefined> {
     let Ip: string | undefined = inIp
     if (shouldPrompt) {
         const options: vscode.InputBoxOptions = {
@@ -512,11 +536,10 @@ async function connect(inIp: string, shouldPrompt?: boolean): Promise<void> {
     }
 
     if (ConnectionHelper.parseConnectionString(Ip)) {
-        await createTerminal(Ip)
+        return await createTerminal(Ip)
     } else {
         void vscode.window.showErrorMessage("Bad connection string")
     }
-    return
 }
 
 //function startTerminateAllConn() {

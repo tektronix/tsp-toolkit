@@ -289,6 +289,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._parent = instr
     }
 
+    get terminal() {
+        return this._terminal
+    }
+
     async getInfo(): Promise<IIDNInfo | null> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
         Log.debug("Getting instrument information", LOGLOC)
@@ -643,11 +647,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return
     }
 
-    sendScript(filepath: string) {
+    async sendScript(filepath: string) {
         if (!this._terminal) {
-            return
+            await this.connect()
         }
-        this._terminal.sendText(`.script "${filepath}"`)
+        this._terminal?.sendText(`.script "${filepath}"`)
     }
 
     /**
@@ -815,14 +819,14 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         return this._connections
     }
 
-    sendScript(filepath: string) {
+    async sendScript(filepath: string) {
         const connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
         )
         if (!connection) {
             return
         }
-        connection.sendScript(filepath)
+        await connection.sendScript(filepath)
     }
 
     async upgrade(): Promise<void> {
@@ -1158,18 +1162,39 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     }
 
     getQuickPickOptions(): vscode.QuickPickItem[] {
-        const options: vscode.QuickPickItem[] = []
+        const connections: {
+            name: string
+            addr: string
+            status: ConnectionStatus
+            idn: string
+        }[] = []
 
         for (const i of this._instruments) {
             for (const c of i.connections) {
-                options.push({
-                    label: `${i.name}@${c.addr}`,
-                    description: idn_to_string(i.info),
+                connections.push({
+                    name: i.name,
+                    addr: c.addr,
+                    status: c.status ?? ConnectionStatus.Inactive,
+                    idn: idn_to_string(i.info),
                 })
             }
         }
 
-        return options
+        return connections
+            .filter(
+                (c) =>
+                    c.status === ConnectionStatus.Active ||
+                    c.status === ConnectionStatus.Connected,
+            )
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => -(a.status - b.status))
+            .map((x) => {
+                return {
+                    label: `${x.name}@${x.addr}`,
+                    description: x.idn,
+                    iconPath: connectionStatusIcon(x.status),
+                }
+            })
     }
 
     addOrUpdateInstrument(instrument: Instrument) {
@@ -1618,10 +1643,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             vscode.window.showErrorMessage(String(err_msg))
         }
     }
-    sendToAllActiveTerminals(filepath: string) {
+    async sendToAllActiveTerminals(filepath: string) {
+        const promises: Promise<void>[] = []
         for (const i of this._instruments) {
-            i.sendScript(filepath)
+            promises.push(i.sendScript(filepath))
         }
+
+        await Promise.allSettled(promises)
     }
 
     private async saveInstrumentToList(instr: Instrument) {
