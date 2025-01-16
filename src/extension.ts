@@ -3,12 +3,7 @@ import { join } from "path"
 import * as vscode from "vscode"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
-import {
-    Connection,
-    Instrument,
-    InstrumentProvider,
-    InstrumentsExplorer,
-} from "./instruments"
+import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
 import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import { getNodeDetails } from "./tspConfigJsonParser"
@@ -18,6 +13,9 @@ import {
     updateConfiguration,
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
+import { InstrumentsExplorer } from "./instrumentExplorer"
+import { Connection } from "./connection"
+import { InstrumentProvider } from "./instrumentProvider"
 
 let _instrExplorer: InstrumentsExplorer
 
