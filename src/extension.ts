@@ -162,7 +162,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
-                        .shellPath === EXECUTABLE
+                        ?.shellPath === EXECUTABLE
                 ) {
                     let connection: Connection | undefined = undefined
                     for (const i of InstrumentProvider.instance.instruments) {
@@ -571,9 +571,8 @@ const base_api = {
     fetchKicTerminals(): vscode.Terminal[] {
         const kicTerminals = vscode.window.terminals.filter(
             (t) =>
-                (
-                    t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE,
+                (t.creationOptions as vscode.TerminalOptions)?.shellPath ===
+                EXECUTABLE,
         )
         return kicTerminals
     },
