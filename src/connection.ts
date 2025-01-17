@@ -480,6 +480,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         if (this._terminal) {
             Log.debug("Terminal exists, sending .reset", LOGLOC)
+            this.showTerminal()
             this._terminal?.sendText(".reset")
             return
         }
@@ -555,6 +556,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (!this._terminal) {
             await this.connect()
         }
+        this.showTerminal()
         this._terminal?.sendText(`.script "${filepath}"`)
     }
 
