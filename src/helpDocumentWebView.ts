@@ -30,12 +30,12 @@ export class HelpDocumentWebView {
     private static getHelpDocumentContent(helpfile: string) {
         if (
             HelpDocumentWebView.currentPanel &&
-            HelpDocumentWebView.currentPanel.title == helpfile
+            HelpDocumentWebView.currentPanel.title === helpfile
         ) {
             HelpDocumentWebView.currentPanel.reveal(this.getViewColumn(), true)
         } else if (
             HelpDocumentWebView.currentPanel &&
-            HelpDocumentWebView.currentPanel.title != helpfile
+            HelpDocumentWebView.currentPanel.title !== helpfile
         ) {
             HelpDocumentWebView.currentPanel.title = helpfile
             HelpDocumentWebView.currentPanel.webview.html =

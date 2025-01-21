@@ -3,6 +3,7 @@ import * as path from "path"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
 import { onDidChangeTspConfigFile } from "./extension"
+import { Log } from "./logging"
 
 /**
  * An array of supported model names.
@@ -87,7 +88,10 @@ function createTspFileFolder(folderPath: string) {
 
     vscode.workspace.fs.stat(nodeConfigFolderPath).then(
         async () => {
-            console.log("Folder already exists:", nodeConfigFolderPath.fsPath)
+            Log.trace(
+                `Folder already exists: "${nodeConfigFolderPath.fsPath}"`,
+                { file: "workspaceManager.ts", func: "createTspFileFolder()" },
+            )
             const tspSchema = vscode.Uri.file(
                 path.join(
                     folderPath,
@@ -153,7 +157,6 @@ export async function updateConfiguration(
     value: unknown,
     target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
     workspace_path?: vscode.WorkspaceFolder,
-    notification?: boolean,
 ) {
     const config = workspace_path
         ? vscode.workspace.getConfiguration(undefined, workspace_path.uri)
@@ -168,11 +171,12 @@ export async function updateConfiguration(
 
     try {
         await config.update(config_name, updatedConfiguration, target)
-        if (notification) {
-            void vscode.window.showInformationMessage(
-                `${config_name} configuration updated successfully.`,
-            )
-        }
+        // DEBUG ONLY
+        // if (notification) {
+        //     void vscode.window.showInformationMessage(
+        //         `${config_name} configuration updated successfully.`,
+        //     )
+        // }
     } catch {
         void vscode.window.showErrorMessage(
             `Failed to update ${config_name} configuration`,

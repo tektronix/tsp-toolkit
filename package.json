@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -181,7 +181,8 @@
             {
                 "command": "tsp.openTerminalIP",
                 "title": "Connect",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(run)"
             },
             {
                 "command": "InstrumentsExplorer.refresh",
@@ -200,37 +201,25 @@
                 }
             },
             {
+                "command": "InstrumentsExplorer.showTerm",
+                "title": "Show Terminal",
+                "icon": "$(terminal)"
+            },
+            {
                 "command": "InstrumentsExplorer.rename",
-                "title": "Rename"
+                "title": "Rename",
+                "icon": "$(edit)"
             },
             {
                 "command": "InstrumentsExplorer.reset",
-                "title": "Reset"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeSlot1",
-                "title": "Upgrade Slot 1",
-                "category": "TSP"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeSlot2",
-                "title": "Upgrade Slot 2",
-                "category": "TSP"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeSlot3",
-                "title": "Upgrade Slot 3",
-                "category": "TSP"
+                "title": "Reset",
+                "icon": "$(discard)"
             },
             {
                 "command": "InstrumentsExplorer.upgradeFirmware",
                 "title": "Upgrade Firmware",
-                "category": "TSP"
-            },
-            {
-                "command": "InstrumentsExplorer.upgradeMainframe",
-                "title": "Upgrade Mainframe",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(chip)"
             },
             {
                 "command": "tsp.configureTspLanguage",
@@ -245,7 +234,8 @@
             {
                 "command": "InstrumentsExplorer.remove",
                 "title": "Remove",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
@@ -328,22 +318,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeMainframe",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot1",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot2",
-                    "when": "false"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot3",
-                    "when": "false"
-                },
-                {
                     "command": "tsp.configureTspLanguage",
                     "when": "false"
                 },
@@ -363,52 +337,37 @@
             "view/item/context": [
                 {
                     "command": "InstrumentsExplorer.rename",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.reset",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
+                    "group": "inline"
+                },
+                {
+                    "command": "InstrumentsExplorer.showTerm",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Connected.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*Instr/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*RegInstr/",
-                    "group": "upgrade"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeMainframe",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*VersatestInstr/",
-                    "group": "upgrade"
-                },
-                {
-                    "submenu": "modulesubmenu",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /.*VersatestInstr/",
-                    "group": "upgrade"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.save",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /NotSaved.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Discovered.*/"
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /ToRemove.*/"
-                }
-            ],
-            "modulesubmenu": [
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot1",
-                    "group": "upgrade.Slot"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot2",
-                    "group": "upgrade.Slot"
-                },
-                {
-                    "command": "InstrumentsExplorer.upgradeSlot3",
-                    "group": "upgrade.Slot"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "group": "inline"
                 }
             ],
             "editor/title/run": [
@@ -491,9 +450,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.19.1",
-        "@tektronix/kic-cli-linux-x64": "0.19.1",
-        "@tektronix/kic-cli-win32-x64": "0.19.1"
+        "@tektronix/kic-cli-darwin-arm64": "0.19.2",
+        "@tektronix/kic-cli-linux-x64": "0.19.2",
+        "@tektronix/kic-cli-win32-x64": "0.19.2"
     },
     "extensionDependencies": [
         "sumneko.lua"

@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.2.0]
+
+### Changed
+
+- Major visual overhaul to the instruments pane
+
 ## [1.1.1]
 
 ### Added
@@ -270,7 +276,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.0
+[1.1.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.0
 [1.0.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.0.0
 [0.18.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v0.18.2

@@ -3,17 +3,9 @@ import { join } from "path"
 import * as vscode from "vscode"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
-import { CommunicationManager } from "./communicationmanager"
-//import { TerminationManager } from "./terminationManager"
-import { InstrumentsExplorer } from "./instruments"
+import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import {
-    ConnectionDetails,
-    ConnectionHelper,
-    FriendlyNameMgr,
-    IoType,
-    KicProcessMgr,
-} from "./resourceManager"
+import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import { getNodeDetails } from "./tspConfigJsonParser"
 import {
     configure_initial_workspace_configurations,
@@ -21,12 +13,11 @@ import {
     updateConfiguration,
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
+import { InstrumentsExplorer } from "./instrumentExplorer"
+import { Connection } from "./connection"
+import { InstrumentProvider } from "./instrumentProvider"
 
-let _activeConnectionManager: CommunicationManager
-//let _terminationMgr: TerminationManager
 let _instrExplorer: InstrumentsExplorer
-let _kicProcessMgr: KicProcessMgr
-let _connHelper: ConnectionHelper
 
 /**
  * Function will create terminal with given connection details
@@ -36,197 +27,177 @@ let _connHelper: ConnectionHelper
  * @returns None
  */
 export async function createTerminal(
-    connection_string: string,
-    model_serial?: string,
-    command_text?: string,
-): Promise<boolean> {
+    connection: Connection | string,
+): Promise<Connection | undefined> {
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
-        func: `createTerminal("${connection_string}", "${model_serial}", "${command_text}")`,
+        func: "createTerminal()",
     }
-    //'example@5e6:2461@2' OR 'example@127.0.0.1'
-    let res: [string, string?] = ["", undefined]
-    let ip = connection_string
     let name = ""
-    if (connection_string.split("@").length > 1) {
-        name = connection_string.split("@")[0]
-        ip = connection_string.split("@")[1]
+    //'example@5e6:2461@2' OR 'example@127.0.0.1'
+    // Always create a Connection.
+    if (typeof connection === "string") {
+        const connection_details =
+            ConnectionHelper.parseConnectionString(connection)
+
+        if (!connection_details) {
+            return Promise.reject(
+                new Error("Unable to parse connection string"),
+            )
+        }
+        Log.debug(
+            `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
+            LOGLOC,
+        )
+        const existing =
+            InstrumentProvider.instance.getConnection(connection_details)
+
+        if (existing) {
+            connection = existing
+        } else {
+            connection = new Connection(
+                connection_details.type,
+                connection_details.addr,
+            )
+        }
+        name = connection_details.name
     }
 
-    if (_connHelper.IPTest(ip)) {
-        Log.debug("Connection type was determined to be LAN", LOGLOC)
-        //LAN
-        Log.trace("Creating terminal", LOGLOC)
-        res = await _activeConnectionManager?.createTerminal(
-            name,
-            IoType.Lan,
-            connection_string,
-            command_text,
-        )
+    const conn: Connection = connection
 
-        Log.trace(
-            `createTerminal responded with '${res.toString().replace("\n", "").trim()}'`,
-            LOGLOC,
-        )
-        const info = res[0].replace("\n", "")
-        if (info == "") {
-            Log.trace(
-                "Unable to read response from createTerminal, could not connect to instrument",
-                LOGLOC,
-            )
-            void vscode.window.showErrorMessage(
-                "Unable to connect to instrument",
-            )
-            return Promise.reject(new Error("Unable to connect to instrument"))
-        }
-        name = res[1] == undefined ? name : res[1]
-        const port_number = "5025"
+    await conn.connect(name)
 
-        Log.trace(
-            `Details from createTerminal - info: "${info}", name: "${name}"`,
-            LOGLOC,
-        )
-        Log.trace("Saving connection", LOGLOC)
-        await _instrExplorer.saveWhileConnect(
-            ip,
-            IoType.Lan,
-            info,
-            name,
-            port_number,
-        )
-    } else {
-        Log.debug("Connection type was determined to be VISA", LOGLOC)
-        //VISA
-        res = await _activeConnectionManager?.createTerminal(
-            name,
-            IoType.Visa,
-            connection_string,
-            command_text,
-        )
-        Log.trace(`createTerminal responded with '${res.toString()}'`, LOGLOC)
+    //LAN
+    return Promise.resolve(conn)
+}
 
-        const info = res[0].replace("\n", "")
-        if (info == "") {
-            Log.trace(
-                "Unable to read response from createTerminal, could not connect to instrument",
-                LOGLOC,
-            )
-            void vscode.window.showErrorMessage(
-                "Unable to connect to instrument",
-            )
-            return Promise.reject(new Error("Unable to connect to instrument"))
-        }
-        name = res[1] == undefined ? name : res[1]
-
-        Log.trace(
-            `Details from createTerminal - info: "${info}", name: "${name}"`,
-            LOGLOC,
-        )
-
-        Log.trace("Saving connection", LOGLOC)
-        await _instrExplorer.saveWhileConnect(
-            ip,
-            IoType.Visa,
-            info,
-            name,
-            undefined,
-        )
+function registerCommands(
+    context: vscode.ExtensionContext,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    commands: { name: string; cb: (...args: any[]) => any; thisArgs?: any }[],
+) {
+    for (const c of commands) {
+        registerCommand(context, c.name, c.cb, c.thisArgs)
     }
-    return Promise.resolve(true)
+}
+
+function registerCommand(
+    context: vscode.ExtensionContext,
+    name: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cb: (...args: any[]) => any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    thisArgs?: any,
+) {
+    const LOGLOC: SourceLocation = {
+        file: "extension.ts",
+        func: "registerCommand()",
+    }
+    Log.debug(`Registering '${name}' command`, LOGLOC)
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(name, cb, thisArgs),
+    )
 }
 
 // Called when the extension is activated.
 export function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     Log.info("TSP Toolkit activating", LOGLOC)
 
-    Log.trace("Updating extension settings", LOGLOC)
+    Log.debug("Updating extension settings", LOGLOC)
     updateExtensionSettings()
 
-    Log.trace("Starting ConnectionHelper", LOGLOC)
-    _connHelper = new ConnectionHelper()
-
-    Log.trace("Starting KicProcessMgr", LOGLOC)
-    _kicProcessMgr = new KicProcessMgr(_connHelper)
-
-    // Create an object of Communication Manager
-    Log.trace("Starting CommunicationManager", LOGLOC)
-    _activeConnectionManager = new CommunicationManager(
-        context,
-        _kicProcessMgr,
-        _connHelper,
-    )
-    //_terminationMgr = new TerminationManager()
-    Log.trace("Creating new InstrumentExplorer", LOGLOC)
-    _instrExplorer = new InstrumentsExplorer(context, _kicProcessMgr)
+    Log.debug("Creating new InstrumentExplorer", LOGLOC)
+    _instrExplorer = new InstrumentsExplorer(context)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    Log.trace("Registering `tsp.openTerminal` command", LOGLOC)
-    const openTerminal = vscode.commands.registerCommand(
-        "tsp.openTerminal",
-        pickConnection,
-    )
-
-    Log.trace("Registering `InstrumentExplorer.connect` command", LOGLOC)
-    const add_new_connection = vscode.commands.registerCommand(
-        "InstrumentsExplorer.connect",
-        async () => {
-            await pickConnection("New Connection")
+    registerCommands(context, [
+        { name: "tsp.openTerminal", cb: pickConnection },
+        { name: "tsp.openTerminalIP", cb: connectCmd },
+        {
+            name: "InstrumentsExplorer.connect",
+            cb: async () => {
+                await pickConnection("New Connection")
+            },
         },
-    )
+        {
+            name: "InstrumentsExplorer.showTerm",
+            cb: (conn: Connection) => {
+                conn.showTerminal()
+            },
+        },
+        {
+            name: "InstrumentsExplorer.rename",
+            cb: async (e: Instrument) => {
+                await startRename(e)
+            },
+        },
+        {
+            name: "InstrumentsExplorer.reset",
+            cb: async (e: Connection) => {
+                await startReset(e)
+                vscode.window.showInformationMessage("Reset complete")
+            },
+        },
+        {
+            name: "InstrumentsExplorer.upgradeFirmware",
+            cb: async (e: Instrument) => {
+                await e.upgrade()
+            },
+        },
+        {
+            name: "tsp.sendFileToAllInstr",
+            cb: async (e: vscode.Uri) => {
+                await InstrumentProvider.instance.sendToAllActiveTerminals(
+                    e.fsPath,
+                )
+            },
+        },
+        {
+            name: "tsp.sendFile",
+            cb: async (e: vscode.Uri) => {
+                const term = vscode.window.activeTerminal
+                if (
+                    (term?.creationOptions as vscode.TerminalOptions)
+                        ?.shellPath === EXECUTABLE
+                ) {
+                    let connection: Connection | undefined = undefined
+                    for (const i of InstrumentProvider.instance.instruments) {
+                        connection = i.connections.find(
+                            (c) => c.terminal?.processId === term?.processId,
+                        )
+                        if (connection) {
+                            break
+                        }
+                    }
 
-    Log.trace("Setting up HelpDocumentWebView", LOGLOC)
-    context.subscriptions.push(add_new_connection)
+                    if (connection) {
+                        await connection.sendScript(e.fsPath)
+                    }
+                } else {
+                    const conn = await pickConnection()
+                    await conn?.sendScript(e.fsPath)
+                }
+            },
+        },
+    ])
 
+    Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
 
-    //TODO: connect `.terminate` in ki-comms
-    // const terminateAll = vscode.commands.registerCommand(
-    //     "tsp.terminateAll",
-    //     startTerminateAllConn
-    // )
-
-    //TODO add the following back into the package.json file after terminate is added to ki-comms
-    /*
-            {
-                "command": "tsp.terminateAll",
-                "title": "Terminate All Existing Connections to an Instrument",
-                "category": "TSP"
-            },
-    */
-
-    Log.trace("Registering `tsp.openTerminalIP` command", LOGLOC)
-    vscode.commands.registerCommand("tsp.openTerminalIP", connectCmd)
-
-    Log.trace("Registering `InstrumentExplorer.rename` command", LOGLOC)
-    vscode.commands.registerCommand("InstrumentsExplorer.rename", async (e) => {
-        await startRename(e)
-    })
-
-    vscode.commands.registerCommand("InstrumentsExplorer.reset", async (e) => {
-        await startReset(e)
-    })
-
-    context.subscriptions.push(openTerminal)
-
-    //TODO: Connect `.terminate` in ki-comms
-    //context.subscriptions.push(terminateAll) TODO: This isn't connected in ki-comms...
-    //context.subscriptions.push(rclick)
-
-    Log.trace(
+    Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
         LOGLOC,
     )
     // call function which is required to call first time while activating the plugin
     void processWorkspaceFolders()
 
-    Log.trace("Update local and global configuration for TSP", LOGLOC)
+    Log.debug("Update local and global configuration for TSP", LOGLOC)
     void configure_initial_workspace_configurations()
-    Log.trace(
+    Log.debug(
         "Subscribing to TSP configuration changes in all workspace folders",
         LOGLOC,
     )
@@ -262,20 +233,13 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     const LOGLOC = { file: "extensions.ts", func: "deactivate()" }
     Log.info("Deactivating TSP Toolkit", LOGLOC)
-    Log.trace("Closing all kic executables", LOGLOC)
-    _kicProcessMgr.dispose().then(
-        () => {
-            Log.info("Deactivation complete", LOGLOC)
-        },
-        () => {
-            Log.error("Deactivation had errors.")
-        },
-    )
+    _instrExplorer.dispose()
+    Log.info("Deactivation complete", LOGLOC)
 }
 
 //Request the instrument to be reset
-function startReset(def: unknown): Promise<void> {
-    return Promise.resolve(_instrExplorer.reset(def))
+function startReset(def: Connection): Promise<void> {
+    return Promise.resolve(def.reset())
 }
 
 function updateExtensionSettings() {
@@ -286,7 +250,6 @@ function updateExtensionSettings() {
     const settingsList = ["connectionList", "savedInstrumentList"]
     settingsList.forEach((setting) => {
         if (vscode.workspace.getConfiguration("tsp").get(setting)) {
-            console.log(setting)
             Log.warn(`Found deprecated setting: \`${setting}\``, LOGLOC)
             void vscode.window
                 .showInformationMessage(
@@ -295,21 +258,51 @@ function updateExtensionSettings() {
                     ...["Remove", "Ignore"],
                 )
                 .then((selection) => {
-                    if (selection == "Remove") {
+                    if (selection === "Remove") {
                         Log.info(
                             `User chose to remove \`${setting}\`. Removing.`,
                             LOGLOC,
                         )
                         void vscode.workspace
                             .getConfiguration("tsp")
-                            .update(setting, undefined, true)
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.Global,
+                            )
                             .then(() => {
                                 Log.info(
-                                    `Setting \`${setting}\` removed`,
+                                    `Setting \`${setting}\` removed from Global settings`,
                                     LOGLOC,
                                 )
                                 void vscode.window.showInformationMessage(
-                                    "removed setting: " + setting,
+                                    "Removed deprecated setting: " + setting,
+                                )
+                            })
+                        void vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.Workspace,
+                            )
+                            .then(() => {
+                                Log.info(
+                                    `Setting \`${setting}\` removed from workspace`,
+                                    LOGLOC,
+                                )
+                            })
+                        void vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                setting,
+                                undefined,
+                                vscode.ConfigurationTarget.WorkspaceFolder,
+                            )
+                            .then(() => {
+                                Log.info(
+                                    `Setting \`${setting}\` removed from workspace folder`,
+                                    LOGLOC,
                                 )
                             })
                     }
@@ -439,36 +432,35 @@ async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
             new_library_settings,
             vscode.ConfigurationTarget.WorkspaceFolder,
             workspace_path,
-            true,
         )
     }
 }
 
-async function pickConnection(connection_info?: string): Promise<void> {
-    const connections: string[] = FriendlyNameMgr.fetchConnListForPicker()
+async function pickConnection(
+    connection_info?: string,
+): Promise<Connection | undefined> {
+    const options: vscode.QuickPickItem[] =
+        InstrumentProvider.instance.getQuickPickOptions()
 
     if (connection_info !== undefined) {
         const options: vscode.InputBoxOptions = {
             prompt: "Enter instrument IP address or VISA resource string",
-            validateInput: _connHelper.instrConnectionStringValidator,
+            validateInput: ConnectionHelper.instrConnectionStringValidator,
         }
-        const Ip = await vscode.window.showInputBox(options)
-        if (Ip === undefined) {
+        const address = await vscode.window.showInputBox(options)
+        if (address === undefined) {
             return
         }
-        await connect(Ip)
+        await connect(address)
     } else {
-        const options: vscode.QuickPickItem[] = connections.map(
-            (connection) => ({
-                label: connection,
-            }),
-        )
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
-        quickPick.placeholder = "Enter instrument IP in <insName>@<IP> format"
+        quickPick.title = "Connect to an Instrument"
+        quickPick.placeholder =
+            "Enter instrument IP address or VISA resource string"
         if (options.length > 0) {
             quickPick.placeholder =
-                "Select connection from existing list or enter instrument IP in <insName>@<IP> format"
+                "Select connection from existing list or enter instrument IP address or VISA resource string"
         }
 
         quickPick.onDidChangeValue((value) => {
@@ -480,53 +472,54 @@ async function pickConnection(connection_info?: string): Promise<void> {
             }
         })
 
-        quickPick.onDidAccept(async () => {
-            const selectedItem = quickPick.selectedItems[0]
-            quickPick.busy = true
-            try {
-                // Validate connection string
-                const validationResult =
-                    _connHelper.instrConnectionStringValidator(
-                        selectedItem.label,
-                    )
-                if (validationResult) {
-                    throw new Error(validationResult)
-                }
-
-                if (
-                    options.some(
-                        (option) => option.label === selectedItem.label,
-                    )
-                ) {
-                    await createTerminal(selectedItem.label)
-                } else {
-                    const Ip = selectedItem.label
-                    if (Ip === undefined) {
-                        return
+        return new Promise<Connection | undefined>((resolve) => {
+            quickPick.onDidAccept(async () => {
+                const selectedItem = quickPick.selectedItems[0]
+                quickPick.busy = true
+                try {
+                    // Validate connection string
+                    const validationResult =
+                        ConnectionHelper.instrConnectionStringValidator(
+                            selectedItem.label,
+                        )
+                    if (validationResult) {
+                        throw new Error(validationResult)
                     }
-                    await connect(Ip)
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(
-                    `Error: ${(error as Error).message}`,
-                )
-            } finally {
-                quickPick.busy = false
-                quickPick.hide()
-            }
-        })
 
-        quickPick.show()
+                    if (
+                        options.some(
+                            (option) => option.label === selectedItem.label,
+                        )
+                    ) {
+                        resolve(await createTerminal(selectedItem.label))
+                    } else {
+                        const Ip = selectedItem.label
+                        if (Ip === undefined) {
+                            return
+                        }
+                        resolve(await connect(Ip))
+                    }
+                } catch (error) {
+                    vscode.window.showErrorMessage(
+                        `Error: ${(error as Error).message}`,
+                    )
+                } finally {
+                    quickPick.busy = false
+                    quickPick.hide()
+                }
+            })
+
+            quickPick.show()
+        })
     }
 }
 
 async function connect(
     inIp: string,
     shouldPrompt?: boolean,
-    model_serial?: string,
-): Promise<void> {
+): Promise<Connection | undefined> {
     let Ip: string | undefined = inIp
-    if (shouldPrompt == true) {
+    if (shouldPrompt) {
         const options: vscode.InputBoxOptions = {
             prompt: "Connect to instrument?",
             value: inIp,
@@ -537,43 +530,35 @@ async function connect(
         return
     }
 
-    if (_activeConnectionManager?.connectionRE.test(Ip)) {
-        await createTerminal(Ip, model_serial)
+    if (ConnectionHelper.parseConnectionString(Ip)) {
+        return await createTerminal(Ip)
     } else {
         void vscode.window.showErrorMessage("Bad connection string")
     }
-    return
 }
 
 //function startTerminateAllConn() {
 //    void _terminationMgr.terminateAllConn()
 //}
 
-async function startRename(def: unknown): Promise<void> {
+async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
 }
 
-function connectCmd(def: object) {
+function connectCmd(def: Connection) {
     const LOGLOC: SourceLocation = {
         file: "extension.ts",
         func: `connectCmd(${String(def)})`,
     }
 
-    Log.trace("Fetching connection args", LOGLOC)
-    const [connection_str, model_serial] =
-        _instrExplorer.fetchConnectionArgs(def)
+    const connection_str = def.addr
 
-    Log.trace(
-        `Connection string: '${connection_str}', Model serial: '${model_serial}'`,
-        LOGLOC,
-    )
-
-    if (_activeConnectionManager?.connectionRE.test(connection_str)) {
-        Log.trace("Connection string is valid. Creating Terminal", LOGLOC)
-        void createTerminal(connection_str, model_serial)
+    if (ConnectionHelper.parseConnectionString(connection_str)) {
+        Log.debug("Connection string is valid. Creating Terminal", LOGLOC)
+        void createTerminal(def)
     } else {
         Log.error(
-            "Connection string is invalid. Unable to connect to instrument.",
+            `Connection string "${connection_str}" is invalid. Unable to connect to instrument.`,
             LOGLOC,
         )
         void vscode.window.showErrorMessage(
@@ -586,51 +571,45 @@ const base_api = {
     fetchKicTerminals(): vscode.Terminal[] {
         const kicTerminals = vscode.window.terminals.filter(
             (t) =>
-                (
-                    t.creationOptions as vscode.TerminalOptions
-                )?.shellPath?.toString() === EXECUTABLE,
+                (t.creationOptions as vscode.TerminalOptions)?.shellPath ===
+                EXECUTABLE,
         )
         return kicTerminals
     },
 
+    // eslint-disable-next-line @typescript-eslint/require-await
     async fetchConnDetails(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         term_pid: Thenable<number | undefined> | undefined,
     ): Promise<ConnectionDetails | undefined> {
-        if (_kicProcessMgr != undefined) {
-            const kicCell = _kicProcessMgr.kicList.find(
-                (x) => x.terminalPid == term_pid,
-            )
-
-            const connDetails = kicCell?.connDetails
-            kicCell?.sendTextToTerminal(".exit")
-            let found = false
-            await kicCell?.getTerminalState().then(
-                () => {
-                    found = true
-                },
-                () => {
-                    found = false
-                },
-            )
-            if (found) {
-                return Promise.resolve(connDetails)
-            }
-            return Promise.reject(
-                new Error(
-                    "Couldn't close terminal. Please check instrument state",
-                ),
-            )
-        }
+        return undefined
+        // if (_kicProcessMgr !== undefined) {
+        //     const kicCell = _kicProcessMgr.kicList.find(
+        //         (x) => x.terminalPid === term_pid,
+        //     )
+        //     const connDetails = kicCell?.connection
+        //     kicCell?.sendTextToTerminal(".exit")
+        //     let found = false
+        //     await kicCell?.getTerminalState().then(
+        //         () => {
+        //             found = true
+        //         },
+        //         () => {
+        //             found = false
+        //         },
+        //     )
+        //     if (found) {
+        //         return Promise.resolve(connDetails)
+        //     }
+        //     return Promise.reject(
+        //         new Error(
+        //             "Couldn't close terminal. Please check instrument state",
+        //         ),
+        //     )
+        // }
     },
 
-    async restartConnAfterDbg(instr: ConnectionDetails) {
-        if (instr != undefined) {
-            await _kicProcessMgr.createKicCell(
-                instr.Name,
-                instr.ConnAddr,
-                instr.ConnType,
-                instr.Maxerr,
-            )
-        }
+    async restartConnAfterDbg(name: string, connection: Connection) {
+        await connection.connect(name)
     },
 }
