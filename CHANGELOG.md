@@ -22,6 +22,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Major visual overhaul to the instruments pane
 
+### Fixed
+
+- Don't create a `.vscode` folder with `config.tsp.json` if the workspace folder does not
+  contain a `.tsp` file.
+
 ## [1.1.1]
 
 ### Added

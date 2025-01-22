@@ -199,6 +199,39 @@ export async function processWorkspaceFolders() {
     }
 }
 
+async function getAllFiles(uri: vscode.Uri): Promise<Array<vscode.Uri>> {
+    const files: Array<vscode.Uri> = []
+    for (const f of await vscode.workspace.fs.readDirectory(uri)) {
+        if (f[1] === vscode.FileType.File) {
+            files.push(vscode.Uri.joinPath(uri, f[0]))
+        } else if (f[1] === vscode.FileType.Directory) {
+            for (const e of await getAllFiles(vscode.Uri.joinPath(uri, f[0]))) {
+                files.push(e)
+            }
+        }
+    }
+
+    return files
+}
+
+function uriHasExtension(extension: string, uri: vscode.Uri): boolean {
+    const fsPath = uri.fsPath // asdf.tsp
+    return fsPath.substring(fsPath.length - extension.length) === extension
+}
+
+async function folderContainsExtension(
+    extension: string,
+    root: vscode.Uri,
+): Promise<boolean> {
+    const files = await getAllFiles(root)
+    for (const f of files) {
+        if (uriHasExtension(extension, f)) {
+            return true
+        }
+    }
+    return false
+}
+
 export async function configure_initial_workspace_configurations() {
     await updateConfiguration(
         "files.associations",
@@ -210,6 +243,10 @@ export async function configure_initial_workspace_configurations() {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders) {
         for (const folder of workspaceFolders) {
+            // only change the settings for this folder if the folder contains a TSP file.
+            if (!(await folderContainsExtension(".tsp", folder.uri))) {
+                continue
+            }
             await updateConfiguration(
                 "Lua.workspace.ignoreDir",
                 [],
