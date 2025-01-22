@@ -27,6 +27,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Don't create a `.vscode` folder with `config.tsp.json` if the workspace folder does not
   contain a `.tsp` file.
 
+### Added
+
+- Added connection support for 5881-SRU and 5880-SRU
+
 ## [1.1.1]
 
 ### Added
