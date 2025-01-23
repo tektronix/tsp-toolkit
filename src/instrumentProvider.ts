@@ -12,6 +12,7 @@ import {
     connectionStatusIcon,
 } from "./connection"
 import {
+    IgnoredInstrumentList,
     InactiveInstrumentList,
     InfoList,
     instr_map,
@@ -59,7 +60,12 @@ const jsonRPCRequest: JSONRPCRequest = {
     method: "get_instr_list",
 }
 
-type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
+type TreeData =
+    | Instrument
+    | Connection
+    | InactiveInstrumentList
+    | StringData
+    | IgnoredInstrumentList
 type VscTdp = vscode.TreeDataProvider<TreeData>
 
 export class InstrumentProvider implements VscTdp, vscode.Disposable {
@@ -249,52 +255,24 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     }
 
     private _onDidChangeTreeData: vscode.EventEmitter<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
+        void | TreeData | TreeData[] | null | undefined
     > = new vscode.EventEmitter<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
+        void | TreeData | TreeData[] | null | undefined
     >()
 
     readonly onDidChangeTreeData: vscode.Event<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
+        void | TreeData | TreeData[] | null | undefined
     > = this._onDidChangeTreeData.event
 
     getTreeItem(
-        element: Instrument | Connection | InactiveInstrumentList | StringData,
+        element: TreeData,
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element
     }
 
     getChildren(
-        element?:
-            | Instrument
-            | Connection
-            | InactiveInstrumentList
-            | StringData
-            | undefined,
-    ): vscode.ProviderResult<
-        (Instrument | Connection | InactiveInstrumentList | StringData)[]
-    > {
+        element?: TreeData | undefined,
+    ): vscode.ProviderResult<TreeData[]> {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.getChildren()`,
@@ -308,6 +286,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             x.status === ConnectionStatus.Connected,
                     ),
                     new InactiveInstrumentList(),
+                    new IgnoredInstrumentList(),
                 ])
             })
         }
@@ -343,9 +322,16 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             return new Promise((resolve) => {
                 resolve([
                     ...this._instruments.filter(
-                        (x) =>
-                            x.status === ConnectionStatus.Inactive ||
-                            x.status === ConnectionStatus.Ignored,
+                        (x) => x.status === ConnectionStatus.Inactive,
+                    ),
+                ])
+            })
+        }
+        if (element instanceof IgnoredInstrumentList) {
+            return new Promise((resolve) => {
+                resolve([
+                    ...this._instruments.filter(
+                        (x) => x.status === ConnectionStatus.Ignored,
                     ),
                 ])
             })

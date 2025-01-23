@@ -83,7 +83,7 @@ export class InactiveInstrumentList extends vscode.TreeItem {
  * A class used to indicate the start of the Ignored Instruments section of the instrument
  * list. This class stores no data and is simply a sentinel.
  */
-export class IgnoredInstruments extends vscode.TreeItem {
+export class IgnoredInstrumentList extends vscode.TreeItem {
     constructor() {
         super("Ignored Instruments", vscode.TreeItemCollapsibleState.Collapsed)
     }

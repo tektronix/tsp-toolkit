@@ -248,6 +248,11 @@
                     "default": [],
                     "description": "A list of saved instrument serial numbers"
                 },
+                "tsp.ignoredInstruments": {
+                    "type": "array",
+                    "default": [],
+                    "description": "A list of ignored serial numbers"
+                },
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
