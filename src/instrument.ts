@@ -80,6 +80,16 @@ export class InactiveInstrumentList extends vscode.TreeItem {
 }
 
 /**
+ * A class used to indicate the start of the Ignored Instruments section of the instrument
+ * list. This class stores no data and is simply a sentinel.
+ */
+export class IgnoredInstruments extends vscode.TreeItem {
+    constructor() {
+        super("Ignored Instruments", vscode.TreeItemCollapsibleState.Collapsed)
+    }
+}
+
+/**
  * Information describing an instrument that is either saved or discovered.
  */
 export class Instrument extends vscode.TreeItem implements vscode.Disposable {
@@ -139,7 +149,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             this.contextValue += "Reg"
         }
         this.contextValue += "Inactive"
-        this.contextValue += "Discovered"
+        this.saved = false
     }
     dispose() {
         for (const c of this._connections) {

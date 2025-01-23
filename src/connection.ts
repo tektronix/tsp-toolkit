@@ -158,6 +158,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     }
 
     get status(): ConnectionStatus | undefined {
+        if (this.terminal && this._terminal?.exitStatus === undefined) {
+            this.status = ConnectionStatus.Connected
+        }
         return this._status
     }
 
@@ -438,22 +441,23 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     this._terminal?.show(false)
                     vscode.window.onDidCloseTerminal((t) => {
                         Log.info("Terminal closed", LOGLOC)
-                        this.status = ConnectionStatus.Active
-                        this._terminal = undefined
                         if (
                             t.creationOptions.iconPath !== undefined &&
                             // eslint-disable-next-line @typescript-eslint/no-base-to-string
                             t.creationOptions.iconPath
                                 .toString()
-                                .search("tsp-terminal-icon")
+                                .search("tsp-terminal-icon") &&
+                            t.name === this._parent?.name
                         ) {
+                            this.status = ConnectionStatus.Active
+                            this._terminal = undefined
                             setTimeout(() => {
                                 Log.debug("Resetting closed instrument", LOGLOC)
                                 this.reset().catch(() => {})
                                 this.status = ConnectionStatus.Active
                             }, 500)
                         }
-                    })
+                    }, this)
 
                     Log.debug(`Connected to ${this._parent.name}`, LOGLOC)
 

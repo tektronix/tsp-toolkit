@@ -229,7 +229,8 @@
             {
                 "command": "InstrumentsExplorer.save",
                 "title": "Save",
-                "category": "TSP"
+                "category": "TSP",
+                "icon": "$(save)"
             },
             {
                 "command": "InstrumentsExplorer.remove",
@@ -337,7 +338,7 @@
             "view/item/context": [
                 {
                     "command": "InstrumentsExplorer.rename",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },
                 {
@@ -362,11 +363,12 @@
                 },
                 {
                     "command": "InstrumentsExplorer.save",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Discovered.*/"
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*/ && !(viewItem =~ /.*Saved.*/)",
+                    "group": "inline"
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 }
             ],

@@ -111,6 +111,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.updateSaved()",
         }
+        if (!instrument.saved) {
+            // If the instrument isn't listed as saved, we don't need to update the saved list
+            return
+        }
 
         Log.debug(
             `Updating saved instrument with sn ${instrument.info.serial_number}`,
@@ -529,11 +533,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     resolve(this.instruments_discovered)
                 },
                 () => {
-                    reject(new Error("RPC Instr List Fetch failed!"))
                     Log.error("RPC Instr List Fetch failed!", {
                         file: "instruments.ts",
                         func: "InstrumentProvider.getContent()",
                     })
+                    reject(new Error("RPC Instr List Fetch failed!"))
                 },
             )
             //todo
