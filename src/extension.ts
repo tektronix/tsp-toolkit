@@ -183,6 +183,33 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             },
         },
+        {
+            name: "tsp.configureTspLanguage",
+            cb: async (e: vscode.Uri) => {
+                const term = vscode.window.activeTerminal
+                if (
+                    (term?.creationOptions as vscode.TerminalOptions)
+                        ?.shellPath === EXECUTABLE
+                ) {
+                    let connection: Connection | undefined = undefined
+                    for (const i of InstrumentProvider.instance.instruments) {
+                        connection = i.connections.find(
+                            (c) => c.terminal?.processId === term?.processId,
+                        )
+                        if (connection) {
+                            break
+                        }
+                    }
+
+                    if (connection) {
+                        await connection.getNodes(e.fsPath)
+                    }
+                } else {
+                    const conn = await pickConnection()
+                    await conn?.getNodes(e.fsPath)
+                }
+            },
+        },
     ])
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
