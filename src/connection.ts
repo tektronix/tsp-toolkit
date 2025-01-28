@@ -447,15 +447,25 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             t.creationOptions.iconPath
                                 .toString()
                                 .search("tsp-terminal-icon") &&
-                            t.name === this._parent?.name
+                            t.name === this._parent?.name &&
+                            t.processId === this._terminal?.processId
                         ) {
                             this.status = ConnectionStatus.Active
                             this._terminal = undefined
-                            setTimeout(() => {
-                                Log.debug("Resetting closed instrument", LOGLOC)
-                                this.reset().catch(() => {})
-                                this.status = ConnectionStatus.Active
-                            }, 500)
+
+                            if (
+                                t.exitStatus?.reason !==
+                                vscode.TerminalExitReason.Process
+                            ) {
+                                setTimeout(() => {
+                                    Log.debug(
+                                        "Resetting closed instrument",
+                                        LOGLOC,
+                                    )
+                                    this.reset().catch(() => {})
+                                    this.status = ConnectionStatus.Active
+                                }, 500)
+                            }
                         }
                     }, this)
 

@@ -47,9 +47,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
             treeDataProvider,
         })
 
-        this.InstrumentsDiscoveryViewer.message =
-            "Checking saved instrument connections..."
-
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
             this.InstrumentsDiscoveryViewer.message =
@@ -59,8 +56,11 @@ export class InstrumentsExplorer implements vscode.Disposable {
                     await this.startDiscovery()
                 })
                 .then(
-                    () => {},
+                    () => {
+                        this.InstrumentsDiscoveryViewer.message = undefined
+                    },
                     (e) => {
+                        this.InstrumentsDiscoveryViewer.message = undefined
                         Log.error(`Unable to refresh instrument explorer: ${e}`)
                     },
                 )
@@ -91,11 +91,17 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
 
+        this.InstrumentsDiscoveryViewer.message =
+            "Checking saved instrument connections..."
+
         this.treeDataProvider
             ?.refresh(async () => await this.startDiscovery())
             .then(
-                () => {},
+                () => {
+                    this.InstrumentsDiscoveryViewer.message = undefined
+                },
                 (e: Error) => {
+                    this.InstrumentsDiscoveryViewer.message = undefined
                     Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
                 },
             )
@@ -111,6 +117,9 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
         return new Promise<void>((resolve) => {
             if (!this._discoveryInProgress) {
+                this.InstrumentsDiscoveryViewer.message =
+                    "Discovering new instrument connections..."
+
                 this._discoveryInProgress = true
                 const discover = child.spawn(
                     DISCOVER_EXECUTABLE,
@@ -145,9 +154,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 })
 
                 //subprocess.unref()
-
-                this.InstrumentsDiscoveryViewer.message =
-                    "Discovering new instrument connections..."
 
                 //this.treeDataProvider?.clear()
 
