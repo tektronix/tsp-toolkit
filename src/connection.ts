@@ -564,6 +564,17 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._terminal?.sendText(`.script "${filepath}"`)
     }
 
+    async getNodes(filepath: string) {
+        if (!this._terminal) {
+            await this.connect()
+        }
+
+        this.showTerminal()
+        this._terminal?.sendText(
+            `.nodes "${join(filepath, "config.tsp.json")}"`,
+        )
+    }
+
     /**
      * NOT YET IMPLEMENTED IN KIC
      */

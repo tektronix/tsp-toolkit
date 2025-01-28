@@ -453,6 +453,8 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 }),
             )
 
+            //raw:  {1, 2, 3, 4}
+            //inst: {   2,    4, 5, 6}
             const to_remove = this._instruments.filter((v) => {
                 for (const r of raw) {
                     if (r.serial_number === v.info.serial_number) {
@@ -462,12 +464,21 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 return true
             })
 
+            //raw:          {1, 2, 3, 4      }
+            //inst:         {   2,    4, 5, 6}
+            //to_remove:    {            5, 6}
+
             for (const r of to_remove) {
                 this._instruments = this._instruments.filter(
-                    (i) => i.info.serial_number !== r.info.serial_number,
+                    (i) =>
+                        i.info.serial_number !== r.info.serial_number ||
+                        !i.saved,
                 )
                 this.reloadTreeData()
             }
+            //inst:         {   2,    4, 5, 6}
+            //to_remove:    {            5, 6}
+            //inst:         {   2,    4      }
 
             return this._instruments
         })
@@ -651,6 +662,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 "savedInstruments",
                 raw,
                 vscode.ConfigurationTarget.Global,
+            )
+
+            this._instruments = this._instruments.filter(
+                (i) => i.info.serial_number !== instr.info.serial_number,
             )
         } catch (err_msg) {
             vscode.window.showErrorMessage(String(err_msg))
