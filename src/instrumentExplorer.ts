@@ -8,7 +8,7 @@ import { Log, SourceLocation } from "./logging"
 import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 
-const DISCOVERY_TIMEOUT = 2
+const DISCOVERY_TIMEOUT = 5
 
 export class InstrumentsExplorer implements vscode.Disposable {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
