@@ -29,7 +29,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
-- Added connection support for 5881-SRU and 5880-SRU
 - Optionally use `firmware.valid` attribute for applicable instruments to only run
   upgrade on valid firmware
 
