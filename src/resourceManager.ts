@@ -59,6 +59,33 @@ export class InstrInfo implements IInstrInfo {
     socket_port?: string | undefined
 }
 
+interface Slot {
+    [slotNumber: string]: string
+}
+
+interface Node {
+    model: string
+    slots?: Slot
+}
+
+interface Nodes {
+    [nodeName: string]: Node
+}
+
+interface ISystemInfo {
+    name: string
+    is_active: boolean
+    nodes?: Nodes
+    localnode: string
+}
+
+export class SystemInfo implements ISystemInfo {
+    name = ""
+    is_active = false
+    localnode = ""
+    nodes?: Nodes | undefined
+}
+
 export interface ConnectionDetails {
     name: string
     addr: string

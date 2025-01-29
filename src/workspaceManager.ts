@@ -2,7 +2,6 @@ import * as fs from "fs"
 import * as path from "path"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
-import { onDidChangeTspConfigFile } from "./extension"
 import { Log } from "./logging"
 
 /**
@@ -298,11 +297,6 @@ export async function configure_initial_workspace_configurations() {
                 vscode.ConfigurationTarget.WorkspaceFolder,
                 folder,
             )
-            const config_file_path = path.join(
-                folder.uri.path,
-                "/.vscode/tspConfig/config.tsp.json",
-            )
-            await onDidChangeTspConfigFile(vscode.Uri.file(config_file_path))
         }
     }
 }

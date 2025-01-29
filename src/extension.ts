@@ -1,16 +1,15 @@
-import * as fs from "fs"
-import { join } from "path"
 import * as vscode from "vscode"
-import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
-import { getNodeDetails } from "./tspConfigJsonParser"
+import {
+    ConnectionDetails,
+    ConnectionHelper,
+    SystemInfo,
+} from "./resourceManager"
 import {
     configure_initial_workspace_configurations,
     processWorkspaceFolders,
-    updateConfiguration,
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
@@ -115,6 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
     registerCommands(context, [
+        { name: "tsp.openConfigWebview", cb: launchConfigureWebview },
         { name: "tsp.openTerminal", cb: pickConnection },
         { name: "tsp.openTerminalIP", cb: connectCmd },
         {
@@ -228,21 +228,6 @@ export function activate(context: vscode.ExtensionContext) {
         "Subscribing to TSP configuration changes in all workspace folders",
         LOGLOC,
     )
-    hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
-
-    // Register a handler to process files whenever file is saved
-    context.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument((textFilePath) => {
-            void onDidSaveTextDocument(textFilePath)
-        }),
-    )
-    // Register a handler to process files whenever a new workspace folder is added
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeWorkspaceFolders((event) => {
-            hookTspConfigFileChange(context, event.added.slice())
-            void processWorkspaceFolders()
-        }),
-    )
 
     // Register a handler to process files whenever a file is created is added
     context.subscriptions.push(
@@ -336,131 +321,6 @@ function updateExtensionSettings() {
                 })
         }
     })
-}
-
-/**
- * For each workspace folder its creating file watcher for "*config.tsp.json"
- * file so that if its get saved for any other process also its should able to
- * configure language library for that
- * @param context extension context
- * @param workspace_folders workspace folder list
- */
-function hookTspConfigFileChange(
-    context: vscode.ExtensionContext,
-    workspace_folders: vscode.WorkspaceFolder[] | undefined,
-) {
-    if (workspace_folders) {
-        for (const folder of workspace_folders) {
-            const folderPath = folder.uri
-
-            const fileWatcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(folderPath, "**/*.tsp.json"),
-            )
-            // Event listener for file changes
-            fileWatcher.onDidChange(onDidChangeTspConfigFile)
-            fileWatcher.onDidCreate(onDidChangeTspConfigFile)
-
-            context.subscriptions.push(fileWatcher)
-        }
-    }
-}
-
-/**
- * Event listener for ".vscode/tspConfig/config.tsp.json"
- * @param uri text file uri
- */
-export async function onDidChangeTspConfigFile(uri: vscode.Uri) {
-    void onDidSaveTextDocument(await vscode.workspace.openTextDocument(uri))
-}
-
-/**
- * Event listener for save text document event
- * check for file path if its ".vscode/tspConfig/config.tsp.json"
- * then read the file and fetch node details form it
- * update the library path in setting.json file of selected workspace folder
- * @param textDocument text document path
- */
-async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
-    const workspace_path = vscode.workspace.getWorkspaceFolder(textDocument.uri)
-    const filePath = textDocument.uri.fsPath
-
-    if (
-        filePath.endsWith("config.tsp.json") &&
-        fs.existsSync(filePath) &&
-        workspace_path
-    ) {
-        const new_library_settings: string[] = []
-        new_library_settings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
-
-        const lua_definitions_folder_path = join(
-            COMMAND_SETS,
-            "nodes_definitions",
-        )
-        if (fs.existsSync(lua_definitions_folder_path)) {
-            fs.rmSync(lua_definitions_folder_path, {
-                recursive: true,
-                force: true,
-            })
-        }
-        fs.mkdirSync(lua_definitions_folder_path, { recursive: true })
-        const nodeDetails = getNodeDetails(filePath)
-
-        const supported_models = fs
-            .readdirSync(COMMAND_SETS)
-            .filter((folder) =>
-                fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory(),
-            )
-
-        for (const [model, nodes] of Object.entries(nodeDetails)) {
-            if (!supported_models.includes(model.toUpperCase())) {
-                void vscode.window.showInformationMessage(
-                    `${model} model is not supported`,
-                )
-                return
-            }
-
-            const lib_base_path = join(COMMAND_SETS, model.toUpperCase())
-            new_library_settings.push(join(lib_base_path, "Helper"))
-
-            if (nodes.some((str) => str.includes("self"))) {
-                new_library_settings.push(join(lib_base_path, "AllTspCommands"))
-            }
-
-            nodes.forEach((node) => {
-                if (node.includes("node")) {
-                    const node_num = parseInt(node.match(/\d+/)?.[0] || "", 10)
-                    const node_cmd_file_path = join(
-                        lib_base_path,
-                        "tspLinkSupportedCommands",
-                        "definitions.txt",
-                    )
-                    const node_cmd_file_content = fs
-                        .readFileSync(node_cmd_file_path, "utf8")
-                        .replace(/\$node_number\$/g, node_num.toString())
-                    const new_node_cmd_file_path = join(
-                        lua_definitions_folder_path,
-                        `${model}_node${node_num}.lua`,
-                    )
-                    fs.writeFileSync(
-                        new_node_cmd_file_path,
-                        node_cmd_file_content,
-                    )
-                }
-            })
-        }
-
-        // check if lua_definitions_folder_path is not empty
-
-        if (fs.readdirSync(lua_definitions_folder_path).length !== 0) {
-            new_library_settings.push(lua_definitions_folder_path)
-        }
-        await updateConfiguration(
-            "Lua.workspace.library",
-            new_library_settings,
-            vscode.ConfigurationTarget.WorkspaceFolder,
-            workspace_path,
-        )
-    }
 }
 
 async function pickConnection(
@@ -570,6 +430,34 @@ async function connect(
 
 async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
+}
+
+function launchConfigureWebview() {
+    vscode.window.showInformationMessage("Launching configuration UI pane.....")
+    // Get all the saved entries
+    const systemInfo: SystemInfo[] =
+        vscode.workspace
+            .getConfiguration("tsp")
+            .get("tspLinkSystemConfigurations") ?? []
+
+    const pane = vscode.window.createWebviewPanel(
+        "configWebview",
+        "System Configuration",
+        vscode.ViewColumn.One,
+        {
+            enableScripts: true,
+            localResourceRoots: [],
+        },
+    )
+    pane.webview.html = JSON.stringify(systemInfo)
+
+    // configured trebuchet hardware with module in two slot, one is psu and another is smu
+    // got the IP of mainframe
+    // connect the IP in tsp-toolkit
+    // open configuration UI and want to put details
+    // new configuration, trebuchet mainframe, slot 1, slot 2, slot 3
+    //
+    pane.webview.html = ""
 }
 
 function connectCmd(def: Connection) {
