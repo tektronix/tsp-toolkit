@@ -183,7 +183,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 func: "InstrumentsExplorer.rename()",
             })
             item.name = name
-            this.treeDataProvider?.addOrUpdateInstrument(item)
             this.treeDataProvider?.doWithConfigWatcherOff(() => {
                 this.treeDataProvider?.updateSaved(item).catch(() => {})
             })

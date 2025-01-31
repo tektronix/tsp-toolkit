@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Keithley TSP Toolkit",
     "description": "VSCode extension for Keithley Instruments' Test Script Processor",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
