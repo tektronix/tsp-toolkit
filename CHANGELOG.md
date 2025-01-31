@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.2.1]
+
+### Fixed
+
+- Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+
 ## [1.2.0]
 
 ### Changed
@@ -286,7 +292,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.1
 [1.2.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.0
 [1.1.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.0
