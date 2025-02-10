@@ -134,6 +134,10 @@ for more information.
 - Due to limitations in instrument firmware, script names longer than 27 characters will
   be truncated to 27 characters. If multiple scripts have names that are the same up to
   the 27th character, the second script will overwrite the first.
+- Some instruments (2450, 2460, 2461, 2470, DAQ6500, DMM7510, 3706A, 707B, 708B) encounter
+  a fatal error if the trash can is used to close the connected terminal if the instrument
+  is connected via GPIB on VISA. Be sure to type `.exit` when connected to one of these
+  instruments over GPIB.
 - The list of instruments that support language features is limited to the following:
     - 2450
     - 2460
