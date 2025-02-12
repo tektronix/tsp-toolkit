@@ -210,6 +210,18 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             })
     }
 
+    async getTerminalByPid(term_pid: number): Promise<Connection | undefined> {
+        for (const i of this.instruments) {
+            for (const c of i.connections) {
+                if (c.terminal && (await c.terminal.processId) === term_pid) {
+                    return c
+                }
+            }
+        }
+
+        return undefined
+    }
+
     addOrUpdateInstrument(instrument: Instrument) {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
