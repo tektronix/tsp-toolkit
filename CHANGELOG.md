@@ -21,6 +21,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Fix changes that broke advanced feature compatibility (closed beta)
 
+### Changed
+
+- Updated branding in README and package.json
+
 ## [1.2.0]
 
 ### Changed
