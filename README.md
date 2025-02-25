@@ -1,11 +1,11 @@
-# Keithley TSP™ Toolkit
+# Tektronix TSP™ Toolkit
 
-This is an open source project from Keithley Instruments. We welcome
+This is an open source project from Tektronix. We welcome
 any [feedback][tsp-toolkit-issues] on the GitHub repo for this project.
 
-Keithley TSP™ Toolkit is a [Visual Studio Code][code] extension that provides rich
-support for Keithley's Test Script Processor ([TSP][tsp]) technology to edit and execute
-scripts on TSP-enabled Keithley instruments. The extension includes command-set documentation and language features such as
+Tektronix TSP™ Toolkit is a [Visual Studio Code][code] extension that provides rich
+support for Test Script Processor ([TSP][tsp]) technology to edit and execute
+scripts on TSP-enabled Tektronix and Keithley instruments. The extension includes command-set documentation and language features such as
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
@@ -24,15 +24,15 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 ## Installed Extensions
 
-Keithley TSP Toolkit will automatically install the [sumneko.lua][sumneko]
+Tektronix TSP Toolkit will automatically install the [sumneko.lua][sumneko]
 extension to use all of the language features it provides.
 
 Extensions installed through the marketplace are subject to the [Marketplace Terms of Use][marketplace-tou].
 
 ## Quick Start
 
-- **Step 1.** Connect your TSP-enabled Keithley instrument to your local network (LAN).
-- **Step 2.** Install the [Keithley TSP Toolkit Visual Studio Code Extension][tsp-toolkit-marketplace].
+- **Step 1.** Connect your TSP-enabled Tektronix and Keithley instrument to your local network (LAN).
+- **Step 2.** Install the [Tektronix TSP Toolkit Visual Studio Code Extension][tsp-toolkit-marketplace].
 - **Step 3.** Open or create a folder for your TSP project.
 
     ![Open Folder][pic-open-folder]
@@ -60,7 +60,7 @@ following commands:
 | TSP: Connect               | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |                                                 |
 | TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |                                                 |
 
-To see all available Keithley TSP Toolkit commands, open the Command Pallette and type `TSP`.
+To see all available Tektronix TSP Toolkit commands, open the Command Pallette and type `TSP`.
 
 To see all available context-sensitive options, right-click on your active editor window while a `*.tsp` file is open:
 
@@ -99,7 +99,7 @@ then it is possible to have TSP Toolkit automatically configure your project for
 
 ## Feature Details
 
-The Keithley TSP Toolkit includes:
+The Tektronix TSP Toolkit includes:
 
 - **Language Features:** Write your code with the assistance of autocompletion and
   syntax checking

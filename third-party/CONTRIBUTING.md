@@ -27,7 +27,7 @@ In this example
   # License
 
   <!-- The copyright as it appears in the LICENSE. -->
-  Copyright Keithley Instruments, LLC.
+  Copyright Tektronix Inc.
 
   Licensed under the [MIT](./LICENSE) license.
   ```

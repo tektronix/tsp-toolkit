@@ -470,39 +470,26 @@ const base_api = {
         return kicTerminals
     },
 
-    // eslint-disable-next-line @typescript-eslint/require-await
     async fetchConnDetails(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         term_pid: Thenable<number | undefined> | undefined,
     ): Promise<ConnectionDetails | undefined> {
+        const pid = await term_pid
+        if (pid) {
+            const connection =
+                await InstrumentProvider.instance.getTerminalByPid(pid)
+            if (connection) {
+                return {
+                    name: connection.terminal?.name ?? "",
+                    addr: connection.addr,
+                    type: connection.type,
+                }
+            }
+        }
         return undefined
-        // if (_kicProcessMgr !== undefined) {
-        //     const kicCell = _kicProcessMgr.kicList.find(
-        //         (x) => x.terminalPid === term_pid,
-        //     )
-        //     const connDetails = kicCell?.connection
-        //     kicCell?.sendTextToTerminal(".exit")
-        //     let found = false
-        //     await kicCell?.getTerminalState().then(
-        //         () => {
-        //             found = true
-        //         },
-        //         () => {
-        //             found = false
-        //         },
-        //     )
-        //     if (found) {
-        //         return Promise.resolve(connDetails)
-        //     }
-        //     return Promise.reject(
-        //         new Error(
-        //             "Couldn't close terminal. Please check instrument state",
-        //         ),
-        //     )
-        // }
     },
 
-    async restartConnAfterDbg(name: string, connection: Connection) {
-        await connection.connect(name)
+    async restartConnAfterDbg(details: ConnectionDetails) {
+        const conn = InstrumentProvider.instance.getConnection(details)
+        await conn?.connect(details.name)
     },
 }

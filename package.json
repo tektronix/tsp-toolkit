@@ -1,9 +1,9 @@
 {
     "name": "tsp-toolkit",
     "publisher": "Tektronix",
-    "displayName": "Keithley TSP Toolkit",
-    "description": "VSCode extension for Keithley Instruments' Test Script Processor",
-    "version": "1.2.0",
+    "displayName": "Tektronix TSP Toolkit",
+    "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
+    "version": "1.2.1",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -40,7 +40,7 @@
             {
                 "id": "getting-started",
                 "title": "Getting Started with TSP Toolkit",
-                "description": "This guide will walk you through some setup and the features of the Keithley TSP™ Toolkit.",
+                "description": "This guide will walk you through some setup and the features of the Tektronix TSP™ Toolkit.",
                 "when": "true",
                 "icon": "./resources/TSP_Toolkit_128x128.png",
                 "featuredFor": [
@@ -436,7 +436,7 @@
         "@types/vscode": "1.92.0",
         "@typescript-eslint/eslint-plugin": "8.3.0",
         "@typescript-eslint/parser": "8.3.0",
-        "@vscode/vsce": "3.0.0",
+        "@vscode/vsce": "3.2.2",
         "chai": "^4.4.1",
         "eslint": "8.57.0",
         "eslint-config-prettier": "8.2.0",
