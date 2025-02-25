@@ -1,6 +1,46 @@
+import * as fs from "fs"
+import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 //export const IPV4_ADDR_RE = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/
+
+const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
+    string,
+    { noOfSlots?: number; moduleOptions?: string[] }
+> = {
+    MP5103: {
+        noOfSlots: 3,
+        moduleOptions: ["Empty", "MPSU50-2ST", "MSMU60-2"],
+    },
+}
+
+/**
+ * An array of supported model names.
+ *
+ * This array is populated by reading the directories within the COMMAND_SETS directory.
+ * Each directory name represents a supported model.
+ *
+ * @type {string[]}
+ */
+let models: string[] = fs
+    .readdirSync(COMMAND_SETS)
+    .filter((folder: string) =>
+        fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory(),
+    )
+
+// Remove "tsp-lua-5.0" and "nodes_definitions" from the supported models
+models = models.filter(
+    (model) => model !== "tsp-lua-5.0" && model !== "nodes_definitions",
+)
+
+export const SUPPORTED_MODELS_DETAILS = models.reduce(
+    (acc, item) => {
+        acc[item] = {}
+        return acc
+    },
+    { ...TREBUCHET_SUPPORTED_MODELS_DETAILS },
+)
 
 //interface for *idn? response
 export interface IIDNInfo {

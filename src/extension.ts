@@ -2,11 +2,7 @@ import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import {
-    ConnectionDetails,
-    ConnectionHelper,
-    SystemInfo,
-} from "./resourceManager"
+import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import {
     configure_initial_workspace_configurations,
     processWorkspaceFolders,
@@ -15,6 +11,7 @@ import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
+import { ConfigWebView } from "./ConifgWebView"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -114,7 +111,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
     registerCommands(context, [
-        { name: "tsp.openConfigWebview", cb: launchConfigureWebview },
         { name: "tsp.openTerminal", cb: pickConnection },
         { name: "tsp.openTerminalIP", cb: connectCmd },
         {
@@ -214,6 +210,16 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
+    // Instantiate a new instance of the WeatherViewProvider class
+    const provider = new ConfigWebView(context.extensionUri)
+
+    // Register the provider for a Webview View
+    const weatherViewDisposable = vscode.window.registerWebviewViewProvider(
+        ConfigWebView.viewType,
+        provider,
+    )
+
+    context.subscriptions.push(weatherViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
@@ -430,34 +436,6 @@ async function connect(
 
 async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
-}
-
-function launchConfigureWebview() {
-    vscode.window.showInformationMessage("Launching configuration UI pane.....")
-    // Get all the saved entries
-    const systemInfo: SystemInfo[] =
-        vscode.workspace
-            .getConfiguration("tsp")
-            .get("tspLinkSystemConfigurations") ?? []
-
-    const pane = vscode.window.createWebviewPanel(
-        "configWebview",
-        "System Configuration",
-        vscode.ViewColumn.One,
-        {
-            enableScripts: true,
-            localResourceRoots: [],
-        },
-    )
-    pane.webview.html = JSON.stringify(systemInfo)
-
-    // configured trebuchet hardware with module in two slot, one is psu and another is smu
-    // got the IP of mainframe
-    // connect the IP in tsp-toolkit
-    // open configuration UI and want to put details
-    // new configuration, trebuchet mainframe, slot 1, slot 2, slot 3
-    //
-    pane.webview.html = ""
 }
 
 function connectCmd(def: Connection) {
