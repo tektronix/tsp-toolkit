@@ -2,10 +2,14 @@ import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
+import {
+    ConnectionDetails,
+    ConnectionHelper,
+    SystemInfo,
+} from "./resourceManager"
 import {
     configure_initial_workspace_configurations,
-    processWorkspaceFolders,
+    updateConfiguration,
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
@@ -219,27 +223,36 @@ export function activate(context: vscode.ExtensionContext) {
         provider,
     )
 
+    // Register a callback for configuration changes
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
+        if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+            // Handle the configuration change
+            const systemInfo: SystemInfo[] =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("tspLinkSystemConfigurations") ?? []
+            console.log(systemInfo)
+            const luaLibraryPaths: string[] = []
+            await updateConfiguration(
+                "Lua.workspace.library",
+                luaLibraryPaths,
+                vscode.ConfigurationTarget.Workspace,
+            )
+        }
+    })
+
     context.subscriptions.push(weatherViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
         LOGLOC,
     )
-    // call function which is required to call first time while activating the plugin
-    void processWorkspaceFolders()
 
     Log.debug("Update local and global configuration for TSP", LOGLOC)
     void configure_initial_workspace_configurations()
     Log.debug(
         "Subscribing to TSP configuration changes in all workspace folders",
         LOGLOC,
-    )
-
-    // Register a handler to process files whenever a file is created is added
-    context.subscriptions.push(
-        vscode.workspace.onDidCreateFiles(() => {
-            void processWorkspaceFolders()
-        }),
     )
 
     Log.info("TSP Toolkit activation complete", LOGLOC)
