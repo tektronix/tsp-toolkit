@@ -74,6 +74,7 @@ function setVSCodeMessageListener() {
         nameLabel.textContent = 'System Name: ';
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
+        nameInput.placeholder = 'Enter System Name'
         form.appendChild(nameLabel);
         form.appendChild(nameInput);
 
@@ -104,6 +105,7 @@ function setVSCodeMessageListener() {
             slotContainer.appendChild(slotsLabel);
             for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
               const slotRow = document.createElement('div')
+              slotRow.className = "slot-container"
               slotRow.style.display = 'flex';
               slotRow.style.alignItems = 'center';
               slotRow.appendChild(createLabel(`slot[${i}]:  `, ''))
@@ -137,13 +139,14 @@ function setVSCodeMessageListener() {
         nodesLabelContainer.appendChild(plusButton);
         let rowID = 0;
         plusButton.addEventListener('click', () => {
-          rowID+=1;
+          rowID += 1;
           const nodeRow = document.createElement('div');
           nodeRow.style.display = 'flex';
           nodeRow.style.alignItems = 'center';
 
           nodeRow.appendChild(createLabel('node[', ''));
           const nodeSelect = createDropdown('', 'vscode-dropdown');
+          nodeSelect.id = "nodeNumber"
           for (let i = 1; i <= 63; i++) {
             const opt = document.createElement('option');
             opt.value = i;
@@ -154,6 +157,7 @@ function setVSCodeMessageListener() {
           nodeRow.appendChild(document.createTextNode(']: '));
 
           const modelSelect = createDropdown('', 'vscode-dropdown');
+          modelSelect.id = "nodeModelName"
           Object.keys(models).forEach(key => {
             const option = document.createElement('option');
             option.value = key;
@@ -166,11 +170,10 @@ function setVSCodeMessageListener() {
             const selectedKey = modelSelect.value;
             const existingSlots = document.getElementById(`nodeSlotsContainer${rowID}`);
             if (existingSlots) existingSlots.remove();
-  
+
             if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
               const slotContainer = document.createElement('div');
               slotContainer.id = `nodeSlotsContainer${rowID}`;
-              // Nodes area
               const slotsLabel = document.createElement('h4');
               slotsLabel.textContent = 'Slots';
               slotContainer.appendChild(slotsLabel);
@@ -191,7 +194,7 @@ function setVSCodeMessageListener() {
                 }
                 slotContainer.appendChild(slotRow)
               }
-  
+
               nodeRow.insertAdjacentElement('afterend', slotContainer);
             }
           });
@@ -217,19 +220,38 @@ function setVSCodeMessageListener() {
         saveButton.addEventListener('click', () => {
           const nodeData = [];
           nodesContainer.querySelectorAll('div').forEach(nodeRow => {
-            const inputs = nodeRow.querySelectorAll('input');
-            nodeData.push({
-              nodeId: inputs[0].value,
-              mainframe: inputs[1].value,
-              slots: []
+            const nodeId = `node[${nodeRow.querySelector('select#nodeNumber').value}]`;
+            const mainframe = nodeRow.querySelector('#nodeModelName').value;
+            const slots = [];
+            const slotContainers = document.querySelectorAll(`#nodeSlotsContainer${rowID} .slot-container`);
+            slotContainers.forEach(slotContainer => {
+              const slotId = slotContainer.querySelector('label').textContent;
+              const module = slotContainer.querySelector('select').value;
+              slots.push({ slotId, module });
             });
+            const nodeObj = { nodeId, mainframe };
+            if (slots.length > 0) {
+              nodeObj.slots = slots;
+            }
+            nodeData.push(nodeObj);
           });
+
+          const slots = [];
+          const slotContainers = document.querySelectorAll('#slotsContainer .slot-container');
+          slotContainers.forEach(slotContainer => {
+            const slotId = slotContainer.querySelector('label').textContent;
+            const module = slotContainer.querySelector('select').value;
+            slots.push({ slotId, module });
+          });
+
           const payload = {
             name: nameInput.value,
             isActive: true,
             localNode: localNodeSelect.value,
-            nodes: nodeData
+            slots: slots.length > 0 ? slots : undefined,
+            nodes: nodeData.length > 0 ? nodeData : undefined
           };
+
           vscode.postMessage({
             command: "add",
             data: payload

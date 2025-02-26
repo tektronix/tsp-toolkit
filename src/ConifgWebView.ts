@@ -93,42 +93,43 @@ export class ConfigWebView implements WebviewViewProvider {
                 }
                 case "add":
                     {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-                        const item = message.data
-                        console.log(item)
-                        // const originalSystemInfo: SystemInfo[] =
-                        //     vscode.workspace
-                        //         .getConfiguration("tsp")
-                        //         .get("tspLinkSystemConfigurations") ?? []
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                        const newSystemDetails = message.data as SystemInfo
+                        console.log(newSystemDetails)
+                        const originalSystemInfo: SystemInfo[] =
+                            vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("tspLinkSystemConfigurations") ?? []
 
-                        // const newItem: SystemInfo = {
-                        //     name: item,
-                        //     // Add other properties as needed
-                        //     is_active: false,
-                        //     localnode: "",
-                        // }
+                        const newItem: SystemInfo = {
+                            name: newSystemDetails.name,
+                            localNode: newSystemDetails.localNode,
+                            isActive: newSystemDetails.isActive,
+                            nodes: newSystemDetails.nodes,
+                            slots: newSystemDetails.slots,
+                        }
 
-                        // const updatedSystemInfos = [
-                        //     ...originalSystemInfo,
-                        //     newItem,
-                        // ]
+                        const updatedSystemInfos = [
+                            ...originalSystemInfo,
+                            newItem,
+                        ]
 
-                        // await vscode.workspace
-                        //     .getConfiguration("tsp")
-                        //     .update(
-                        //         "tspLinkSystemConfigurations",
-                        //         updatedSystemInfos,
-                        //         false,
-                        //     )
-                        // const systemInfo: SystemInfo[] =
-                        //     vscode.workspace
-                        //         .getConfiguration("tsp")
-                        //         .get("tspLinkSystemConfigurations") ?? []
+                        await vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                "tspLinkSystemConfigurations",
+                                updatedSystemInfos,
+                                false,
+                            )
+                        const systemInfo: SystemInfo[] =
+                            vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("tspLinkSystemConfigurations") ?? []
 
-                        // webviewView.webview.postMessage({
-                        //     command: "systems",
-                        //     payload: JSON.stringify(systemInfo),
-                        // })
+                        webviewView.webview.postMessage({
+                            command: "systems",
+                            payload: JSON.stringify(systemInfo),
+                        })
                         break
                     }
 

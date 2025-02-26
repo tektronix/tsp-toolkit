@@ -100,30 +100,30 @@ export class InstrInfo implements IInstrInfo {
 }
 
 interface Slot {
-    [slotNumber: string]: string
+    slotId: string
+    module: string
 }
 
 interface Node {
-    model: string
-    slots?: Slot
-}
-
-interface Nodes {
-    [nodeName: string]: Node
+    nodeId: string
+    mainframe: string
+    slots?: Slot[]
 }
 
 interface ISystemInfo {
     name: string
-    is_active: boolean
-    nodes?: Nodes
-    localnode: string
+    localNode: string
+    isActive: boolean
+    slots?: Slot[]
+    nodes?: Node[]
 }
 
 export class SystemInfo implements ISystemInfo {
     name = ""
-    is_active = false
-    localnode = ""
-    nodes?: Nodes | undefined
+    isActive = false
+    localNode = ""
+    slots?: Slot[] = []
+    nodes?: Node[] = []
 }
 
 export interface ConnectionDetails {
