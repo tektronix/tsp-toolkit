@@ -164,7 +164,7 @@
             {
                 "command": "tsp.openConfigWebview",
                 "title": "Open Config Webview",
-                 "category": "TSP"
+                "category": "TSP"
             },
             {
                 "command": "tsp.openTerminal",
@@ -260,8 +260,8 @@
                     "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
                     "scope": "application"
                 },
-                "tsp.tspLinkSystemConfigurations":{
-                    "type":"array",
+                "tsp.tspLinkSystemConfigurations": {
+                    "type": "array",
                     "default": [],
                     "scope": "window",
                     "description": "A list of dynamically switchable set of instruments"
@@ -412,7 +412,7 @@
                     "type": "webview",
                     "id": "systemConfigurations",
                     "name": "System Configurations"
-                  }
+                }
             ]
         },
         "submenus": [
@@ -425,12 +425,13 @@
     "scripts": {
         "pretest": "npm run compile && npm run lint",
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
+        "compile": "tsc -p ./ && npm run copy-css",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts",
         "test": "mocha --config .mocharc.yml",
         "test-ci": "mocha --config .mocharc.yml --reporter xunit --reporter-option output=junit.xml",
-        "coverage": "nyc --nycrc-path='.nycrc.json' npm run test"
+        "coverage": "nyc --nycrc-path='.nycrc.json' npm run test",
+        "copy-css": "cpx src/**/*.{css,js} out/"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
@@ -443,6 +444,7 @@
         "@typescript-eslint/parser": "8.3.0",
         "@vscode/vsce": "3.2.2",
         "chai": "^4.4.1",
+        "cpx": "^1.2.1",
         "eslint": "8.57.0",
         "eslint-config-prettier": "8.2.0",
         "eslint-import-resolver-typescript": "3.6.3",
