@@ -73,3 +73,34 @@ h1 {
 .vscode-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
+
+.form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  margin-right: 10px;
+}
+
+.form-group input,
+.form-group select {
+  flex: 1;
+}
+
+.nodeRow,
+.slot-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.nodeRow label,
+.slot-container label {
+  margin-right: 10px;
+}
+
+.node-slots-container{
+  margin-left: 15px;
+}

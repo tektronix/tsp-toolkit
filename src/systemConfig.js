@@ -69,16 +69,22 @@ function setVSCodeMessageListener() {
         const models = JSON.parse(event.data.payload);
         const form = document.createElement('div');
         systemsContainer.innerHTML = '';
+
         // System name
+        const nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
         const nameLabel = document.createElement('label');
         nameLabel.textContent = 'System Name: ';
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
-        nameInput.placeholder = 'Enter System Name'
-        form.appendChild(nameLabel);
-        form.appendChild(nameInput);
+        nameInput.placeholder = 'Enter System Name';
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+        form.appendChild(nameGroup);
 
         // Local node dropdown
+        const localNodeGroup = document.createElement('div');
+        localNodeGroup.className = 'form-group';
         const localNodeLabel = document.createElement('label');
         localNodeLabel.textContent = 'Local Node: ';
         const localNodeSelect = document.createElement('select');
@@ -88,8 +94,9 @@ function setVSCodeMessageListener() {
           option.textContent = key;
           localNodeSelect.appendChild(option);
         });
-        form.appendChild(localNodeLabel);
-        form.appendChild(localNodeSelect);
+        localNodeGroup.appendChild(localNodeLabel);
+        localNodeGroup.appendChild(localNodeSelect);
+        form.appendChild(localNodeGroup);
 
         localNodeSelect.addEventListener('change', () => {
           const selectedKey = localNodeSelect.value;
@@ -99,16 +106,13 @@ function setVSCodeMessageListener() {
           if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
             const slotContainer = document.createElement('div');
             slotContainer.id = "slotsContainer";
-            // Nodes area
             const slotsLabel = document.createElement('h4');
-            slotsLabel.textContent = 'Slots';
+            slotsLabel.textContent = `${selectedKey} Slots`;
             slotContainer.appendChild(slotsLabel);
             for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
-              const slotRow = document.createElement('div')
-              slotRow.className = "slot-container"
-              slotRow.style.display = 'flex';
-              slotRow.style.alignItems = 'center';
-              slotRow.appendChild(createLabel(`slot[${i}]:  `, ''))
+              const slotRow = document.createElement('div');
+              slotRow.className = "slot-container";
+              slotRow.appendChild(createLabel(`slot[${i}]:`, ''));
               if (models[selectedKey].moduleOptions) {
                 const slotSelect = document.createElement('select');
                 models[selectedKey].moduleOptions.forEach(module => {
@@ -117,12 +121,11 @@ function setVSCodeMessageListener() {
                   option.textContent = module;
                   slotSelect.appendChild(option);
                 });
-                slotRow.appendChild(slotSelect)
+                slotRow.appendChild(slotSelect);
               }
-              slotContainer.appendChild(slotRow)
+              slotContainer.appendChild(slotRow);
             }
-
-            localNodeSelect.insertAdjacentElement('afterend', slotContainer);
+            localNodeGroup.insertAdjacentElement('afterend', slotContainer);
           }
         });
 
@@ -137,16 +140,20 @@ function setVSCodeMessageListener() {
 
         const plusButton = createButton('+', '.round-vscode-button');
         nodesLabelContainer.appendChild(plusButton);
+        form.appendChild(nodesLabelContainer);
+
+        const nodesContainer = document.createElement('div');
+
         let rowID = 0;
         plusButton.addEventListener('click', () => {
           rowID += 1;
           const nodeRow = document.createElement('div');
-          nodeRow.style.display = 'flex';
-          nodeRow.style.alignItems = 'center';
+          nodeRow.classList.add('nodeRow');
+          nodeRow.dataset.rowid = rowID;
 
           nodeRow.appendChild(createLabel('node[', ''));
           const nodeSelect = createDropdown('', 'vscode-dropdown');
-          nodeSelect.id = "nodeNumber"
+          nodeSelect.id = "nodeNumber";
           for (let i = 1; i <= 63; i++) {
             const opt = document.createElement('option');
             opt.value = i;
@@ -157,7 +164,7 @@ function setVSCodeMessageListener() {
           nodeRow.appendChild(document.createTextNode(']: '));
 
           const modelSelect = createDropdown('', 'vscode-dropdown');
-          modelSelect.id = "nodeModelName"
+          modelSelect.id = "nodeModelName";
           Object.keys(models).forEach(key => {
             const option = document.createElement('option');
             option.value = key;
@@ -170,18 +177,19 @@ function setVSCodeMessageListener() {
             const selectedKey = modelSelect.value;
             const existingSlots = document.getElementById(`nodeSlotsContainer${rowID}`);
             if (existingSlots) existingSlots.remove();
+            nodeRow.dataset.associateSlots = models[selectedKey]?.noOfSlots ? true : false;
 
             if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
               const slotContainer = document.createElement('div');
               slotContainer.id = `nodeSlotsContainer${rowID}`;
-              const slotsLabel = document.createElement('h4');
-              slotsLabel.textContent = 'Slots';
+              slotContainer.className = "node-slots-container";
+              const slotsLabel = createLabel("slots", '');
+              slotsLabel.textContent = `${selectedKey} Slots`;
               slotContainer.appendChild(slotsLabel);
               for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
-                const slotRow = document.createElement('div')
-                slotRow.style.display = 'flex';
-                slotRow.style.alignItems = 'center';
-                slotRow.appendChild(createLabel(`slot[${i}]:  `, ''))
+                const slotRow = document.createElement('div');
+                slotRow.className = 'slot-container';
+                slotRow.appendChild(createLabel(`slot[${i}]:`, ''));
                 if (models[selectedKey].moduleOptions) {
                   const slotSelect = document.createElement('select');
                   models[selectedKey].moduleOptions.forEach(module => {
@@ -190,18 +198,17 @@ function setVSCodeMessageListener() {
                     option.textContent = module;
                     slotSelect.appendChild(option);
                   });
-                  slotRow.appendChild(slotSelect)
+                  slotRow.appendChild(slotSelect);
                 }
-                slotContainer.appendChild(slotRow)
+                slotContainer.appendChild(slotRow);
               }
-
               nodeRow.insertAdjacentElement('afterend', slotContainer);
             }
           });
 
           const removeButton = createButton('x', '.round-vscode-button');
           removeButton.addEventListener('click', () => {
-            const existingSlots = document.getElementById(`nodeSlotsContainer${rowID}`);
+            const existingSlots = document.getElementById(`nodeSlotsContainer${nodeRow.dataset.rowid}`);
             if (existingSlots) existingSlots.remove();
             nodeRow.remove();
           });
@@ -209,26 +216,26 @@ function setVSCodeMessageListener() {
 
           nodesContainer.appendChild(nodeRow);
         });
-
-        form.appendChild(nodesLabelContainer);
-
-        const nodesContainer = document.createElement('div');
         form.appendChild(nodesContainer);
 
         // Save button
         const saveButton = createButton('Save', 'vscode-button');
         saveButton.addEventListener('click', () => {
           const nodeData = [];
-          nodesContainer.querySelectorAll('div').forEach(nodeRow => {
+          nodesContainer.querySelectorAll('div.nodeRow').forEach(nodeRow => {
+            const rowID = nodeRow.dataset.rowid;
             const nodeId = `node[${nodeRow.querySelector('select#nodeNumber').value}]`;
             const mainframe = nodeRow.querySelector('#nodeModelName').value;
             const slots = [];
-            const slotContainers = document.querySelectorAll(`#nodeSlotsContainer${rowID} .slot-container`);
-            slotContainers.forEach(slotContainer => {
-              const slotId = slotContainer.querySelector('label').textContent;
-              const module = slotContainer.querySelector('select').value;
-              slots.push({ slotId, module });
-            });
+            
+              const slotContainers = document.querySelectorAll(`#nodeSlotsContainer${rowID} .slot-container`);
+              slotContainers.forEach(slotContainer => {
+                const slotId = slotContainer.querySelector('label').textContent;
+                const module = slotContainer.querySelector('select').value;
+                slots.push({ slotId, module });
+              });
+            
+
             const nodeObj = { nodeId, mainframe };
             if (slots.length > 0) {
               nodeObj.slots = slots;
@@ -260,7 +267,7 @@ function setVSCodeMessageListener() {
         form.appendChild(saveButton);
 
         systemsContainer.appendChild(form);
-        break
+        break;
     }
   });
 }
