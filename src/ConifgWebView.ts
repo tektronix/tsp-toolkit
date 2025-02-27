@@ -105,8 +105,8 @@ export class ConfigWebView implements WebviewViewProvider {
                             name: newSystemDetails.name,
                             localNode: newSystemDetails.localNode,
                             isActive: newSystemDetails.isActive,
-                            nodes: newSystemDetails.nodes,
                             slots: newSystemDetails.slots,
+                            nodes: newSystemDetails.nodes,
                         }
 
                         const updatedSystemInfos = [
