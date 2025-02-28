@@ -130,7 +130,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-          npm install
+          npm install --devDependencies
       - name: Build
         run: npm run compile
       - name: npm Package
