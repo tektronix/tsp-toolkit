@@ -431,7 +431,7 @@
         "test": "mocha --config .mocharc.yml",
         "test-ci": "mocha --config .mocharc.yml --reporter xunit --reporter-option output=junit.xml",
         "coverage": "nyc --nycrc-path='.nycrc.json' npm run test",
-        "copy-css": "npx cpx 'src/**/*.{css,js}' out"
+        "copy-css": "cpx 'src/**/*.{css,js}' out"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
