@@ -425,13 +425,13 @@
     "scripts": {
         "pretest": "npm run compile && npm run lint",
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./ && npm run copy-css",
+        "compile": "tsc -p ./ && npm run copy-static",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts",
         "test": "mocha --config .mocharc.yml",
         "test-ci": "mocha --config .mocharc.yml --reporter xunit --reporter-option output=junit.xml",
         "coverage": "nyc --nycrc-path='.nycrc.json' npm run test",
-        "copy-css": "cpx src/**/*.{css,js} out"
+        "copy-static": "copyfiles -u 1 src/**/*.{js,css} out"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
@@ -444,7 +444,7 @@
         "@typescript-eslint/parser": "8.3.0",
         "@vscode/vsce": "3.2.2",
         "chai": "^4.4.1",
-        "cpx": "^1.5.0",
+        "copyfiles": "^2.4.1",
         "eslint": "8.57.0",
         "eslint-config-prettier": "8.2.0",
         "eslint-import-resolver-typescript": "3.6.3",
