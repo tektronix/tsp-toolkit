@@ -80,7 +80,10 @@ export class ConfigWebView implements WebviewViewProvider {
 
                     webviewView.webview.postMessage({
                         command: "systems",
-                        payload: JSON.stringify(systemInfo),
+                        payload: JSON.stringify({
+                            systemInfo,
+                            supportedModels: SUPPORTED_MODELS_DETAILS,
+                        }),
                     })
                     break
                 }
@@ -128,7 +131,10 @@ export class ConfigWebView implements WebviewViewProvider {
 
                         webviewView.webview.postMessage({
                             command: "systems",
-                            payload: JSON.stringify(systemInfo),
+                            payload: JSON.stringify({
+                                systemInfo,
+                                supportedModels: SUPPORTED_MODELS_DETAILS,
+                            }),
                         })
                         break
                     }
@@ -158,7 +164,10 @@ export class ConfigWebView implements WebviewViewProvider {
 
                     webviewView.webview.postMessage({
                         command: "systems",
-                        payload: JSON.stringify(systemInfo),
+                        payload: JSON.stringify({
+                            systemInfo,
+                            supportedModels: SUPPORTED_MODELS_DETAILS,
+                        }),
                     })
                     break
                 }
