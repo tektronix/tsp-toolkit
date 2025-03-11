@@ -221,10 +221,12 @@ export function activate(context: vscode.ExtensionContext) {
     const provider = new ConfigWebView(context.extensionUri)
 
     // Register the provider for a Webview View
-    const weatherViewDisposable = vscode.window.registerWebviewViewProvider(
-        ConfigWebView.viewType,
-        provider,
-    )
+    const systemConfigViewDisposable =
+        vscode.window.registerWebviewViewProvider(
+            ConfigWebView.viewType,
+            provider,
+        )
+    context.subscriptions.push(systemConfigViewDisposable)
 
     // Register a callback for configuration changes
     vscode.workspace.onDidChangeConfiguration(async (event) => {
@@ -232,8 +234,6 @@ export function activate(context: vscode.ExtensionContext) {
             await updateLuaLibraryConfigurations()
         }
     })
-
-    context.subscriptions.push(weatherViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
