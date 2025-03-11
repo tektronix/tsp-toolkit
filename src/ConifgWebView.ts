@@ -73,7 +73,7 @@ export class ConfigWebView implements WebviewViewProvider {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             switch (message.command) {
                 case "getInitialSystems": {
-                    const systemInfo: SystemInfo[] =
+                    const savedSystems: SystemInfo[] =
                         vscode.workspace
                             .getConfiguration("tsp")
                             .get("tspLinkSystemConfigurations") ?? []
@@ -81,7 +81,7 @@ export class ConfigWebView implements WebviewViewProvider {
                     webviewView.webview.postMessage({
                         command: "systems",
                         payload: JSON.stringify({
-                            systemInfo,
+                            systemInfo: savedSystems,
                             supportedModels: SUPPORTED_MODELS_DETAILS,
                         }),
                     })

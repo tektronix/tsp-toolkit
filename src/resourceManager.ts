@@ -34,13 +34,16 @@ models = models.filter(
     (model) => model !== "tsp-lua-5.0" && model !== "nodes_definitions",
 )
 
-export const SUPPORTED_MODELS_DETAILS = models.reduce(
-    (acc, item) => {
+export const SUPPORTED_MODELS_DETAILS = models.reduce<
+    Record<string, { noOfSlots?: number; moduleOptions?: string[] }>
+>((acc, item) => {
+    if (TREBUCHET_SUPPORTED_MODELS_DETAILS[item]) {
+        acc[item] = TREBUCHET_SUPPORTED_MODELS_DETAILS[item]
+    } else {
         acc[item] = {}
-        return acc
-    },
-    { ...TREBUCHET_SUPPORTED_MODELS_DETAILS },
-)
+    }
+    return acc
+}, {})
 
 //interface for *idn? response
 export interface IIDNInfo {
