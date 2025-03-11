@@ -217,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
-    // Instantiate a new instance of the WeatherViewProvider class
+    // Instantiate a new instance of the ViewProvider class
     const provider = new ConfigWebView(context.extensionUri)
 
     // Register the provider for a Webview View
