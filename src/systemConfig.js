@@ -67,7 +67,7 @@ function handleSupportedModelsMessage(payload, systemsContainer) {
   localNodeSelect.addEventListener('change', () => handleLocalNodeChange(localNodeSelect, models, localNodeGroup));
 
   // Nodes area
-  const nodesContainer = getNodesHeaderControls(models);
+  const nodesContainer = getNodeControls(models);
   form.appendChild(nodesContainer);
 
   // Save button
@@ -110,7 +110,7 @@ function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
     for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
       const slotRow = document.createElement('div');
       slotRow.className = "slot-container";
-      slotRow.appendChild(createLabel(`slot[${i}]:`, ''));
+      slotRow.appendChild(createLabel(`slot[${i}]`, ''));
       if (models[selectedKey].moduleOptions) {
         const slotSelect = document.createElement('select');
         models[selectedKey].moduleOptions.forEach(module => {
@@ -128,6 +128,22 @@ function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
 }
 
 function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
+  // Validate inputs
+  const systemNameInput = nameGroup.querySelector('input');
+  const existingError = nameGroup.querySelector('.nameError');
+  if (existingError) existingError.remove();
+  systemNameInput.classList.remove('error-border');
+
+  if (!systemNameInput.value.trim()) {
+    systemNameInput.classList.add('error-border');
+    const errorMessage = document.createElement('span');
+    errorMessage.className = 'nameError';
+    errorMessage.style.color = 'red';
+    errorMessage.textContent = 'System Name is required.';
+    nameGroup.appendChild(errorMessage);
+    return;
+  }
+
   const nodeData = [];
   nodesContainer.querySelectorAll('div.nodeRow').forEach(nodeRow => {
     const rowID = nodeRow.dataset.rowid;
@@ -172,7 +188,7 @@ function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
 }
 
 
-function getNodesHeaderControls(models, existingNodes = []) {
+function getNodeControls(models, existingNodes = []) {
   const nodesLabelContainer = document.createElement('div');
   nodesLabelContainer.id = "nodesControls";
 
@@ -256,30 +272,30 @@ function createModuleSelect(modelOptions, selectedValue = null) {
 }
 
 function onModuleSelectionChange(modelSelect, rowID, models, nodeRow, existingSlots = []) {
-  const renderSlots = () => {
-    const selectedKey = modelSelect.value;
-    const existingSlotsContainer = document.getElementById(`nodeSlotsContainer${rowID}`);
-    if (existingSlotsContainer) existingSlotsContainer.remove();
-
-    if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
-      const slotContainer = document.createElement('div');
-      slotContainer.id = `nodeSlotsContainer${rowID}`;
-      slotContainer.className = "node-slots-container";
-      const slotsLabel = createLabel("slots", '');
-      slotsLabel.textContent = `${selectedKey} Slots`;
-      slotContainer.appendChild(slotsLabel);
-      for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
-        const slot = existingSlots.find(slot => slot.slotId === `slot[${i}]`);
-        const slotRow = addSlot(i, models[selectedKey].moduleOptions, slot ? slot.module : null);
-        slotContainer.appendChild(slotRow);
-      }
-      nodeRow.insertAdjacentElement('afterend', slotContainer);
-    }
-  };
-
-  modelSelect.addEventListener('change', renderSlots);
-
+  modelSelect.addEventListener('change', () => {
+    renderSlots(modelSelect.value, rowID, models, nodeRow, existingSlots);
+  });
 }
+
+function renderSlots(selectedKey, rowID, models, nodeRow, existingSlots = []){
+  const existingSlotsContainer = document.getElementById(`nodeSlotsContainer${rowID}`);
+  if (existingSlotsContainer) existingSlotsContainer.remove();
+
+  if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
+    const slotContainer = document.createElement('div');
+    slotContainer.id = `nodeSlotsContainer${rowID}`;
+    slotContainer.className = "node-slots-container";
+    const slotsLabel = createLabel("slots", '');
+    slotsLabel.textContent = `${selectedKey} Slots`;
+    slotContainer.appendChild(slotsLabel);
+    for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
+      const slot = existingSlots.find(slot => slot.slotId === `slot[${i}]`);
+      const slotRow = addSlot(i, models[selectedKey].moduleOptions, slot ? slot.module : null);
+      slotContainer.appendChild(slotRow);
+    }
+    nodeRow.insertAdjacentElement('afterend', slotContainer);
+  }
+};
 
 function addSlot(slotId, moduleOptions, selectedModule = null) {
   const slotRow = document.createElement('div');
@@ -344,20 +360,27 @@ function populateUI(systems, supportedModels, systemsContainer) {
 
     const selectedSystem = systems.find(system => system.name === systemsDropDown.value);
     localNodeInput.value = selectedSystem ? selectedSystem.localNode : '';
+    if (selectedSystem.slots){
+      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, selectedSystem.slots)
+    }
 
-
-
-    if (selectedSystem) {
-      const controls = getNodesHeaderControls(supportedModels, selectedSystem.nodes);
+    if (selectedSystem && selectedSystem.nodes) {
+      const controls = getNodeControls(supportedModels, selectedSystem.nodes);
       systemsContainer.appendChild(controls);
     }
 
-    // firing `change` event for model select control to render slots UI for nodes
+    // fire `change` to render slots
     const modelDropDowns = document.querySelectorAll('#nodeModelName');
     modelDropDowns.forEach(dropDown => {
       dropDown.dispatchEvent(new Event('change'));
     });
-  });
+    });
+
+    // trigger the default selection
+    if (systems.length > 0) {
+    systemsDropDown.value = systems[0].name;
+    systemsDropDown.dispatchEvent(new Event('change'));
+    }
 
   
 
