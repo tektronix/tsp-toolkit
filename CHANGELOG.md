@@ -15,6 +15,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+
+## [1.2.2]
+
+### Added
+
+- System configurations webview UI implemented
+
+
 ## [1.2.1]
 
 ### Fixed
@@ -295,8 +303,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.1...HEAD
-[1.2.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.0
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.2
+[1.2.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.1
 [1.2.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.0
 [1.1.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.1
 [1.1.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.0
