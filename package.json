@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -246,12 +246,20 @@
                 "tsp.savedInstruments": {
                     "type": "array",
                     "default": [],
-                    "description": "A list of saved instrument serial numbers"
+                    "description": "A list of saved instrument details",
+                    "scope": "application"
                 },
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
-                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting."
+                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "scope": "application"
+                },
+                "tsp.tspLinkSystemConfigurations": {
+                    "type": "array",
+                    "default": [],
+                    "scope": "window",
+                    "description": "A list of dynamically switchable sets of instruments"
                 }
             }
         },
@@ -394,6 +402,11 @@
                 {
                     "id": "InstrumentsExplorer",
                     "name": "Instruments"
+                },
+                {
+                    "type": "webview",
+                    "id": "systemConfigurations",
+                    "name": "System Configurations"
                 }
             ]
         },
@@ -407,12 +420,13 @@
     "scripts": {
         "pretest": "npm run compile && npm run lint",
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
+        "compile": "tsc -p ./ && npm run copy-static",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts",
         "test": "mocha --config .mocharc.yml",
         "test-ci": "mocha --config .mocharc.yml --reporter xunit --reporter-option output=junit.xml",
-        "coverage": "nyc --nycrc-path='.nycrc.json' npm run test"
+        "coverage": "nyc --nycrc-path='.nycrc.json' npm run test",
+        "copy-static": "copyfiles -u 1 src/**/*.{js,css} out"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "1.0.2",
@@ -425,6 +439,7 @@
         "@typescript-eslint/parser": "8.3.0",
         "@vscode/vsce": "3.2.2",
         "chai": "^4.4.1",
+        "copyfiles": "^2.4.1",
         "eslint": "8.57.0",
         "eslint-config-prettier": "8.2.0",
         "eslint-import-resolver-typescript": "3.6.3",
@@ -440,8 +455,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.18.4",
-        "@tektronix/web-help-documents": "0.18.0",
+        "@tektronix/keithley_instrument_libraries": "0.19.0",
+        "@tektronix/web-help-documents": "0.19.0",
         "@types/cheerio": "0.22.35",
         "cheerio": "1.0.0",
         "class-transformer": "0.5.1",
