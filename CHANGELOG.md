@@ -15,6 +15,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+
+## [1.2.2]
+
+### Added
+
+- System configurations webview UI implemented
+
+
 ## [1.2.1]
 
 ### Fixed
