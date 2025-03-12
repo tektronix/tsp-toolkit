@@ -162,11 +162,6 @@
         ],
         "commands": [
             {
-                "command": "tsp.openConfigWebview",
-                "title": "Open Config Webview",
-                "category": "TSP"
-            },
-            {
                 "command": "tsp.openTerminal",
                 "title": "Connect",
                 "category": "TSP"
@@ -251,7 +246,7 @@
                 "tsp.savedInstruments": {
                     "type": "array",
                     "default": [],
-                    "description": "A list of saved instrument serial numbers",
+                    "description": "A list of saved instrument details",
                     "scope": "application"
                 },
                 "tsp.dumpQueueOnConnect": {
@@ -264,7 +259,7 @@
                     "type": "array",
                     "default": [],
                     "scope": "window",
-                    "description": "A list of dynamically switchable set of instruments"
+                    "description": "A list of dynamically switchable sets of instruments"
                 }
             }
         },
