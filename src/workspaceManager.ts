@@ -1,7 +1,9 @@
-import * as path from "path"
+import { join } from "path"
+import * as fs from "fs"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
 import * as vscode from "vscode"
-
+import { SystemInfo } from "./resourceManager"
+import { Log } from "./logging"
 export async function updateConfiguration(
     config_name: string,
     value: unknown,
@@ -42,60 +44,159 @@ export async function configure_initial_workspace_configurations() {
         },
         vscode.ConfigurationTarget.Global,
     )
-    const workspaceFolders = vscode.workspace.workspaceFolders
-    if (workspaceFolders) {
-        for (const folder of workspaceFolders) {
-            await updateConfiguration(
-                "Lua.workspace.ignoreDir",
-                [],
-                vscode.ConfigurationTarget.WorkspaceFolder,
-                folder,
-            )
-            await updateConfiguration(
-                "Lua.diagnostics.libraryFiles",
-                "Disable",
-                vscode.ConfigurationTarget.WorkspaceFolder,
-                folder,
-            )
-            await updateConfiguration(
-                "Lua.runtime.version",
-                "Lua 5.1",
-                vscode.ConfigurationTarget.WorkspaceFolder,
-                folder,
-            )
-            await updateConfiguration(
-                "Lua.runtime.builtin",
-                {
-                    basic: "disable",
-                    bit: "disable",
-                    bit32: "disable",
-                    builtin: "disable",
-                    coroutine: "disable",
-                    debug: "disable",
-                    ffi: "disable",
-                    io: "disable",
-                    jit: "disable",
-                    "jit.profile": "disable",
-                    "jit.util": "disable",
-                    math: "disable",
-                    os: "disable",
-                    package: "disable",
-                    string: "disable",
-                    "string.buffer": "disable",
-                    table: "disable",
-                    "table.clear": "disable",
-                    "table.new": "disable",
-                    utf8: "disable",
-                },
-                vscode.ConfigurationTarget.WorkspaceFolder,
-                folder,
-            )
-            await updateConfiguration(
-                "Lua.workspace.library",
-                [path.join(COMMAND_SETS, "tsp-lua-5.0")],
-                vscode.ConfigurationTarget.WorkspaceFolder,
-                folder,
-            )
-        }
+
+    if (vscode.workspace.workspaceFolders) {
+        await updateConfiguration(
+            "Lua.workspace.ignoreDir",
+            [],
+            vscode.ConfigurationTarget.Workspace,
+        )
+        await updateConfiguration(
+            "Lua.diagnostics.libraryFiles",
+            "Disable",
+            vscode.ConfigurationTarget.Workspace,
+        )
+        await updateConfiguration(
+            "Lua.runtime.version",
+            "Lua 5.1",
+            vscode.ConfigurationTarget.Workspace,
+        )
+        await updateConfiguration(
+            "Lua.runtime.builtin",
+            {
+                basic: "disable",
+                bit: "disable",
+                bit32: "disable",
+                builtin: "disable",
+                coroutine: "disable",
+                debug: "disable",
+                ffi: "disable",
+                io: "disable",
+                jit: "disable",
+                "jit.profile": "disable",
+                "jit.util": "disable",
+                math: "disable",
+                os: "disable",
+                package: "disable",
+                string: "disable",
+                "string.buffer": "disable",
+                table: "disable",
+                "table.clear": "disable",
+                "table.new": "disable",
+                utf8: "disable",
+            },
+            vscode.ConfigurationTarget.Workspace,
+        )
+        await updateLuaLibraryConfigurations()
     }
+}
+
+/**
+ * Updates the workspace Lua library configurations based on system information and active nodes.
+ *
+ * This function:
+ * - Manages a folder that stores generated Lua node definitions.
+ * - Retrieves system configuration details (local and remote nodes).
+ * - Creates custom Lua file definitions for specific nodes.
+ * - Dynamically updates the "Lua.workspace.library" settings with the new paths.
+ *
+ * @async
+ * @returns {Promise<void>} A promise that resolves when the configuration update is complete.
+ */
+export async function updateLuaLibraryConfigurations(): Promise<void> {
+    try {
+        const newLibrarySettings: string[] = []
+        newLibrarySettings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
+
+        const luaDefinitionsFolderPath = join(COMMAND_SETS, "nodes_definitions")
+        if (fs.existsSync(luaDefinitionsFolderPath)) {
+            fs.rmSync(luaDefinitionsFolderPath, {
+                recursive: true,
+                force: true,
+            })
+        }
+        fs.mkdirSync(luaDefinitionsFolderPath, { recursive: true })
+
+        const systemInfo: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+        const activeSystem = systemInfo.find((item) => item.isActive)
+
+        const nodeDetails: Record<string, string[]> = {}
+
+        if (activeSystem?.localNode) {
+            nodeDetails[activeSystem.localNode] = ["localNode"]
+        }
+
+        if (activeSystem?.nodes) {
+            for (const node of activeSystem.nodes) {
+                if (!nodeDetails[node.mainframe]) {
+                    nodeDetails[node.mainframe] = []
+                }
+                nodeDetails[node.mainframe].push(node.nodeId)
+            }
+        }
+
+        for (const [model, nodes] of Object.entries(nodeDetails)) {
+            const libBasePath = join(COMMAND_SETS, model.toUpperCase())
+            newLibrarySettings.push(join(libBasePath, "Helper"))
+
+            if (nodes.some((str) => str.includes("localNode"))) {
+                newLibrarySettings.push(join(libBasePath, "AllTspCommands"))
+            }
+
+            for (const node of nodes) {
+                if (node.includes("node")) {
+                    const nodeNum = parseInt(node.match(/\d+/)?.[0] || "", 10)
+                    createNodeCmdFile(
+                        libBasePath,
+                        nodeNum,
+                        luaDefinitionsFolderPath,
+                        model,
+                    )
+                }
+            }
+        }
+
+        // Add luaDefinitionsFolderPath to library settings if it contains files
+        if (fs.readdirSync(luaDefinitionsFolderPath).length !== 0) {
+            newLibrarySettings.push(luaDefinitionsFolderPath)
+        }
+
+        await updateConfiguration(
+            "Lua.workspace.library",
+            newLibrarySettings,
+            vscode.ConfigurationTarget.Workspace,
+        )
+    } catch (error) {
+        Log.error(
+            `Error updating Lua library configurations: ${String(error)}`,
+            {
+                file: "extension.ts",
+                func: "updateLuaLibraryConfigurations()",
+            },
+        )
+    }
+}
+
+function createNodeCmdFile(
+    libBasePath: string,
+    nodeNum: number,
+    luaDefinitionsFolderPath: string,
+    model: string,
+) {
+    const nodeCmdFilePath = join(
+        libBasePath,
+        "tspLinkSupportedCommands",
+        "definitions.txt",
+    )
+    const nodeCmdFileContent = fs
+        .readFileSync(nodeCmdFilePath, "utf8")
+        .replace(/\$node_number\$/g, nodeNum.toString())
+    const newNodeCmdFilePath = join(
+        luaDefinitionsFolderPath,
+        `${model}_node${nodeNum}.lua`,
+    )
+    fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
 }

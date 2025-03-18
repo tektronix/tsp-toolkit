@@ -17,7 +17,7 @@ export class ConfigWebView implements WebviewViewProvider {
             // Enable JavaScript in the webview
             enableScripts: true,
             // Restrict the webview to only load resources from the `out` directory
-            localResourceRoots: [Uri.joinPath(this._extensionUri, "out")],
+            localResourceRoots: [Uri.joinPath(this._extensionUri)],
         }
 
         // Set the HTML content that will fill the webview view
@@ -45,6 +45,12 @@ export class ConfigWebView implements WebviewViewProvider {
                 "out",
                 "styles.css",
             ])
+            const codiconsUri = this.getUri(webview, this._extensionUri, [
+                "node_modules",
+                "@vscode/codicons",
+                "dist",
+                "codicon.css",
+            ])
             const nonce = this.getNonce()
             return /*html*/ `
             <!DOCTYPE html>
@@ -52,9 +58,10 @@ export class ConfigWebView implements WebviewViewProvider {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
 <link rel="stylesheet" href="${stylesUri.toString()}">
+<link rel="stylesheet" href="${codiconsUri.toString()}">
   <title>System Configuration</title>
 </head>
 
@@ -150,6 +157,41 @@ export class ConfigWebView implements WebviewViewProvider {
                     const updatedSystemInfos = originalSystemInfo.filter(
                         (sys) => sys.name !== item,
                     )
+                    await vscode.workspace
+                        .getConfiguration("tsp")
+                        .update(
+                            "tspLinkSystemConfigurations",
+                            updatedSystemInfos,
+                            false,
+                        )
+                    const systemInfo: SystemInfo[] =
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("tspLinkSystemConfigurations") ?? []
+
+                    webviewView.webview.postMessage({
+                        command: "systems",
+                        payload: JSON.stringify({
+                            systemInfo,
+                            supportedModels: SUPPORTED_MODELS_DETAILS,
+                        }),
+                    })
+                    break
+                }
+                case "activate": {
+                    const originalSystemInfo: SystemInfo[] =
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("tspLinkSystemConfigurations") ?? []
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                    const item = message.data
+                    const updatedSystemInfos = originalSystemInfo.map((sys) => {
+                        if (sys.name === item) {
+                            return { ...sys, isActive: true }
+                        } else {
+                            return { ...sys, isActive: false }
+                        }
+                    })
                     await vscode.workspace
                         .getConfiguration("tsp")
                         .update(
