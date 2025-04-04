@@ -129,12 +129,38 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
             nodeDetails[activeSystem.localNode] = ["localNode"]
         }
 
+        const slotDetails: Record<string, string[]> = {}
+
+        if (activeSystem?.slots) {
+            for (const slot of activeSystem.slots) {
+                if (!slot.module.includes("Empty")) {
+                    if (!slotDetails[slot.module]) {
+                        slotDetails[slot.module] = []
+                    }
+                    slotDetails[slot.module].push(slot.slotId)
+                }
+            }
+        }
+
         if (activeSystem?.nodes) {
             for (const node of activeSystem.nodes) {
                 if (!nodeDetails[node.mainframe]) {
                     nodeDetails[node.mainframe] = []
                 }
                 nodeDetails[node.mainframe].push(node.nodeId)
+
+                if (node?.slots) {
+                    for (const slot of node.slots) {
+                        if (!slot.module.includes("Empty")) {
+                            if (!slotDetails[slot.module]) {
+                                slotDetails[slot.module] = []
+                            }
+                            slotDetails[slot.module].push(
+                                node.nodeId + slot.slotId,
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -155,6 +181,41 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
                         luaDefinitionsFolderPath,
                         model,
                     )
+                }
+            }
+        }
+
+        for (const [model, slots] of Object.entries(slotDetails)) {
+            const libBasePath = join(COMMAND_SETS, model.toUpperCase())
+            newLibrarySettings.push(join(libBasePath, "Helper"))
+
+            if (slots.some((str) => str.includes("localNode"))) {
+                newLibrarySettings.push(join(libBasePath, "AllTspCommands"))
+            }
+
+            for (const slotId of slots) {
+                if (slotId.includes("node[") && slotId.includes("slot[")) {
+                    const nodeMatch = slotId.match(/node\[(\d+)\]/)
+                    const slotMatch = slotId.match(/slot\[(\d+)\]/)
+                    const nodeNum = nodeMatch ? parseInt(nodeMatch[1], 10) : 0
+                    const slotNum = slotMatch ? parseInt(slotMatch[1], 10) : 0
+                    createNodeSlotCmdFile(
+                        libBasePath,
+                        nodeNum,
+                        slotNum,
+                        luaDefinitionsFolderPath,
+                        model,
+                    )
+                } else if (slotId.includes("slot[")) {
+                    const slotNum = parseInt(slotId.match(/\d+/)?.[0] || "", 10)
+                    createSlotCmdFile(
+                        libBasePath,
+                        slotNum,
+                        luaDefinitionsFolderPath,
+                        model,
+                    )
+                } else {
+                    /* empty */
                 }
             }
         }
@@ -197,6 +258,50 @@ function createNodeCmdFile(
     const newNodeCmdFilePath = join(
         luaDefinitionsFolderPath,
         `${model}_node${nodeNum}.lua`,
+    )
+    fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
+}
+
+function createSlotCmdFile(
+    libBasePath: string,
+    slotNum: number,
+    luaDefinitionsFolderPath: string,
+    model: string,
+) {
+    const slotCmdFilePath = join(
+        libBasePath,
+        "AllTspCommands",
+        "definitions.lua",
+    )
+    const nodeCmdFileContent = fs
+        .readFileSync(slotCmdFilePath, "utf8")
+        .replace(/\$slot_number\$/g, slotNum.toString())
+    const newNodeCmdFilePath = join(
+        luaDefinitionsFolderPath,
+        `${model}_slot${slotNum}.lua`,
+    )
+    fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
+}
+
+function createNodeSlotCmdFile(
+    libBasePath: string,
+    nodeNum: number,
+    slotNum: number,
+    luaDefinitionsFolderPath: string,
+    model: string,
+) {
+    const nodeSlotCmdFilePath = join(
+        libBasePath,
+        "tspLinkSupportedCommands",
+        "definitions.txt",
+    )
+    const nodeCmdFileContent = fs
+        .readFileSync(nodeSlotCmdFilePath, "utf8")
+        .replace(/\$node_number\$/g, nodeNum.toString())
+        .replace(/\$slot_number\$/g, slotNum.toString())
+    const newNodeCmdFilePath = join(
+        luaDefinitionsFolderPath,
+        `${model}_node${nodeNum}_slot${slotNum}.lua`,
     )
     fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
 }
