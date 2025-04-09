@@ -1,18 +1,12 @@
-import { join } from "path"
-import * as fs from "fs"
 import * as vscode from "vscode"
-import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import {
-    ConnectionDetails,
-    ConnectionHelper,
-    SystemInfo,
-} from "./resourceManager"
+import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import {
     configure_initial_workspace_configurations,
-    updateConfiguration,
+    updateLuaLibraryConfigurations,
 } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
@@ -263,116 +257,6 @@ export function deactivate() {
 //Request the instrument to be reset
 function startReset(def: Connection): Promise<void> {
     return Promise.resolve(def.reset())
-}
-
-/**
- * Updates the workspace Lua library configurations based on system information and active nodes.
- *
- * This function:
- * - Manages a folder that stores generated Lua node definitions.
- * - Retrieves system configuration details (local and remote nodes).
- * - Creates custom Lua file definitions for specific nodes.
- * - Dynamically updates the "Lua.workspace.library" settings with the new paths.
- *
- * @async
- * @returns {Promise<void>} A promise that resolves when the configuration update is complete.
- */
-async function updateLuaLibraryConfigurations(): Promise<void> {
-    try {
-        const newLibrarySettings: string[] = []
-        newLibrarySettings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
-
-        const luaDefinitionsFolderPath = join(COMMAND_SETS, "nodes_definitions")
-        if (fs.existsSync(luaDefinitionsFolderPath)) {
-            fs.rmSync(luaDefinitionsFolderPath, {
-                recursive: true,
-                force: true,
-            })
-        }
-        fs.mkdirSync(luaDefinitionsFolderPath, { recursive: true })
-
-        const systemInfo: SystemInfo[] =
-            vscode.workspace
-                .getConfiguration("tsp")
-                .get("tspLinkSystemConfigurations") ?? []
-        const activeSystem = systemInfo.find((item) => item.isActive)
-
-        const nodeDetails: Record<string, string[]> = {}
-
-        if (activeSystem?.localNode) {
-            nodeDetails[activeSystem.localNode] = ["localNode"]
-        }
-
-        if (activeSystem?.nodes) {
-            for (const node of activeSystem.nodes) {
-                if (!nodeDetails[node.mainframe]) {
-                    nodeDetails[node.mainframe] = []
-                }
-                nodeDetails[node.mainframe].push(node.nodeId)
-            }
-        }
-
-        for (const [model, nodes] of Object.entries(nodeDetails)) {
-            const libBasePath = join(COMMAND_SETS, model.toUpperCase())
-            newLibrarySettings.push(join(libBasePath, "Helper"))
-
-            if (nodes.some((str) => str.includes("localNode"))) {
-                newLibrarySettings.push(join(libBasePath, "AllTspCommands"))
-            }
-
-            for (const node of nodes) {
-                if (node.includes("node")) {
-                    const nodeNum = parseInt(node.match(/\d+/)?.[0] || "", 10)
-                    createNodeCmdFile(
-                        libBasePath,
-                        nodeNum,
-                        luaDefinitionsFolderPath,
-                        model,
-                    )
-                }
-            }
-        }
-
-        // Add luaDefinitionsFolderPath to library settings if it contains files
-        if (fs.readdirSync(luaDefinitionsFolderPath).length !== 0) {
-            newLibrarySettings.push(luaDefinitionsFolderPath)
-        }
-
-        await updateConfiguration(
-            "Lua.workspace.library",
-            newLibrarySettings,
-            vscode.ConfigurationTarget.Workspace,
-        )
-    } catch (error) {
-        Log.error(
-            `Error updating Lua library configurations: ${String(error)}`,
-            {
-                file: "extension.ts",
-                func: "updateLuaLibraryConfigurations()",
-            },
-        )
-    }
-}
-
-function createNodeCmdFile(
-    libBasePath: string,
-    nodeNum: number,
-    luaDefinitionsFolderPath: string,
-    model: string,
-) {
-    const nodeCmdFilePath = join(
-        libBasePath,
-        "tspLinkSupportedCommands",
-        "definitions.txt",
-    )
-    const nodeCmdFileContent = fs
-        .readFileSync(nodeCmdFilePath, "utf8")
-        .replace(/\$node_number\$/g, nodeNum.toString())
-    const newNodeCmdFilePath = join(
-        luaDefinitionsFolderPath,
-        `${model}_node${nodeNum}.lua`,
-    )
-    fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
 }
 
 function updateExtensionSettings() {

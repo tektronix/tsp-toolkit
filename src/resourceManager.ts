@@ -5,13 +5,17 @@ export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 //export const IPV4_ADDR_RE = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/
 
+const MPSU50_2ST = "MPSU50-2ST"
+const MSMU60_2 = "MSMU60-2"
+const EMPTY = "Empty"
+
 const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
     string,
     { noOfSlots?: number; moduleOptions?: string[] }
 > = {
     MP5103: {
         noOfSlots: 3,
-        moduleOptions: ["Empty", "MPSU50-2ST", "MSMU60-2"],
+        moduleOptions: [EMPTY, MPSU50_2ST, MSMU60_2],
     },
 }
 
@@ -31,7 +35,11 @@ let models: string[] = fs
 
 // Remove "tsp-lua-5.0" and "nodes_definitions" from the supported models
 models = models.filter(
-    (model) => model !== "tsp-lua-5.0" && model !== "nodes_definitions",
+    (model) =>
+        model !== "tsp-lua-5.0" &&
+        model !== "nodes_definitions" &&
+        model !== MPSU50_2ST &&
+        model !== MSMU60_2,
 )
 
 export const SUPPORTED_MODELS_DETAILS = models.reduce<

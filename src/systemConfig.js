@@ -41,12 +41,7 @@ function handleSystemsMessage(payload, systemsContainer) {
   addSystemButtonListener(addButton);
 
   if (systems.length > 0) {
-    const removeButton = createButton("Remove System", 'vscode-button');
-    systemsContainer.appendChild(removeButton);
-    removeSystemButtonListener(removeButton);
-
     populateUI(systems, supportedModels, systemsContainer);
-
   }
 }
 
@@ -82,16 +77,6 @@ function addSystemButtonListener(button) {
   button.addEventListener('click', () => {
     vscode.postMessage({
       command: "getSupportedModels"
-    });
-  });
-}
-
-function removeSystemButtonListener(button) {
-  button.addEventListener('click', () => {
-    const selectedSystemName = document.querySelector('.vscode-dropdown').value;
-    vscode.postMessage({
-      command: "remove",
-      data: selectedSystemName
     });
   });
 }
@@ -175,7 +160,7 @@ function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
 
   const payload = {
     name: nameGroup.querySelector('input').value,
-    isActive: true,
+    isActive: false,
     localNode: localNodeSelect.value,
     slots: slots.length > 0 ? slots : undefined,
     nodes: nodeData.length > 0 ? nodeData : undefined
@@ -334,8 +319,36 @@ function populateUI(systems, supportedModels, systemsContainer) {
   const systemsDropDownLabel = createLabel('System Name:', 'vscode-input-label');
   const systemsDropDown = createDropdown('System Name', 'vscode-dropdown');
 
+
+
   systemDiv.appendChild(systemsDropDownLabel);
   systemDiv.appendChild(systemsDropDown);
+
+  // Remove button with icon
+  const removeButton = createButton('', 'icon-button');
+  const removeIcon = document.createElement('span');
+  removeIcon.className = 'codicon codicon-trash';
+  removeButton.appendChild(removeIcon);
+  removeButton.addEventListener('click', () => {
+    vscode.postMessage({ 
+      command: 'remove', 
+      data: systemsDropDown.value 
+    });
+  });
+  systemDiv.appendChild(removeButton);
+
+  // Activate button with icon
+  const activateButton = createButton('', 'icon-button');
+  const activateIcon = document.createElement('span');
+  activateIcon.className = 'codicon codicon-check';
+  activateButton.appendChild(activateIcon);
+  activateButton.addEventListener('click', () => {
+    vscode.postMessage({ 
+      command: 'activate', 
+      data: systemsDropDown.value 
+    });
+  });
+  systemDiv.appendChild(activateButton);
 
   systems.forEach(system => {
     const option = document.createElement('option');
@@ -344,12 +357,15 @@ function populateUI(systems, supportedModels, systemsContainer) {
     systemsDropDown.appendChild(option);
   });
 
+  systemsContainer.appendChild(systemDiv);
+
+  const localNodeDiv = document.createElement('div');
   const localNodeLabel = createLabel('Local Node:', 'vscode-input-label');
   const localNodeInput = createInput('text', 'vscode-input', true);
 
-  systemDiv.appendChild(localNodeLabel);
-  systemDiv.appendChild(localNodeInput);
-  systemsContainer.appendChild(systemDiv);
+  localNodeDiv.appendChild(localNodeLabel);
+  localNodeDiv.appendChild(localNodeInput);
+  systemDiv.appendChild(localNodeDiv);
 
   systemsDropDown.addEventListener('change', () => {
     // Remove previously added controls
@@ -360,8 +376,14 @@ function populateUI(systems, supportedModels, systemsContainer) {
 
     const selectedSystem = systems.find(system => system.name === systemsDropDown.value);
     localNodeInput.value = selectedSystem ? selectedSystem.localNode : '';
-    if (selectedSystem.slots){
-      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, selectedSystem.slots)
+    // Remove previously rendered slots if any
+    const existingSlotsContainer = document.getElementById('nodeSlotsContainer');
+    if (existingSlotsContainer) {
+      existingSlotsContainer.remove();
+    }
+
+    if (selectedSystem && selectedSystem.slots) {
+      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, selectedSystem.slots);
     }
 
     if (selectedSystem && selectedSystem.nodes) {
