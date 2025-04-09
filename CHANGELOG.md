@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 
 - System configurations webview UI implemented
+- slot input support for modules
 
 
 ## [1.2.1]
