@@ -8,10 +8,7 @@ import {
     ConnectionHelper,
     NO_WORKSPACE_OPEN,
 } from "./resourceManager"
-import {
-    configure_initial_workspace_configurations,
-    updateLuaLibraryConfigurations,
-} from "./workspaceManager"
+import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
@@ -234,13 +231,6 @@ export function activate(context: vscode.ExtensionContext) {
             provider,
         )
     context.subscriptions.push(systemConfigViewDisposable)
-
-    // Register a callback for configuration changes
-    vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
-            await updateLuaLibraryConfigurations()
-        }
-    })
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",

@@ -5,6 +5,7 @@ import {
     SUPPORTED_MODELS_DETAILS,
     SystemInfo,
 } from "./resourceManager"
+import { updateLuaLibraryConfigurations } from "./workspaceManager"
 
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
@@ -44,6 +45,13 @@ export class ConfigWebView implements WebviewViewProvider {
                 })
             },
         )
+        // Register a callback for configuration changes
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+                await updateLuaLibraryConfigurations()
+                this.reloadUi(webviewView)
+            }
+        })
     }
     private _getWebviewContent(webview: Webview) {
         if (!vscode.workspace.workspaceFolders) {
@@ -98,18 +106,7 @@ export class ConfigWebView implements WebviewViewProvider {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             switch (message.command) {
                 case "getInitialSystems": {
-                    const savedSystems: SystemInfo[] =
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("tspLinkSystemConfigurations") ?? []
-
-                    webviewView.webview.postMessage({
-                        command: "systems",
-                        payload: JSON.stringify({
-                            systemInfo: savedSystems,
-                            supportedModels: SUPPORTED_MODELS_DETAILS,
-                        }),
-                    })
+                    this.reloadUi(webviewView)
                     break
                 }
                 case "add":
@@ -228,6 +225,21 @@ export class ConfigWebView implements WebviewViewProvider {
                 case "update":
                     break
             }
+        })
+    }
+
+    private reloadUi(webviewView: vscode.WebviewView) {
+        const savedSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        webviewView.webview.postMessage({
+            command: "systems",
+            payload: JSON.stringify({
+                systemInfo: savedSystems,
+                supportedModels: SUPPORTED_MODELS_DETAILS,
+            }),
         })
     }
 
