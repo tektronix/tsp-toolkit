@@ -1,6 +1,10 @@
 import * as vscode from "vscode"
 import { Uri, Webview, WebviewView, WebviewViewProvider } from "vscode"
-import { SUPPORTED_MODELS_DETAILS, SystemInfo } from "./resourceManager"
+import {
+    NO_WORKSPACE_OPEN,
+    SUPPORTED_MODELS_DETAILS,
+    SystemInfo,
+} from "./resourceManager"
 
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
@@ -26,6 +30,20 @@ export class ConfigWebView implements WebviewViewProvider {
         // Sets up an event listener to listen for messages passed from the webview view context
         // and executes code based on the message that is recieved
         this._setWebviewMessageListener(webviewView)
+
+        vscode.commands.registerCommand(
+            "systemConfigurations.addSystem",
+            () => {
+                if (!vscode.workspace.workspaceFolders) {
+                    vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+                    return
+                }
+                webviewView.webview.postMessage({
+                    command: "supportedModels",
+                    payload: JSON.stringify(SUPPORTED_MODELS_DETAILS),
+                })
+            },
+        )
     }
     private _getWebviewContent(webview: Webview) {
         if (!vscode.workspace.workspaceFolders) {
@@ -33,7 +51,7 @@ export class ConfigWebView implements WebviewViewProvider {
             <html lang="en">
             <head></head>
             <body>
-            <h1>No workspace has been open, please open an workspace and reload this UI</h1>
+            <h1>${NO_WORKSPACE_OPEN}</h1>
             </body>
             </html>`
         } else {
@@ -91,13 +109,6 @@ export class ConfigWebView implements WebviewViewProvider {
                             systemInfo: savedSystems,
                             supportedModels: SUPPORTED_MODELS_DETAILS,
                         }),
-                    })
-                    break
-                }
-                case "getSupportedModels": {
-                    webviewView.webview.postMessage({
-                        command: "supportedModels",
-                        payload: JSON.stringify(SUPPORTED_MODELS_DETAILS),
                     })
                     break
                 }

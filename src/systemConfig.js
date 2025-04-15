@@ -36,10 +36,6 @@ function handleSystemsMessage(payload, systemsContainer) {
   const supportedModels = data.supportedModels;
   systemsContainer.innerHTML = ''; // Clear existing content
 
-  const addButton = createButton("Add System", 'vscode-button');
-  systemsContainer.appendChild(addButton);
-  addSystemButtonListener(addButton);
-
   if (systems.length > 0) {
     populateUI(systems, supportedModels, systemsContainer);
   }
@@ -71,14 +67,6 @@ function handleSupportedModelsMessage(payload, systemsContainer) {
   form.appendChild(saveButton);
 
   systemsContainer.appendChild(form);
-}
-
-function addSystemButtonListener(button) {
-  button.addEventListener('click', () => {
-    vscode.postMessage({
-      command: "getSupportedModels"
-    });
-  });
 }
 
 function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {

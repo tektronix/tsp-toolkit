@@ -581,7 +581,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         this.showTerminal()
         this._terminal?.sendText(
-            `.nodes "${join(filepath, "config.tsp.json")}"`,
+            `.nodes "${join(filepath, ".vscode/settings.json")}"`,
         )
     }
 
