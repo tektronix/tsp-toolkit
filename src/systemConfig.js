@@ -32,7 +32,7 @@ function setVSCodeMessageListener() {
 
 function handleSystemsMessage(payload, systemsContainer) {
   const data = JSON.parse(payload);
-  const systems = data.systemInfo;
+  const systems = data.systemInfo.filter(system => system.name);
   const supportedModels = data.supportedModels;
   systemsContainer.innerHTML = ''; // Clear existing content
 
@@ -77,7 +77,7 @@ function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
   if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
     const slotContainer = document.createElement('div');
     slotContainer.id = "slotsContainer";
-    const slotsLabel = document.createElement('h4');
+    const slotsLabel = createLabel("slots", '');
     slotsLabel.textContent = `${selectedKey} Slots`;
     slotContainer.appendChild(slotsLabel);
     for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
@@ -85,7 +85,7 @@ function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
       slotRow.className = "slot-container";
       slotRow.appendChild(createLabel(`slot[${i}]`, ''));
       if (models[selectedKey].moduleOptions) {
-        const slotSelect = document.createElement('select');
+        const slotSelect = createDropdown('', 'vscode-dropdown');
         models[selectedKey].moduleOptions.forEach(module => {
           const option = document.createElement('option');
           option.value = module;
@@ -250,7 +250,7 @@ function onModuleSelectionChange(modelSelect, rowID, models, nodeRow, existingSl
   });
 }
 
-function renderSlots(selectedKey, rowID, models, nodeRow, existingSlots = []){
+function renderSlots(selectedKey, rowID, models, nodeRow, existingSlots = []) {
   const existingSlotsContainer = document.getElementById(`nodeSlotsContainer${rowID}`);
   if (existingSlotsContainer) existingSlotsContainer.remove();
 
@@ -275,7 +275,7 @@ function addSlot(slotId, moduleOptions, selectedModule = null) {
   slotRow.className = 'slot-container';
   slotRow.appendChild(createLabel(`slot[${slotId}]`, ''));
 
-  const slotSelect = document.createElement('select');
+  const slotSelect = createDropdown('', 'vscode-dropdown');
   moduleOptions.forEach(module => {
     const option = document.createElement('option');
     option.value = module;
@@ -302,7 +302,7 @@ function createRemoveButton(nodeRow) {
 
 function populateUI(systems, supportedModels, systemsContainer) {
   const systemDiv = document.createElement('div');
-  systemDiv.className = 'system';
+  //systemDiv.className = 'system';
 
   const systemsDropDownLabel = createLabel('System Name:', 'vscode-input-label');
   const systemsDropDown = createDropdown('System Name', 'vscode-dropdown');
@@ -313,30 +313,30 @@ function populateUI(systems, supportedModels, systemsContainer) {
   systemDiv.appendChild(systemsDropDown);
 
   // Remove button with icon
-  const removeButton = createButton('', 'icon-button');
   const removeIcon = document.createElement('span');
+  removeIcon.name = 'Remove selected system';
   removeIcon.className = 'codicon codicon-trash';
-  removeButton.appendChild(removeIcon);
-  removeButton.addEventListener('click', () => {
-    vscode.postMessage({ 
-      command: 'remove', 
-      data: systemsDropDown.value 
+  removeIcon.role = "button";
+  removeIcon.tabIndex = 0; // Make it focusable
+  removeIcon.addEventListener('click', () => {
+    vscode.postMessage({
+      command: 'remove',
+      data: systemsDropDown.value
     });
   });
-  systemDiv.appendChild(removeButton);
+  systemDiv.appendChild(removeIcon);
 
   // Activate button with icon
-  const activateButton = createButton('', 'icon-button');
   const activateIcon = document.createElement('span');
   activateIcon.className = 'codicon codicon-check';
-  activateButton.appendChild(activateIcon);
-  activateButton.addEventListener('click', () => {
-    vscode.postMessage({ 
-      command: 'activate', 
-      data: systemsDropDown.value 
+  activateIcon.role = "button"
+  activateIcon.addEventListener('click', () => {
+    vscode.postMessage({
+      command: 'activate',
+      data: systemsDropDown.value
     });
   });
-  systemDiv.appendChild(activateButton);
+  systemDiv.appendChild(activateIcon);
 
   systems.forEach(system => {
     const option = document.createElement('option');
@@ -384,15 +384,15 @@ function populateUI(systems, supportedModels, systemsContainer) {
     modelDropDowns.forEach(dropDown => {
       dropDown.dispatchEvent(new Event('change'));
     });
-    });
+  });
 
-    // trigger the default selection
-    if (systems.length > 0) {
+  // trigger the default selection
+  if (systems.length > 0) {
     systemsDropDown.value = systems[0].name;
     systemsDropDown.dispatchEvent(new Event('change'));
-    }
+  }
 
-  
+
 
 }
 
@@ -444,7 +444,7 @@ function createFormGroup(labelText, placeholder, options = null) {
   group.appendChild(label);
 
   if (options) {
-    const select = document.createElement('select');
+    const select = createDropdown('', 'vscode-dropdown');
     Object.keys(options).forEach(key => {
       const option = document.createElement('option');
       option.value = key;

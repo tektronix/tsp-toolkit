@@ -2,7 +2,7 @@ body {
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
-  background-color: var(--vscode-editor-background);
+  background-color: var(--vscode-sideBar-background);
   margin: 0;
   padding: 20px;
 }
@@ -23,7 +23,6 @@ h1 {
 .vscode-input-label {
   display: inline-block;
   margin-right: 10px;
-  font-weight: bold;
 }
 
 .vscode-dropdown,

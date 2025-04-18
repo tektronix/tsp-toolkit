@@ -9,7 +9,7 @@ import { updateLuaLibraryConfigurations } from "./workspaceManager"
 
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
-    constructor(private readonly _extensionUri: Uri) {}
+    constructor(private readonly _extensionUri: Uri) { }
     resolveWebviewView(
         webviewView: vscode.WebviewView,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -48,8 +48,9 @@ export class ConfigWebView implements WebviewViewProvider {
         // Register a callback for configuration changes
         vscode.workspace.onDidChangeConfiguration(async (event) => {
             if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
-                await updateLuaLibraryConfigurations()
+                await this.getSystemName()
                 this.reloadUi(webviewView)
+                await updateLuaLibraryConfigurations()
             }
         })
     }
@@ -113,7 +114,6 @@ export class ConfigWebView implements WebviewViewProvider {
                     {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                         const newSystemDetails = message.data as SystemInfo
-                        console.log(newSystemDetails)
                         const originalSystemInfo: SystemInfo[] =
                             vscode.workspace
                                 .getConfiguration("tsp")
@@ -242,11 +242,36 @@ export class ConfigWebView implements WebviewViewProvider {
             }),
         })
     }
+    private async getSystemName() {
+        const existingSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        const systemWithEmptyName = existingSystems.find(
+            (system) => !system.name,
+        )
+        if (systemWithEmptyName) {
+            const options: vscode.InputBoxOptions = {
+                prompt: "Enter new system name",
+            }
+            const name = await vscode.window.showInputBox(options)
+            if (name)
+                systemWithEmptyName.name = name
+            await vscode.workspace
+                .getConfiguration("tsp")
+                .update(
+                    "tspLinkSystemConfigurations",
+                    existingSystems,
+                    false,
+                )
+        }
+    }
 
     private getNonce() {
         let text = ""
         const possible =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         for (let i = 0; i < 32; i++) {
             text += possible.charAt(Math.floor(Math.random() * possible.length))
         }
