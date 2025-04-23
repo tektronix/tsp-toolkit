@@ -22,7 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - System configurations webview UI implemented
 - slot input support for modules
-- UI option to fetch localnode and tsplik nodes for active connection
+- UI option to fetch localnode and tsplink nodes for active connection
 
 
 ## [1.2.1]
