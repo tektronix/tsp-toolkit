@@ -52,6 +52,7 @@ h1 {
   border-radius: 3px;
   cursor: pointer;
   margin-right: 10px;
+  margin-top: 10px;
 }
 
 .round-vscode-button {
@@ -90,16 +91,29 @@ h1 {
 
 .nodeRow,
 .slot-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
+  margin-left: 10px;
 }
 
-.nodeRow label,
 .slot-container label {
   margin-right: 10px;
 }
 
 .node-slots-container{
-  margin-left: 15px;
+  margin-left: 42px;
+}
+.localnode-slots-container{
+  margin-left: 21px;
+}
+
+.localnode-style{
+  margin-left: 10px;
+}
+
+.nodes-container{
+  margin-top: 10px;
+}
+
+.delete-icon{
+  cursor: pointer;
+  margin-left: 5px;
 }
