@@ -109,19 +109,6 @@
                         ]
                     },
                     {
-                        "id": "config-project",
-                        "title": "Configure TSP Project",
-                        "description": "After opening your folder containing TSP files and connecting to your instrument of interest, open the file explorer and right-click on the ``.vscode/tspConfig`` folder and select **\"Fetch TSP-Link Nodes for Connected Instrument\"**.",
-                        "media": {
-                            "image": "./resources/walkthrough/FetchConfig.png",
-                            "altText": "Fetch Instrument Config"
-                        },
-                        "completionEvents": [
-                            "onView:Explorer",
-                            "onCommand:tsp.configureTspLanguage"
-                        ]
-                    },
-                    {
                         "id": "run-script",
                         "title": "Run TSP Script",
                         "description": "While connected to an instrument with a TSP file open in an editor, either click on the play button in the upper-right of the editor or right-click in the editor and select \"Send Script to Terminal\".",
@@ -222,11 +209,6 @@
                 "icon": "$(chip)"
             },
             {
-                "command": "tsp.configureTspLanguage",
-                "title": "Fetch TSP-Link Nodes for Connected Instrument",
-                "category": "TSP"
-            },
-            {
                 "command": "InstrumentsExplorer.save",
                 "title": "Save",
                 "category": "TSP",
@@ -237,6 +219,22 @@
                 "title": "Remove",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "systemConfigurations.addSystem",
+                "title": "Add new system",
+                "icon": {
+                    "light": "resources/light/connect.svg",
+                    "dark": "resources/dark/connect.svg"
+                }
+            },
+            {
+                "command": "systemConfigurations.fetchConnectionNodes",
+                "title": "Fetch connected instrumnet and its TSP-Link nodes",
+                "icon": {
+                    "light": "resources/light/dependency.svg",
+                    "dark": "resources/dark/dependency.svg"
+                }
             }
         ],
         "configuration": {
@@ -278,11 +276,6 @@
             ],
             "explorer/context": [
                 {
-                    "command": "tsp.configureTspLanguage",
-                    "when": "explorerResourceIsFolder && resourceFilename == 'tspConfig'",
-                    "group": "navigation"
-                },
-                {
                     "when": "activeEditor && resourceExtname == .tsp",
                     "command": "tsp.sendFile",
                     "group": "navigation"
@@ -315,6 +308,16 @@
                     "command": "InstrumentsExplorer.connect",
                     "when": "view == InstrumentsExplorer",
                     "group": "navigation"
+                },
+                {
+                    "command": "systemConfigurations.addSystem",
+                    "when": "view == systemConfigurations",
+                    "group": "navigation"
+                },
+                {
+                    "command": "systemConfigurations.fetchConnectionNodes",
+                    "when": "view == systemConfigurations",
+                    "group": "navigation"
                 }
             ],
             "commandPalette": [
@@ -324,10 +327,6 @@
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmware",
-                    "when": "false"
-                },
-                {
-                    "command": "tsp.configureTspLanguage",
                     "when": "false"
                 },
                 {
@@ -402,11 +401,12 @@
                 {
                     "id": "InstrumentsExplorer",
                     "name": "Instruments"
+
                 },
                 {
-                    "type": "webview",
                     "id": "systemConfigurations",
-                    "name": "System Configurations"
+                    "name": "System Configurations",
+                    "type": "webview"
                 }
             ]
         },

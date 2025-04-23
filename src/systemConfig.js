@@ -32,13 +32,9 @@ function setVSCodeMessageListener() {
 
 function handleSystemsMessage(payload, systemsContainer) {
   const data = JSON.parse(payload);
-  const systems = data.systemInfo;
+  const systems = data.systemInfo.filter(system => system.name);
   const supportedModels = data.supportedModels;
   systemsContainer.innerHTML = ''; // Clear existing content
-
-  const addButton = createButton("Add System", 'vscode-button');
-  systemsContainer.appendChild(addButton);
-  addSystemButtonListener(addButton);
 
   if (systems.length > 0) {
     populateUI(systems, supportedModels, systemsContainer);
@@ -55,7 +51,7 @@ function handleSupportedModelsMessage(payload, systemsContainer) {
   form.appendChild(nameGroup);
 
   // Local node dropdown
-  const localNodeGroup = createFormGroup('Local Node: ', '', models);
+  const localNodeGroup = createFormGroup('localnode: ', '', models);
   form.appendChild(localNodeGroup);
 
   const localNodeSelect = localNodeGroup.querySelector('select');
@@ -73,14 +69,6 @@ function handleSupportedModelsMessage(payload, systemsContainer) {
   systemsContainer.appendChild(form);
 }
 
-function addSystemButtonListener(button) {
-  button.addEventListener('click', () => {
-    vscode.postMessage({
-      command: "getSupportedModels"
-    });
-  });
-}
-
 function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
   const selectedKey = localNodeSelect.value;
   const existingSlots = document.getElementById('slotsContainer');
@@ -89,15 +77,13 @@ function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
   if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
     const slotContainer = document.createElement('div');
     slotContainer.id = "slotsContainer";
-    const slotsLabel = document.createElement('h4');
-    slotsLabel.textContent = `${selectedKey} Slots`;
-    slotContainer.appendChild(slotsLabel);
+    slotContainer.className = "localnode-slots-container"
     for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
       const slotRow = document.createElement('div');
       slotRow.className = "slot-container";
-      slotRow.appendChild(createLabel(`slot[${i}]`, ''));
+      slotRow.appendChild(createSlotLabel(i, ''));
       if (models[selectedKey].moduleOptions) {
-        const slotSelect = document.createElement('select');
+        const slotSelect = createDropdown('', 'vscode-dropdown');
         models[selectedKey].moduleOptions.forEach(module => {
           const option = document.createElement('option');
           option.value = module;
@@ -138,7 +124,7 @@ function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
 
     const slotContainers = document.querySelectorAll(`#nodeSlotsContainer${rowID} .slot-container`);
     slotContainers.forEach(slotContainer => {
-      const slotId = slotContainer.querySelector('label').textContent;
+      const slotId = slotContainer.querySelector('label').dataset.value;
       const module = slotContainer.querySelector('select').value;
       slots.push({ slotId, module });
     });
@@ -153,7 +139,7 @@ function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
   const slots = [];
   const slotContainers = document.querySelectorAll('#slotsContainer .slot-container');
   slotContainers.forEach(slotContainer => {
-    const slotId = slotContainer.querySelector('label').textContent;
+    const slotId = slotContainer.querySelector('label').dataset.value;
     const module = slotContainer.querySelector('select').value;
     slots.push({ slotId, module });
   });
@@ -174,26 +160,32 @@ function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
 
 
 function getNodeControls(models, existingNodes = []) {
-  const nodesLabelContainer = document.createElement('div');
-  nodesLabelContainer.id = "nodesControls";
+  const nodesAccordion = document.createElement('details'); // Create the accordion
+  nodesAccordion.id = "nodesControls";
 
-  const nodesLabel = document.createElement('h4');
-  nodesLabel.textContent = 'Nodes';
-  nodesLabelContainer.appendChild(nodesLabel);
-
-  const plusButton = createButton('+', '.round-vscode-button');
-  nodesLabelContainer.appendChild(plusButton);
-  nodesLabelContainer.appendChild(createPlusButton(plusButton, models));
+  const summary = document.createElement('summary'); // Create the summary for the accordion
+  summary.textContent = 'Nodes';
+  nodesAccordion.appendChild(summary);
 
   const nodesContainer = document.createElement('div');
+  nodesContainer.className = 'nodes-container';
+
+  // Add the "+" button inside the accordion
+  const plusButton = createButton('+', '.round-vscode-button');
+  plusButton.style.marginTop = '10px';
+  nodesContainer.appendChild(plusButton);
+  nodesContainer.appendChild(createPlusButton(plusButton, models));
+
+
   // Render existing nodes
   existingNodes.forEach((node, index) => {
     const nodeRow = createNodeRow(index + 1, models, parseInt(node.nodeId.match(/\d+/)[0], 10), node.mainframe, node.slots);
     nodesContainer.appendChild(nodeRow);
   });
 
-  nodesLabelContainer.appendChild(nodesContainer);
-  return nodesLabelContainer;
+
+  nodesAccordion.appendChild(nodesContainer);
+  return nodesAccordion;
 }
 
 function createPlusButton(button, models) {
@@ -212,10 +204,10 @@ function createNodeRow(rowID, models, nodeId = null, mainframe = null, slots = [
   const nodeRow = document.createElement('div');
   nodeRow.classList.add('nodeRow');
   nodeRow.dataset.rowid = rowID;
-  nodeRow.appendChild(createLabel('node[', ''));
+  nodeRow.appendChild(createLabel('node [ ', ''));
   const nodeIdSelect = createNodeIdSelect(nodeId);
   nodeRow.appendChild(nodeIdSelect);
-  nodeRow.appendChild(document.createTextNode(']'));
+  nodeRow.appendChild(document.createTextNode(' ] '));
 
   const modelSelect = createModuleSelect(Object.keys(models), mainframe);
   onModuleSelectionChange(modelSelect, rowID, models, nodeRow, slots);
@@ -258,21 +250,19 @@ function createModuleSelect(modelOptions, selectedValue = null) {
 
 function onModuleSelectionChange(modelSelect, rowID, models, nodeRow, existingSlots = []) {
   modelSelect.addEventListener('change', () => {
-    renderSlots(modelSelect.value, rowID, models, nodeRow, existingSlots);
+    const slotContainerClassName = "node-slots-container"
+    renderSlots(modelSelect.value, rowID, models, nodeRow, slotContainerClassName, existingSlots);
   });
 }
 
-function renderSlots(selectedKey, rowID, models, nodeRow, existingSlots = []){
+function renderSlots(selectedKey, rowID, models, nodeRow, slotContainerClassName, existingSlots = []) {
   const existingSlotsContainer = document.getElementById(`nodeSlotsContainer${rowID}`);
   if (existingSlotsContainer) existingSlotsContainer.remove();
 
   if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
     const slotContainer = document.createElement('div');
     slotContainer.id = `nodeSlotsContainer${rowID}`;
-    slotContainer.className = "node-slots-container";
-    const slotsLabel = createLabel("slots", '');
-    slotsLabel.textContent = `${selectedKey} Slots`;
-    slotContainer.appendChild(slotsLabel);
+    slotContainer.className = slotContainerClassName;
     for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
       const slot = existingSlots.find(slot => slot.slotId === `slot[${i}]`);
       const slotRow = addSlot(i, models[selectedKey].moduleOptions, slot ? slot.module : null);
@@ -285,9 +275,9 @@ function renderSlots(selectedKey, rowID, models, nodeRow, existingSlots = []){
 function addSlot(slotId, moduleOptions, selectedModule = null) {
   const slotRow = document.createElement('div');
   slotRow.className = 'slot-container';
-  slotRow.appendChild(createLabel(`slot[${slotId}]`, ''));
+  slotRow.appendChild(createSlotLabel(slotId, ''));
 
-  const slotSelect = document.createElement('select');
+  const slotSelect = createDropdown('', 'vscode-dropdown');
   moduleOptions.forEach(module => {
     const option = document.createElement('option');
     option.value = module;
@@ -303,18 +293,24 @@ function addSlot(slotId, moduleOptions, selectedModule = null) {
 }
 
 function createRemoveButton(nodeRow) {
-  const removeButton = createButton('x', '.round-vscode-button');
-  removeButton.addEventListener('click', () => {
+  // Remove button with icon
+  const removeIcon = document.createElement('span');
+  removeIcon.name = 'Remove selected system';
+  removeIcon.className = 'codicon codicon-trash delete-icon';
+  removeIcon.role = "button";
+  removeIcon.tabIndex = 0; // Make it focusable
+
+  removeIcon.addEventListener('click', () => {
     const existingSlots = document.getElementById(`nodeSlotsContainer${nodeRow.dataset.rowid}`);
     if (existingSlots) existingSlots.remove();
     nodeRow.remove();
   });
-  return removeButton;
+  return removeIcon;
 }
 
 function populateUI(systems, supportedModels, systemsContainer) {
   const systemDiv = document.createElement('div');
-  systemDiv.className = 'system';
+  //systemDiv.className = 'system';
 
   const systemsDropDownLabel = createLabel('System Name:', 'vscode-input-label');
   const systemsDropDown = createDropdown('System Name', 'vscode-dropdown');
@@ -325,30 +321,30 @@ function populateUI(systems, supportedModels, systemsContainer) {
   systemDiv.appendChild(systemsDropDown);
 
   // Remove button with icon
-  const removeButton = createButton('', 'icon-button');
   const removeIcon = document.createElement('span');
-  removeIcon.className = 'codicon codicon-trash';
-  removeButton.appendChild(removeIcon);
-  removeButton.addEventListener('click', () => {
-    vscode.postMessage({ 
-      command: 'remove', 
-      data: systemsDropDown.value 
+  removeIcon.name = 'Remove selected system';
+  removeIcon.className = 'codicon codicon-trash delete-icon';
+  removeIcon.role = "button";
+  removeIcon.tabIndex = 0; // Make it focusable
+  removeIcon.addEventListener('click', () => {
+    vscode.postMessage({
+      command: 'remove',
+      data: systemsDropDown.value
     });
   });
-  systemDiv.appendChild(removeButton);
+  systemDiv.appendChild(removeIcon);
 
   // Activate button with icon
-  const activateButton = createButton('', 'icon-button');
   const activateIcon = document.createElement('span');
   activateIcon.className = 'codicon codicon-check';
-  activateButton.appendChild(activateIcon);
-  activateButton.addEventListener('click', () => {
-    vscode.postMessage({ 
-      command: 'activate', 
-      data: systemsDropDown.value 
+  activateIcon.role = "button"
+  activateIcon.addEventListener('click', () => {
+    vscode.postMessage({
+      command: 'activate',
+      data: systemsDropDown.value
     });
   });
-  systemDiv.appendChild(activateButton);
+  systemDiv.appendChild(activateIcon);
 
   systems.forEach(system => {
     const option = document.createElement('option');
@@ -360,7 +356,8 @@ function populateUI(systems, supportedModels, systemsContainer) {
   systemsContainer.appendChild(systemDiv);
 
   const localNodeDiv = document.createElement('div');
-  const localNodeLabel = createLabel('Local Node:', 'vscode-input-label');
+  const localNodeLabel = createLabel('localnode: ', 'vscode-input-label');
+  localNodeLabel.classList.add("localnode-slots-container");
   const localNodeInput = createInput('text', 'vscode-input', true);
 
   localNodeDiv.appendChild(localNodeLabel);
@@ -383,7 +380,8 @@ function populateUI(systems, supportedModels, systemsContainer) {
     }
 
     if (selectedSystem && selectedSystem.slots) {
-      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, selectedSystem.slots);
+      const slotContainerClassName = "localnode-slots-container"
+      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, slotContainerClassName, selectedSystem.slots);
     }
 
     if (selectedSystem && selectedSystem.nodes) {
@@ -396,15 +394,15 @@ function populateUI(systems, supportedModels, systemsContainer) {
     modelDropDowns.forEach(dropDown => {
       dropDown.dispatchEvent(new Event('change'));
     });
-    });
+  });
 
-    // trigger the default selection
-    if (systems.length > 0) {
+  // trigger the default selection
+  if (systems.length > 0) {
     systemsDropDown.value = systems[0].name;
     systemsDropDown.dispatchEvent(new Event('change'));
-    }
+  }
 
-  
+
 
 }
 
@@ -412,6 +410,14 @@ function populateUI(systems, supportedModels, systemsContainer) {
 function createLabel(text, className) {
   const label = document.createElement('label');
   label.textContent = text;
+  label.className = className;
+  return label;
+}
+
+function createSlotLabel(slot_index, className) {
+  const label = document.createElement('label');
+  label.textContent = `slot [ ${slot_index} ]`;
+  label.dataset.value = `slot[${slot_index}]`
   label.className = className;
   return label;
 }
@@ -456,7 +462,7 @@ function createFormGroup(labelText, placeholder, options = null) {
   group.appendChild(label);
 
   if (options) {
-    const select = document.createElement('select');
+    const select = createDropdown('', 'vscode-dropdown');
     Object.keys(options).forEach(key => {
       const option = document.createElement('option');
       option.value = key;

@@ -3,11 +3,12 @@ import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
 import {
-    configure_initial_workspace_configurations,
-    updateLuaLibraryConfigurations,
-} from "./workspaceManager"
+    ConnectionDetails,
+    ConnectionHelper,
+    NO_WORKSPACE_OPEN,
+} from "./resourceManager"
+import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
@@ -181,8 +182,13 @@ export function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "tsp.configureTspLanguage",
-            cb: async (e: vscode.Uri) => {
+            name: "systemConfigurations.fetchConnectionNodes",
+            cb: async () => {
+                if (!vscode.workspace.workspaceFolders) {
+                    vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+                    return
+                }
+
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
@@ -199,11 +205,15 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     if (connection) {
-                        await connection.getNodes(e.fsPath)
+                        await connection.getNodes(
+                            vscode.workspace.workspaceFolders[0].uri.fsPath,
+                        )
                     }
                 } else {
                     const conn = await pickConnection()
-                    await conn?.getNodes(e.fsPath)
+                    await conn?.getNodes(
+                        vscode.workspace.workspaceFolders[0].uri.fsPath,
+                    )
                 }
             },
         },
@@ -221,13 +231,6 @@ export function activate(context: vscode.ExtensionContext) {
             provider,
         )
     context.subscriptions.push(systemConfigViewDisposable)
-
-    // Register a callback for configuration changes
-    vscode.workspace.onDidChangeConfiguration(async (event) => {
-        if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
-            await updateLuaLibraryConfigurations()
-        }
-    })
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",

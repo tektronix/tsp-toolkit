@@ -9,6 +9,9 @@ const MPSU50_2ST = "MPSU50-2ST"
 const MSMU60_2 = "MSMU60-2"
 const EMPTY = "Empty"
 
+export const NO_WORKSPACE_OPEN =
+    "No workspace has been open, please open an workspace and reload this UI"
+
 const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
     string,
     { noOfSlots?: number; moduleOptions?: string[] }
