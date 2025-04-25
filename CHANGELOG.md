@@ -23,6 +23,17 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - System configurations webview UI implemented
 - slot input support for modules
 - UI option to fetch localnode and tsplink nodes for active connection
+- (**tsp-toolkit-kic-lib**) Progress indicators for very large scripts and firmware files
+
+### Changed
+
+- (**tsp-toolkit-kic-cli**) JSON structure updated to include module info
+- (**tsp-toolkit-kic-cli**) Write fetched configuration to setting.json file
+- (**tsp-toolkit-kic-lib**) No longer need to call `slot.stop` and `slot.start` since that is done by firmware now
+
+### Fixed
+
+- (**tsp-toolkit-kic-lib**) Issues with firmware updates over USBTMC on some instruments
 
 
 ## [1.2.1]
