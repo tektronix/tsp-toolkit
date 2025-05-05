@@ -222,13 +222,19 @@ export function activate(context: vscode.ExtensionContext) {
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
     // Instantiate a new instance of the ViewProvider class
-    const provider = new ConfigWebView(context.extensionUri)
+    const systemConfigWebViewprovider = new ConfigWebView(context.extensionUri)
+
+    registerCommand(
+        context,
+        "systemConfigurations.addSystem",
+        systemConfigWebViewprovider.addSystem.bind(systemConfigWebViewprovider),
+    )
 
     // Register the provider for a Webview View
     const systemConfigViewDisposable =
         vscode.window.registerWebviewViewProvider(
             ConfigWebView.viewType,
-            provider,
+            systemConfigWebViewprovider,
         )
     context.subscriptions.push(systemConfigViewDisposable)
 

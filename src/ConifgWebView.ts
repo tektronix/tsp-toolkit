@@ -9,7 +9,8 @@ import { updateLuaLibraryConfigurations } from "./workspaceManager"
 
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
-    constructor(private readonly _extensionUri: Uri) { }
+    private _webviewView!: vscode.WebviewView
+    constructor(private readonly _extensionUri: Uri) {}
     resolveWebviewView(
         webviewView: vscode.WebviewView,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -17,6 +18,7 @@ export class ConfigWebView implements WebviewViewProvider {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _token: vscode.CancellationToken,
     ) {
+        this._webviewView = webviewView
         // Allow scripts in the webview
         webviewView.webview.options = {
             // Enable JavaScript in the webview
@@ -32,24 +34,10 @@ export class ConfigWebView implements WebviewViewProvider {
         // and executes code based on the message that is recieved
         this._setWebviewMessageListener(webviewView)
 
-        vscode.commands.registerCommand(
-            "systemConfigurations.addSystem",
-            () => {
-                if (!vscode.workspace.workspaceFolders) {
-                    vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
-                    return
-                }
-                webviewView.webview.postMessage({
-                    command: "supportedModels",
-                    payload: JSON.stringify(SUPPORTED_MODELS_DETAILS),
-                })
-            },
-        )
         // Register a callback for configuration changes
         vscode.workspace.onDidChangeConfiguration(async (event) => {
             if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
                 await this.getSystemName()
-                this.reloadUi(webviewView)
                 await updateLuaLibraryConfigurations()
             }
         })
@@ -102,6 +90,24 @@ export class ConfigWebView implements WebviewViewProvider {
         }
     }
 
+    public addSystem() {
+        if (!vscode.workspace.workspaceFolders) {
+            vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+            return
+        }
+        const savedSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+        this._webviewView.webview.postMessage({
+            command: "supportedModels",
+            payload: JSON.stringify({
+                systemInfo: savedSystems,
+                supportedModels: SUPPORTED_MODELS_DETAILS,
+            }),
+        })
+    }
+
     private _setWebviewMessageListener(webviewView: WebviewView) {
         webviewView.webview.onDidReceiveMessage(async (message) => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -147,8 +153,10 @@ export class ConfigWebView implements WebviewViewProvider {
                         webviewView.webview.postMessage({
                             command: "systems",
                             payload: JSON.stringify({
-                                systemInfo,
+                                systemInfo: systemInfo,
                                 supportedModels: SUPPORTED_MODELS_DETAILS,
+                                selected_system: newSystemDetails.name,
+                                activate: true,
                             }),
                         })
                         break
@@ -180,8 +188,12 @@ export class ConfigWebView implements WebviewViewProvider {
                     webviewView.webview.postMessage({
                         command: "systems",
                         payload: JSON.stringify({
-                            systemInfo,
+                            systemInfo: systemInfo,
                             supportedModels: SUPPORTED_MODELS_DETAILS,
+                            selected_system: systemInfo[0]
+                                ? systemInfo[0].name
+                                : "",
+                            activate: true,
                         }),
                     })
                     break
@@ -207,18 +219,9 @@ export class ConfigWebView implements WebviewViewProvider {
                             updatedSystemInfos,
                             false,
                         )
-                    const systemInfo: SystemInfo[] =
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("tspLinkSystemConfigurations") ?? []
-
-                    webviewView.webview.postMessage({
-                        command: "systems",
-                        payload: JSON.stringify({
-                            systemInfo,
-                            supportedModels: SUPPORTED_MODELS_DETAILS,
-                        }),
-                    })
+                    vscode.window.showInformationMessage(
+                        `System configuration ${item} is activated`,
+                    )
                     break
                 }
 
@@ -234,11 +237,30 @@ export class ConfigWebView implements WebviewViewProvider {
                 .getConfiguration("tsp")
                 .get("tspLinkSystemConfigurations") ?? []
 
+        const activeSystem = savedSystems.find((system) => system.isActive)
         webviewView.webview.postMessage({
             command: "systems",
             payload: JSON.stringify({
                 systemInfo: savedSystems,
                 supportedModels: SUPPORTED_MODELS_DETAILS,
+                selected_system: activeSystem ? activeSystem.name : null,
+                activate: false,
+            }),
+        })
+    }
+    private render_new_system(system_name: string) {
+        const savedSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        this._webviewView.webview.postMessage({
+            command: "systems",
+            payload: JSON.stringify({
+                systemInfo: savedSystems,
+                supportedModels: SUPPORTED_MODELS_DETAILS,
+                selected_system: system_name,
+                activate: true,
             }),
         })
     }
@@ -254,24 +276,50 @@ export class ConfigWebView implements WebviewViewProvider {
         if (systemWithEmptyName) {
             const options: vscode.InputBoxOptions = {
                 prompt: "Enter new system name",
+                validateInput: (value) => {
+                    const trimmedValue = value.trim()
+                    if (!trimmedValue) {
+                        return "System name cannot be empty"
+                    }
+                    const isDuplicate = existingSystems.some(
+                        (system) => system.name === trimmedValue,
+                    )
+                    if (isDuplicate) {
+                        return "Duplicate system name not allowed"
+                    }
+                    return null
+                },
             }
             const name = await vscode.window.showInputBox(options)
-            if (name)
+            if (name) {
                 systemWithEmptyName.name = name
-            await vscode.workspace
-                .getConfiguration("tsp")
-                .update(
-                    "tspLinkSystemConfigurations",
-                    existingSystems,
-                    false,
+                await vscode.workspace
+                    .getConfiguration("tsp")
+                    .update(
+                        "tspLinkSystemConfigurations",
+                        existingSystems,
+                        false,
+                    )
+                this.render_new_system(systemWithEmptyName.name)
+            } else {
+                const updatedSystems = existingSystems.filter(
+                    (system) => system !== systemWithEmptyName,
                 )
+                await vscode.workspace
+                    .getConfiguration("tsp")
+                    .update(
+                        "tspLinkSystemConfigurations",
+                        updatedSystems,
+                        false,
+                    )
+            }
         }
     }
 
     private getNonce() {
         let text = ""
         const possible =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         for (let i = 0; i < 32; i++) {
             text += possible.charAt(Math.floor(Math.random() * possible.length))
         }

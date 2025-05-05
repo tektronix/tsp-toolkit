@@ -3,117 +3,135 @@ body {
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background-color: var(--vscode-sideBar-background);
-  margin: 0;
-  padding: 20px;
+  padding: 10px;
 }
 
-h1 {
-  text-align: center;
+.form-group {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+label {
+  text-align: right;
   color: var(--vscode-foreground);
 }
 
-.system {
-  background-color: var(--vscode-editor-background);
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+.accordion {
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  width: 100%;
+  text-align: left;
+  transition: 0.3s;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.vscode-input-label {
-  display: inline-block;
-  margin-right: 10px;
+.accordion .plus-icon {
+  display: none;
+  margin-left: auto;
+  font-weight: bold;
+  font-size: 20px;
+  color: var(--vscode-foreground);
+  cursor: pointer;
 }
 
-.vscode-dropdown,
-.vscode-input {
-  display: inline-block;
+.accordion[aria-expanded="true"] .plus-icon {
+  display: inline;
+}
+
+.accordion-content {
+  padding: 10px;
+  display: none;
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
+  border-top: 1px solid var(--vscode-editorWidget-border);
+}
+
+.accordion-content.show {
+  display: block;
+}
+
+.node-subgroup {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
-  padding: 5px;
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 3px;
+}
+
+.node-details {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.delete-icon {
+  cursor: pointer;
+  font-weight: bold;
+  justify-self: end;
+}
+
+@media (max-width: 350px) {
+  .form-group {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  label {
+    text-align: left;
+  }
+
+  .node-subgroup {
+    grid-template-columns: 1fr;
+  }
+
+  .node-details {
+    grid-template-columns: 1fr;
+  }
+
+  .delete-icon {
+    justify-self: start;
+    margin-top: 5px;
+  }
+}
+
+input[type="text"],
+select {
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
 }
 
-.vscode-details {
-  margin-bottom: 10px;
+input[type="text"]::placeholder {
+  color: var(--vscode-input-placeholderForeground);
 }
 
-.vscode-details-content {
-  margin-left: 20px;
-}
-
-.vscode-button {
+.save-button {
+  margin-top: 15px;
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 3px;
+  border: 1px solid var(--vscode-button-border);
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-right: 10px;
-  margin-top: 10px;
+  transition: background-color 0.3s;
 }
 
-.round-vscode-button {
-  background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  padding: 0;
-  border-radius: 50%;
-  cursor: pointer;
-  margin-right: 10px;
-  width : 24px;
-  height: 24px;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center
-}
-
-.vscode-button:hover {
+.save-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.form-group {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
 
-.form-group label {
-  margin-right: 10px;
-}
-
-.form-group input,
-.form-group select {
-  flex: 1;
-}
-
-.nodeRow,
-.slot-container {
-  margin-left: 10px;
-}
-
-.slot-container label {
-  margin-right: 10px;
-}
-
-.node-slots-container{
-  margin-left: 42px;
-}
-.localnode-slots-container{
-  margin-left: 21px;
-}
-
-.localnode-style{
-  margin-left: 10px;
-}
-
-.nodes-container{
-  margin-top: 10px;
-}
-
-.delete-icon{
-  cursor: pointer;
-  margin-left: 5px;
-}
