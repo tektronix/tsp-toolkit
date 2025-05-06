@@ -43,6 +43,14 @@ label {
   cursor: pointer;
 }
 
+.accordion::after {
+  content: '\25B6'; /* right-pointing triangle */
+  transition: transform 0.3s linear;
+}
+.accordion[aria-expanded="true"]::after {
+  content: ''; /* right-pointing triangle */
+}
+
 .accordion[aria-expanded="true"] .plus-icon {
   display: inline;
 }
@@ -133,5 +141,3 @@ input[type="text"]::placeholder {
 .save-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
-
-
