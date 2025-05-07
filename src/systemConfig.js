@@ -59,68 +59,89 @@ function main() {
 function setVSCodeMessageListener() {
   window.addEventListener("message", (event) => {
     const { command, payload } = event.data;
+    usedNodeIds = new Set();
+    nodeCount = 0;
     if (command === "systems") {
-      usedNodeIds = new Set();
-      nodeCount = 0;
-      handleSystemsMessage(payload);
+      renderSavedSystems(payload);
     } else if (command === "supportedModels") {
-      usedNodeIds = new Set();
-      nodeCount = 0;
       addNewSystem(payload);
     }
   });
 }
 
 // Handle systems message and populate the UI
-function handleSystemsMessage(payload) {
+function renderSavedSystems(payload) {
   const data = JSON.parse(payload);
   const { systemInfo, supportedModels, selected_system, activate } = data;
   state.supportedModels = supportedModels;
+  state.systemInfo = systemInfo;
   const systemsContainer = document.getElementById('systems-container');
 
+  if (state.systemInfo.length === 0) {
+    systemsContainer.innerHTML = `
+      <div class="empty-state">
+      <p>No system configurations found. You can:</p>
+      <ul>
+        <li>
+        Click the <strong><span class="icon codicon codicon-add"></span></strong> icon to manually add a new system configuration.
+        </li>
+        <li>
+        Click the <strong><span class="icon codicon codicon-type-hierarchy-sub"></span></strong> icon to automatically retrieve system configurations for a connected instrument.
+        </li>
+      </ul>
+      </div>
+    `;
+    return;
+  }
+  
+  const selectSystem = createElement('div', { class: "node-subgroup" }, `
+        <label for="systemSelector">Select System:</label>
+  `);
+
   // Create a dropdown for selecting system names
-  const dropdown = createElement('select', { id: 'systemSelector' });
+  const dropdown = createElement('select', { id: 'systemSelector', 'data-event': 'system-selector' });
+
   systemInfo.forEach(system => {
     const option = createElement('option', { value: system.name }, system.name);
     dropdown.appendChild(option);
   });
 
-  // Add event listener to render form with selected system data
-  dropdown.addEventListener('change', (event) => {
-    const selectedSystem = systemInfo.find(system => system.name === event.target.value);
-    if (selectedSystem) {
-      renderFormWithData(selectedSystem);
-    }
-  });
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', title: 'Delete System' });
 
-  // Clear and populate the container with the dropdown and form
-  systemsContainer.innerHTML = '';
-  systemsContainer.appendChild(dropdown);
 
-  // Render the form with the initially selected system data
-  if (selected_system) {
-    const initialSystem = systemInfo.find(system => system.name === selected_system);
-    if (initialSystem) {
-      renderFormWithData(initialSystem);
-    }
-  }
-}
-
-function renderFormWithData(systemData) {
-  const systemsContainer = document.getElementById('systems-container');
+  selectSystem.append(dropdown);
+  selectSystem.appendChild(deleteIcon);
+  
 
   // Create the form with pre-filled data
   const form = createAddSystemForm(state.supportedModels);
 
   // Clear and populate the container with the updated form
-  clearAndPopulate(systemsContainer, form);
+  clearAndPopulate(systemsContainer, selectSystem);
+  systemsContainer.appendChild(form);
 
-  form.querySelector('#systemName').value = systemData.name;
-  form.querySelector('#localnode').value = systemData.localNode;
+
+  // Render the form with the initially selected system data
+  if (selected_system) {
+    const initialSystem = systemInfo.find(system => system.name === selected_system);
+    if (initialSystem) {
+      renderFormWithData(form, initialSystem);
+    }
+  }
+}
+
+function renderFormWithData(form, systemData) {
+
+  const systemNameInput = form.querySelector('#systemName');
+  systemNameInput.value = systemData.name;
+  systemNameInput.readOnly = true;
+
+  const localNodeSelect = form.querySelector('#localnode');
+  localNodeSelect.value = systemData.localNode;
 
   // Render slots if available
+  const localNodeSlots = form.querySelector('#localNodeSlots');
   if (systemData.slots) {
-    const localNodeSlots = form.querySelector('#localNodeSlots');
     clearAndPopulate(localNodeSlots, renderSlots(systemData.slots.length, state.supportedModels[systemData.localNode].moduleOptions, 'localNodeSlots'));
     systemData.slots.forEach((slot, index) => {
       const slotElement = localNodeSlots.querySelector(`#localNodeSlots_slot\\[${index + 1}\\]`);
@@ -129,10 +150,13 @@ function renderFormWithData(systemData) {
       }
     });
   }
+  else{
+    localNodeSlots.innerHTML = ""
+  }
 
   // Render nodes if available
+  const nodeContainer = form.querySelector('#nodeContainer');
   if (systemData.nodes) {
-    const nodeContainer = form.querySelector('#nodeContainer');
     systemData.nodes.forEach(node => {
       addNode();
       const nodeRow = nodeContainer.lastChild.previousSibling; // Get the last added node row
@@ -159,8 +183,9 @@ function renderFormWithData(systemData) {
     accordionContent.classList.add('show');
     accordionButton.setAttribute('aria-expanded', true);
   }
-
-
+  else{
+    nodeContainer.innerHTML = ""
+  }
 }
 
 // Render local node slots dynamically
@@ -179,7 +204,13 @@ function addNewSystem(payload) {
   const data = JSON.parse(payload);
   state.supportedModels = data.supportedModels;
   const systemsContainer = document.getElementById('systems-container');
-  clearAndPopulate(systemsContainer, createAddSystemForm(state.supportedModels));
+  const form = createAddSystemForm(state.supportedModels);
+
+  const saveButton = createElement('div', {class : "form-group"}, `
+    <label></label>
+    <button class="save-button" data-id="save" type="submit">Save</button>`);
+  form.appendChild(saveButton);
+  clearAndPopulate(systemsContainer, form);
 }
 
 // Create the add system form
@@ -204,10 +235,6 @@ function createAddSystemForm(supportedModels) {
     </button>
     <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
     <div id="nodeContainer"></div>
-    </div>
-    <div class="form-group">
-    <label></label>
-    <button class="save-button" type="submit">Save</button>
     </div>
   `);
 
@@ -278,7 +305,7 @@ function getNodes(data) {
     if (key.startsWith("node_")) {
       const [nodeId, property] = key.split("_").slice(1);
       if (!nodeMap[nodeId]) {
-        nodeMap[nodeId] = { slots: [] };
+        nodeMap[nodeId] = { };
       }
 
       if (property === "mainframe") {
@@ -286,6 +313,8 @@ function getNodes(data) {
       } else if (property === "nodeId") {
         nodeMap[nodeId].nodeId = `node[${data[key]}]`;
       } else if (property.startsWith("slot")) {
+        if (!nodeMap[nodeId].slots)
+          nodeMap[nodeId].slots = []
         const slotId = key.split("_").pop();
         nodeMap[nodeId].slots.push({
           slotId: slotId,
@@ -356,6 +385,15 @@ function setupEventDelegation() {
   systemsContainer.addEventListener('change', (event) => {
     const target = event.target;
 
+    // Handle change event for the system selector dropdown
+    if (target.tagName === 'SELECT' && target.dataset.event === 'system-selector') {
+      const selectedSystem = state.systemInfo.find(system => system.name === target.value);
+      if (selectedSystem) {
+        const form = document.getElementById('dynamicForm');
+        renderFormWithData(form, selectedSystem);
+      }
+    }
+
     // Handle change event for node model SELECT elements
     if (target.tagName === 'SELECT' && target.name.endsWith('_mainframe')) {
       const nodeId = target.closest('.node-subgroup').id;
@@ -371,7 +409,8 @@ function setupEventDelegation() {
     // Handle change event for local node SELECT
     if (target.id === 'localnode') {
       renderNodeSlots('localNodeSlots', target.value);
-    }
+    };
+
   });
 
   systemsContainer.addEventListener('submit', (event) => {
@@ -386,7 +425,6 @@ function setupEventDelegation() {
         data[key] = value;
       });
 
-      console.log(data);
       const slots = getSlots(data);
       const nodeData = getNodes(data);
       const payload = {

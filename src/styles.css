@@ -6,14 +6,6 @@ body {
   padding: 10px;
 }
 
-.form-group {
-  display: grid;
-  grid-template-columns: 150px 1fr;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
 label {
   text-align: right;
   color: var(--vscode-foreground);
@@ -25,6 +17,7 @@ label {
   cursor: pointer;
   padding: 10px;
   border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
   width: 100%;
   text-align: left;
   transition: 0.3s;
@@ -60,7 +53,6 @@ label {
   display: none;
   background-color: var(--vscode-sideBar-background);
   color: var(--vscode-foreground);
-  border-top: 1px solid var(--vscode-editorWidget-border);
 }
 
 .accordion-content.show {
@@ -75,13 +67,14 @@ label {
   margin-bottom: 10px;
 }
 
-.node-details {
+.form-group {
   display: grid;
   grid-template-columns: 150px 1fr;
+  align-items: center;
   gap: 10px;
-  margin-left: 10px;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
+
 
 .delete-icon {
   cursor: pointer;
@@ -100,10 +93,6 @@ label {
   }
 
   .node-subgroup {
-    grid-template-columns: 1fr;
-  }
-
-  .node-details {
     grid-template-columns: 1fr;
   }
 
