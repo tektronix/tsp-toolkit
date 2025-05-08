@@ -4,6 +4,11 @@ const vscode = acquireVsCodeApi();
 let usedNodeIds = new Set();
 let nodeCount = 0;
 
+function resetNodeCounts(){
+  nodeCount = 0;
+  usedNodeIds = new Set();
+}
+
 // Wait for the webview DOM to load before referencing any HTML elements or toolkit components
 window.addEventListener("load", main);
 
@@ -30,7 +35,7 @@ function clearAndPopulate(container, content) {
 
 // Function to render slots dynamically
 function renderSlots(noOfSlots, options, id) {
-  const slotContainer = createElement('div', { class: 'form-group' });
+  const slotContainer = createElement('div', { class: 'slot-group' });
 
   for (let i = 1; i <= noOfSlots; i++) {
     const label = createElement('label', { for: `${id}_slot[${i}]` }, `slot [ ${i} ]`);
@@ -59,8 +64,7 @@ function main() {
 function setVSCodeMessageListener() {
   window.addEventListener("message", (event) => {
     const { command, payload } = event.data;
-    usedNodeIds = new Set();
-    nodeCount = 0;
+    resetNodeCounts()
     if (command === "systems") {
       renderSavedSystems(payload);
     } else if (command === "supportedModels") {
@@ -106,7 +110,7 @@ function renderSavedSystems(payload) {
     dropdown.appendChild(option);
   });
 
-  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', title: 'Delete System' });
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-selected-system', title: 'Delete Selected System' });
 
 
   selectSystem.append(dropdown);
@@ -125,6 +129,7 @@ function renderSavedSystems(payload) {
   if (selected_system) {
     const initialSystem = systemInfo.find(system => system.name === selected_system);
     if (initialSystem) {
+      dropdown.value = initialSystem.name
       renderFormWithData(form, initialSystem);
     }
   }
@@ -228,9 +233,12 @@ function createAddSystemForm(supportedModels) {
       <label for="localnode">localnode:</label>
       <select id="localnode" name="localnode">${options}</select>
     </div>
-    <div id="localNodeSlots" class="form-group"></div>
+    <div id="localNodeSlots"></div>
     <button type="button" class="accordion" id="accordionToggle" aria-expanded="false" aria-controls="accordionContent">
-      Nodes
+       <span class="accordion-left">
+          <span class="chevron codicon codicon-chevron-right"></span>
+          <span>Nodes</span>
+        </span>
       <span class="plus-icon" id="addNodeBtn">+</span>
     </button>
     <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
@@ -269,8 +277,8 @@ function addNode() {
     nodeModel.appendChild(option);
   });
 
-  const nodeslots = createElement('div', { class: 'node-subgroup', id: `${nodeId}_slots` });
-  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', title: 'Delete Node' }); // Unicode for trashcan
+  const nodeslots = createElement('div', {id: `${nodeId}_slots` });
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' }); // Unicode for trashcan
   nodeRow.append(label, nodeModel, deleteIcon);
   nodeContainer.appendChild(nodeRow);
   nodeContainer.appendChild(nodeslots);
@@ -355,7 +363,8 @@ function setupEventDelegation() {
 
     // Handle delete icon click
     if (target.classList.contains('delete-icon')) {
-      const nodeRow = target.closest('.node-subgroup');
+      if (target.dataset.event === "delete-node"){
+        const nodeRow = target.closest('.node-subgroup');
       if (nodeRow) {
         const nodeId = nodeRow.id;
         usedNodeIds.delete(parseInt(nodeRow.querySelector('.node-number').value, 10));
@@ -363,7 +372,21 @@ function setupEventDelegation() {
         document.getElementById(`${nodeId}_slots`)?.remove(); // Remove associated slots
         updateAllNodeDropdowns();
       }
+      
     }
+      else if (target.dataset.event === "delete-selected-system"){
+      const systemSelector = document.getElementById('systemSelector');
+      const selectedSystem = systemSelector ? systemSelector.value : null;
+      if (selectedSystem) {
+        vscode.postMessage({
+        command: "delete",
+        data: selectedSystem
+        });
+      }
+      }
+    }
+
+
 
     // Handle add node button click
     if (target.id === 'addNodeBtn') {
@@ -387,10 +410,15 @@ function setupEventDelegation() {
 
     // Handle change event for the system selector dropdown
     if (target.tagName === 'SELECT' && target.dataset.event === 'system-selector') {
+      resetNodeCounts()
       const selectedSystem = state.systemInfo.find(system => system.name === target.value);
       if (selectedSystem) {
         const form = document.getElementById('dynamicForm');
         renderFormWithData(form, selectedSystem);
+        vscode.postMessage({
+          command: "activate",
+          data: selectedSystem.name
+          });
       }
     }
 
@@ -429,7 +457,7 @@ function setupEventDelegation() {
       const nodeData = getNodes(data);
       const payload = {
         name: data["systemName"],
-        isActive: false,
+        isActive: true,
         localNode: data["localnode"],
         slots: slots.length > 0 ? slots : undefined,
         nodes: nodeData.length > 0 ? nodeData : undefined

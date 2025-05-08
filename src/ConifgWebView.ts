@@ -156,14 +156,14 @@ export class ConfigWebView implements WebviewViewProvider {
                                 systemInfo: systemInfo,
                                 supportedModels: SUPPORTED_MODELS_DETAILS,
                                 selected_system: newSystemDetails.name,
-                                activate: true,
                             }),
                         })
+                        await this.activateSystem(newSystemDetails.name)
                         break
                     }
 
                     break
-                case "remove": {
+                case "delete": {
                     const originalSystemInfo: SystemInfo[] =
                         vscode.workspace
                             .getConfiguration("tsp")
@@ -193,35 +193,15 @@ export class ConfigWebView implements WebviewViewProvider {
                             selected_system: systemInfo[0]
                                 ? systemInfo[0].name
                                 : "",
-                            activate: true,
                         }),
                     })
+                    await this.activateSystem(systemInfo[0].name)
                     break
                 }
                 case "activate": {
-                    const originalSystemInfo: SystemInfo[] =
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("tspLinkSystemConfigurations") ?? []
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-                    const item = message.data
-                    const updatedSystemInfos = originalSystemInfo.map((sys) => {
-                        if (sys.name === item) {
-                            return { ...sys, isActive: true }
-                        } else {
-                            return { ...sys, isActive: false }
-                        }
-                    })
-                    await vscode.workspace
-                        .getConfiguration("tsp")
-                        .update(
-                            "tspLinkSystemConfigurations",
-                            updatedSystemInfos,
-                            false,
-                        )
-                    vscode.window.showInformationMessage(
-                        `System configuration ${item} is activated`,
-                    )
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const system_name = message.data as string
+                    await this.activateSystem(system_name)
                     break
                 }
 
@@ -244,10 +224,32 @@ export class ConfigWebView implements WebviewViewProvider {
                 systemInfo: savedSystems,
                 supportedModels: SUPPORTED_MODELS_DETAILS,
                 selected_system: activeSystem ? activeSystem.name : null,
-                activate: false,
             }),
         })
     }
+
+    private async activateSystem(systemName: string) {
+        const originalSystemInfo: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        const item = systemName
+        const updatedSystemInfos = originalSystemInfo.map((sys) => {
+            if (sys.name === item) {
+                return { ...sys, isActive: true }
+            } else {
+                return { ...sys, isActive: false }
+            }
+        })
+        await vscode.workspace
+            .getConfiguration("tsp")
+            .update("tspLinkSystemConfigurations", updatedSystemInfos, false)
+        vscode.window.showInformationMessage(
+            `System configuration ${item} is activated`,
+        )
+    }
+
     private render_new_system(system_name: string) {
         const savedSystems: SystemInfo[] =
             vscode.workspace
@@ -260,7 +262,6 @@ export class ConfigWebView implements WebviewViewProvider {
                 systemInfo: savedSystems,
                 supportedModels: SUPPORTED_MODELS_DETAILS,
                 selected_system: system_name,
-                activate: true,
             }),
         })
     }
@@ -301,6 +302,7 @@ export class ConfigWebView implements WebviewViewProvider {
                         false,
                     )
                 this.render_new_system(systemWithEmptyName.name)
+                await this.activateSystem(systemWithEmptyName.name)
             } else {
                 const updatedSystems = existingSystems.filter(
                     (system) => system !== systemWithEmptyName,

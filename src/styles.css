@@ -27,25 +27,21 @@ label {
   align-items: center;
 }
 
-.accordion .plus-icon {
-  display: none;
-  margin-left: auto;
-  font-weight: bold;
+.accordion-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.accordion .chevron {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+.accordion[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.plus-icon {
   font-size: 20px;
-  color: var(--vscode-foreground);
   cursor: pointer;
-}
-
-.accordion::after {
-  content: '\25B6'; /* right-pointing triangle */
-  transition: transform 0.3s linear;
-}
-.accordion[aria-expanded="true"]::after {
-  content: ''; /* right-pointing triangle */
-}
-
-.accordion[aria-expanded="true"] .plus-icon {
-  display: inline;
 }
 
 .accordion-content {
@@ -75,6 +71,14 @@ label {
   margin-bottom: 10px;
 }
 
+.slot-group {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
 
 .delete-icon {
   cursor: pointer;
@@ -84,6 +88,11 @@ label {
 
 @media (max-width: 350px) {
   .form-group {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .slot-group {
     grid-template-columns: 1fr;
     text-align: left;
   }
