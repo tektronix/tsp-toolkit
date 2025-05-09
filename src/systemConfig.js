@@ -1,12 +1,10 @@
 // Get access to the VS Code API from within the webview context
 const vscode = acquireVsCodeApi();
 
-let usedNodeIds = new Set();
 let nodeCount = 0;
 
-function resetNodeCounts(){
+function resetNodeCounts() {
   nodeCount = 0;
-  usedNodeIds = new Set();
 }
 
 // Wait for the webview DOM to load before referencing any HTML elements or toolkit components
@@ -15,6 +13,7 @@ window.addEventListener("load", main);
 const state = {
   systemInfo: {},
   supportedModels: {},
+  selected_system: {}
 }
 
 // Utility function to create an element with attributes
@@ -76,9 +75,10 @@ function setVSCodeMessageListener() {
 // Handle systems message and populate the UI
 function renderSavedSystems(payload) {
   const data = JSON.parse(payload);
-  const { systemInfo, supportedModels, selected_system, activate } = data;
+  const { systemInfo, supportedModels, selected_system } = data;
   state.supportedModels = supportedModels;
   state.systemInfo = systemInfo;
+  state.selected_system = selected_system
   const systemsContainer = document.getElementById('systems-container');
 
   if (state.systemInfo.length === 0) {
@@ -97,7 +97,7 @@ function renderSavedSystems(payload) {
     `;
     return;
   }
-  
+
   const selectSystem = createElement('div', { class: "node-subgroup" }, `
         <label for="systemSelector">Select System:</label>
   `);
@@ -115,7 +115,7 @@ function renderSavedSystems(payload) {
 
   selectSystem.append(dropdown);
   selectSystem.appendChild(deleteIcon);
-  
+
 
   // Create the form with pre-filled data
   const form = createAddSystemForm(state.supportedModels);
@@ -155,7 +155,7 @@ function renderFormWithData(form, systemData) {
       }
     });
   }
-  else{
+  else {
     localNodeSlots.innerHTML = ""
   }
 
@@ -188,7 +188,7 @@ function renderFormWithData(form, systemData) {
     accordionContent.classList.add('show');
     accordionButton.setAttribute('aria-expanded', true);
   }
-  else{
+  else {
     nodeContainer.innerHTML = ""
   }
 }
@@ -211,7 +211,7 @@ function addNewSystem(payload) {
   const systemsContainer = document.getElementById('systems-container');
   const form = createAddSystemForm(state.supportedModels);
 
-  const saveButton = createElement('div', {class : "form-group"}, `
+  const saveButton = createElement('div', { class: "form-group" }, `
     <label></label>
     <button class="save-button" data-id="save" type="submit">Save</button>`);
   form.appendChild(saveButton);
@@ -227,7 +227,7 @@ function createAddSystemForm(supportedModels) {
   const form = createElement('form', { id: 'dynamicForm', novalidate: '' }, `
     <div class="form-group">
       <label for="systemName">System Name:</label>
-      <input type="text" id="systemName" name="systemName" required />
+      <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
     </div>
     <div class="form-group">
       <label for="localnode">localnode:</label>
@@ -253,23 +253,17 @@ function createAddSystemForm(supportedModels) {
 // Add a new node dynamically
 function addNode() {
   const nodeContainer = document.getElementById('nodeContainer');
-  const availableNodes = getAvailableNodeOptions();
-
-  if (availableNodes.length === 0) return;
-
-  const selectedNode = availableNodes[0];
-  usedNodeIds.add(selectedNode);
 
   const nodeId = `node_${nodeCount++}`;
   const nodeRow = createElement('div', { class: 'node-subgroup', id: nodeId });
 
   const label = createElement('label', { for: `${nodeId}_mainframe` }, `
-    node [ <select class="node-number" name="${nodeId}_nodeId" data-number="${selectedNode}"></select> ]
+    node [ <select class="node-number" name="${nodeId}_nodeId"></select> ]
   `);
 
   const numberSelect = label.querySelector('select');
   numberSelect.innerHTML = getAvailableNodeOptions().map(n => `<option value="${n}">${n}</option>`).join('');
-  numberSelect.value = selectedNode;
+  numberSelect.value = 1;
 
   const nodeModel = createElement('select', { name: `${nodeId}_mainframe` });
   Object.keys(state.supportedModels).forEach(model => {
@@ -277,31 +271,40 @@ function addNode() {
     nodeModel.appendChild(option);
   });
 
-  const nodeslots = createElement('div', {id: `${nodeId}_slots` });
+  const nodeslots = createElement('div', { id: `${nodeId}_slots` });
   const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' }); // Unicode for trashcan
   nodeRow.append(label, nodeModel, deleteIcon);
   nodeContainer.appendChild(nodeRow);
   nodeContainer.appendChild(nodeslots);
 
-  updateAllNodeDropdowns();
 }
 
-// Update all node dropdowns dynamically
-function updateAllNodeDropdowns() {
+function checkDuplicateNodeNumber() {
+  const nodeNumbers = {};
+  let hasDuplicate = false;
+
   document.querySelectorAll('.node-number').forEach(select => {
-    const currentVal = parseInt(select.getAttribute('data-number'));
-    const options = getAvailableNodeOptions();
-    if (!options.includes(currentVal)) options.push(currentVal);
-    options.sort((a, b) => a - b);
-    select.innerHTML = options.map(n => `<option value="${n}">${n}</option>`).join('');
-    select.value = currentVal;
+    const value = select.value;
+    if (nodeNumbers[value]) {
+      select.classList.add("invalid-node-number");
+      if(!nodeNumbers[value].classList.contains("invalid-node-number")){
+        nodeNumbers[value].classList.add("invalid-node-number");
+      }
+     
+      hasDuplicate = true;
+    } else {
+      nodeNumbers[value] = select;
+      select.classList.remove("invalid-node-number");
+    }
   });
+
+  return hasDuplicate;
 }
 
 // Get available node options
 function getAvailableNodeOptions() {
   const maxNodes = 63; // Updated maximum nodes to 64
-  return Array.from({ length: maxNodes }, (_, i) => i + 1).filter(n => !usedNodeIds.has(n));
+  return Array.from({ length: maxNodes }, (_, i) => i + 1);
 }
 
 
@@ -313,7 +316,7 @@ function getNodes(data) {
     if (key.startsWith("node_")) {
       const [nodeId, property] = key.split("_").slice(1);
       if (!nodeMap[nodeId]) {
-        nodeMap[nodeId] = { };
+        nodeMap[nodeId] = {};
       }
 
       if (property === "mainframe") {
@@ -363,26 +366,25 @@ function setupEventDelegation() {
 
     // Handle delete icon click
     if (target.classList.contains('delete-icon')) {
-      if (target.dataset.event === "delete-node"){
+      if (target.dataset.event === "delete-node") {
         const nodeRow = target.closest('.node-subgroup');
-      if (nodeRow) {
-        const nodeId = nodeRow.id;
-        usedNodeIds.delete(parseInt(nodeRow.querySelector('.node-number').value, 10));
-        nodeRow.remove();
-        document.getElementById(`${nodeId}_slots`)?.remove(); // Remove associated slots
-        updateAllNodeDropdowns();
+        if (nodeRow) {
+          const nodeId = nodeRow.id;
+          nodeRow.remove();
+          document.getElementById(`${nodeId}_slots`)?.remove(); // Remove associated slots
+        }
+        checkDuplicateNodeNumber()
+
       }
-      
-    }
-      else if (target.dataset.event === "delete-selected-system"){
-      const systemSelector = document.getElementById('systemSelector');
-      const selectedSystem = systemSelector ? systemSelector.value : null;
-      if (selectedSystem) {
-        vscode.postMessage({
-        command: "delete",
-        data: selectedSystem
-        });
-      }
+      else if (target.dataset.event === "delete-selected-system") {
+        const systemSelector = document.getElementById('systemSelector');
+        const selectedSystem = systemSelector ? systemSelector.value : null;
+        if (selectedSystem) {
+          vscode.postMessage({
+            command: "delete",
+            data: selectedSystem
+          });
+        }
       }
     }
 
@@ -395,6 +397,7 @@ function setupEventDelegation() {
       accordionContent.classList.add('show');
       accordionButton.setAttribute('aria-expanded', true);
       addNode();
+      checkDuplicateNodeNumber()
     }
 
     // Handle accordion toggle
@@ -418,7 +421,7 @@ function setupEventDelegation() {
         vscode.postMessage({
           command: "activate",
           data: selectedSystem.name
-          });
+        });
       }
     }
 
@@ -434,6 +437,11 @@ function setupEventDelegation() {
       console.log(`Slot changed: ${target.name}, New Value: ${target.value}`);
     }
 
+    // Handle change event for slot SELECT elements
+    if (target.tagName === 'SELECT' && target.className.includes("node-number")) {
+      checkDuplicateNodeNumber()
+    }
+
     // Handle change event for local node SELECT
     if (target.id === 'localnode') {
       renderNodeSlots('localNodeSlots', target.value);
@@ -447,6 +455,18 @@ function setupEventDelegation() {
     // Handle form submission
     if (form.id === 'dynamicForm') {
       event.preventDefault();
+
+      // Validate Name Field
+      const nameInput = document.getElementById('systemName');
+      if (!nameInput.value.trim()) {
+        showError(nameInput, 'Name is required.');
+        return
+      }
+
+      if (checkDuplicateNodeNumber()) {
+        return
+      }
+
       const formData = new FormData(form);
       const data = {};
       formData.forEach((value, key) => {
@@ -468,4 +488,9 @@ function setupEventDelegation() {
       });
     }
   });
+}
+
+// Function to show error message
+function showError(input) {
+  input.classList.add('invalid-node-number'); // Add error styling to the input field
 }

@@ -111,7 +111,6 @@ label {
   }
 }
 
-input[type="text"],
 select {
   padding: 6px 8px;
   font-size: 14px;
@@ -119,7 +118,28 @@ select {
   border-radius: 4px;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
+  cursor: pointer;
 }
+
+input[type="text"]{
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 4px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+
+.invalid-node-number {
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+}
+.invalid-node-number:hover {
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+}
+
 
 input[type="text"]::placeholder {
   color: var(--vscode-input-placeholderForeground);
