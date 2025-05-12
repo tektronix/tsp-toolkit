@@ -395,22 +395,33 @@ function setupEventDelegation() {
 
 
 
-    // Handle add node button click
-    if (target.id === 'addNodeBtn') {
-      const accordionContent = document.getElementById('accordionContent');
-      const accordionButton = document.getElementById('accordionToggle');
+   // Handle add node button click
+   if (target.id === 'addNodeBtn') {
+    const accordionContent = document.getElementById('accordionContent');
+    const accordionButton = document.getElementById('accordionToggle');
+    
+    // Expand the accordion if it's not already expanded
+    if (!accordionContent.classList.contains('show')) {
       accordionContent.classList.add('show');
       accordionButton.setAttribute('aria-expanded', true);
-      addNode();
-      checkDuplicateNodeNumber()
     }
 
-    // Handle accordion toggle
-    if (target.id === 'accordionToggle') {
-      const accordionContent = document.getElementById('accordionContent');
-      const isOpen = accordionContent.classList.toggle('show');
-      target.setAttribute('aria-expanded', isOpen);
-    }
+    // Add a new node
+    addNode();
+    checkDuplicateNodeNumber();
+
+    // Stop further event propagation to prevent toggling
+    event.stopPropagation();
+    return;
+  }
+
+     // Handle accordion toggle
+  if (target.id === 'accordionToggle' || target.closest('#accordionToggle')) {
+    const accordionContent = document.getElementById('accordionContent');
+    const accordionButton = document.getElementById('accordionToggle');
+    const isOpen = accordionContent.classList.toggle('show');
+    accordionButton.setAttribute('aria-expanded', isOpen);
+  }
   });
 
   systemsContainer.addEventListener('change', (event) => {
