@@ -284,17 +284,22 @@ function checkDuplicateNodeNumber() {
   let hasDuplicate = false;
 
   document.querySelectorAll('.node-number').forEach(select => {
+    // Clear previous error state
+    select.classList.remove('invalid-node-number');
+    select.removeAttribute('title'); // Remove any existing tooltip
+
     const value = select.value;
     if (nodeNumbers[value]) {
       select.classList.add("invalid-node-number");
+      select.setAttribute('title', 'Duplicate node number detected!');
       if(!nodeNumbers[value].classList.contains("invalid-node-number")){
         nodeNumbers[value].classList.add("invalid-node-number");
+        nodeNumbers[value].setAttribute('title', 'Duplicate node number detected!');
       }
      
       hasDuplicate = true;
     } else {
       nodeNumbers[value] = select;
-      select.classList.remove("invalid-node-number");
     }
   });
 
@@ -459,8 +464,13 @@ function setupEventDelegation() {
       // Validate Name Field
       const nameInput = document.getElementById('systemName');
       if (!nameInput.value.trim()) {
-        showError(nameInput, 'Name is required.');
+        showError(nameInput, 'System name cannot be empty');
         return
+      }
+
+      if (state.systemInfo.some(system => system.name === nameInput.value.trim())) {
+        showError(nameInput, 'Duplicate system name not allowed');
+        return;
       }
 
       if (checkDuplicateNodeNumber()) {
@@ -490,7 +500,21 @@ function setupEventDelegation() {
   });
 }
 
-// Function to show error message
-function showError(input) {
-  input.classList.add('invalid-node-number'); // Add error styling to the input field
+function showError(input, message) {
+  if (!input.classList.contains('invalid')) {
+    input.classList.add('invalid');
+    input.setAttribute('title', message);
+
+    // Add an event listener to clear the error when the user starts typing
+    input.addEventListener('input', () => {
+      clearError(input);
+    }, { once: true });
+  }
+}
+
+// Function to clear the error
+function clearError(input) {
+  // Remove the 'invalid' class and tooltip
+  input.classList.remove('invalid');
+  input.removeAttribute('title');
 }

@@ -121,13 +121,23 @@ select {
   cursor: pointer;
 }
 
-input[type="text"]{
+input[type="text"] {
   padding: 6px 8px;
   font-size: 14px;
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 4px;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
+}
+
+input[type="text"].invalid {
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+}
+
+input[type="text"].invalid::placeholder {
+  color: var(--vscode-inputValidation-errorForeground);
 }
 
 .invalid-node-number {
@@ -138,6 +148,11 @@ input[type="text"]{
 .invalid-node-number:hover {
   background-color: var(--vscode-inputValidation-errorBackground);
   color: var(--vscode-inputValidation-errorForeground);
+}
+
+/* Tooltip styling (uses the native title attribute) */
+.invalid-node-number[title] {
+  cursor: help; /* Indicates that the element has additional information */
 }
 
 
