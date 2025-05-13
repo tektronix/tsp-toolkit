@@ -13,7 +13,9 @@ window.addEventListener("load", main);
 const state = {
   systemInfo: {},
   supportedModels: {},
-  selected_system: {}
+  selectedSystem: {},
+  isEditMode: false
+
 }
 
 // Utility function to create an element with attributes
@@ -63,11 +65,18 @@ function main() {
 function setVSCodeMessageListener() {
   window.addEventListener("message", (event) => {
     const { command, payload } = event.data;
-    resetNodeCounts()
     if (command === "systems") {
+      resetNodeCounts()
+      state.isEditMode = true
       renderSavedSystems(payload);
     } else if (command === "supportedModels") {
+      resetNodeCounts()
+      state.isEditMode = false
       addNewSystem(payload);
+    }  else if (command === "systemUpdated") {
+      state.isEditMode = true
+      const data = JSON.parse(payload);
+      state.systemInfo = data.systemInfo;
     }
   });
 }
@@ -75,10 +84,10 @@ function setVSCodeMessageListener() {
 // Handle systems message and populate the UI
 function renderSavedSystems(payload) {
   const data = JSON.parse(payload);
-  const { systemInfo, supportedModels, selected_system } = data;
+  const { systemInfo, supportedModels, selectedSystem } = data;
   state.supportedModels = supportedModels;
   state.systemInfo = systemInfo;
-  state.selected_system = selected_system
+  state.selectedSystem = selectedSystem;
   const systemsContainer = document.getElementById('systems-container');
 
   if (state.systemInfo.length === 0) {
@@ -126,8 +135,8 @@ function renderSavedSystems(payload) {
 
 
   // Render the form with the initially selected system data
-  if (selected_system) {
-    const initialSystem = systemInfo.find(system => system.name === selected_system);
+  if (state.selectedSystem) {
+    const initialSystem = systemInfo.find(system => system.name === state.selectedSystem);
     if (initialSystem) {
       dropdown.value = initialSystem.name
       renderFormWithData(form, initialSystem);
@@ -136,7 +145,6 @@ function renderSavedSystems(payload) {
 }
 
 function renderFormWithData(form, systemData) {
-
   const systemNameInput = form.querySelector('#systemName');
   systemNameInput.value = systemData.name;
   systemNameInput.readOnly = true;
@@ -146,6 +154,7 @@ function renderFormWithData(form, systemData) {
 
   // Render slots if available
   const localNodeSlots = form.querySelector('#localNodeSlots');
+  localNodeSlots.innerHTML = ""
   if (systemData.slots) {
     clearAndPopulate(localNodeSlots, renderSlots(systemData.slots.length, state.supportedModels[systemData.localNode].moduleOptions, 'localNodeSlots'));
     systemData.slots.forEach((slot, index) => {
@@ -155,12 +164,11 @@ function renderFormWithData(form, systemData) {
       }
     });
   }
-  else {
-    localNodeSlots.innerHTML = ""
-  }
+
 
   // Render nodes if available
   const nodeContainer = form.querySelector('#nodeContainer');
+  nodeContainer.innerHTML = ""
   if (systemData.nodes) {
     systemData.nodes.forEach(node => {
       addNode();
@@ -187,9 +195,6 @@ function renderFormWithData(form, systemData) {
     const accordionButton = document.getElementById('accordionToggle');
     accordionContent.classList.add('show');
     accordionButton.setAttribute('aria-expanded', true);
-  }
-  else {
-    nodeContainer.innerHTML = ""
   }
 }
 
@@ -258,14 +263,14 @@ function addNode() {
   const nodeRow = createElement('div', { class: 'node-subgroup', id: nodeId });
 
   const label = createElement('label', { for: `${nodeId}_mainframe` }, `
-    node [ <select class="node-number" name="${nodeId}_nodeId"></select> ]
+    node [ <select class="node-number" name="${nodeId}_nodeId", id = "name="${nodeId}_nodeId""></select> ]
   `);
 
   const numberSelect = label.querySelector('select');
   numberSelect.innerHTML = getAvailableNodeOptions().map(n => `<option value="${n}">${n}</option>`).join('');
   numberSelect.value = 1;
 
-  const nodeModel = createElement('select', { name: `${nodeId}_mainframe` });
+  const nodeModel = createElement('select', { name: `${nodeId}_mainframe`, id: `${nodeId}_mainframe` });
   Object.keys(state.supportedModels).forEach(model => {
     const option = createElement('option', { value: model }, model);
     nodeModel.appendChild(option);
@@ -292,11 +297,11 @@ function checkDuplicateNodeNumber() {
     if (nodeNumbers[value]) {
       select.classList.add("invalid-node-number");
       select.setAttribute('title', 'Duplicate node number detected!');
-      if(!nodeNumbers[value].classList.contains("invalid-node-number")){
+      if (!nodeNumbers[value].classList.contains("invalid-node-number")) {
         nodeNumbers[value].classList.add("invalid-node-number");
         nodeNumbers[value].setAttribute('title', 'Duplicate node number detected!');
       }
-     
+
       hasDuplicate = true;
     } else {
       nodeNumbers[value] = select;
@@ -379,7 +384,7 @@ function setupEventDelegation() {
           document.getElementById(`${nodeId}_slots`)?.remove(); // Remove associated slots
         }
         checkDuplicateNodeNumber()
-
+        handleFormUpdate()
       }
       else if (target.dataset.event === "delete-selected-system") {
         const systemSelector = document.getElementById('systemSelector');
@@ -395,33 +400,34 @@ function setupEventDelegation() {
 
 
 
-   // Handle add node button click
-   if (target.id === 'addNodeBtn') {
-    const accordionContent = document.getElementById('accordionContent');
-    const accordionButton = document.getElementById('accordionToggle');
-    
-    // Expand the accordion if it's not already expanded
-    if (!accordionContent.classList.contains('show')) {
-      accordionContent.classList.add('show');
-      accordionButton.setAttribute('aria-expanded', true);
+    // Handle add node button click
+    if (target.id === 'addNodeBtn') {
+      const accordionContent = document.getElementById('accordionContent');
+      const accordionButton = document.getElementById('accordionToggle');
+
+      // Expand the accordion if it's not already expanded
+      if (!accordionContent.classList.contains('show')) {
+        accordionContent.classList.add('show');
+        accordionButton.setAttribute('aria-expanded', true);
+      }
+
+      // Add a new node
+      addNode();
+      checkDuplicateNodeNumber();
+      handleFormUpdate();
+
+      // Stop further event propagation to prevent toggling
+      event.stopPropagation();
+      return;
     }
 
-    // Add a new node
-    addNode();
-    checkDuplicateNodeNumber();
-
-    // Stop further event propagation to prevent toggling
-    event.stopPropagation();
-    return;
-  }
-
-     // Handle accordion toggle
-  if (target.id === 'accordionToggle' || target.closest('#accordionToggle')) {
-    const accordionContent = document.getElementById('accordionContent');
-    const accordionButton = document.getElementById('accordionToggle');
-    const isOpen = accordionContent.classList.toggle('show');
-    accordionButton.setAttribute('aria-expanded', isOpen);
-  }
+    // Handle accordion toggle
+    if (target.id === 'accordionToggle' || target.closest('#accordionToggle')) {
+      const accordionContent = document.getElementById('accordionContent');
+      const accordionButton = document.getElementById('accordionToggle');
+      const isOpen = accordionContent.classList.toggle('show');
+      accordionButton.setAttribute('aria-expanded', isOpen);
+    }
   });
 
   systemsContainer.addEventListener('change', (event) => {
@@ -446,69 +452,123 @@ function setupEventDelegation() {
       const nodeId = target.closest('.node-subgroup').id;
       const selectedValue = target.value;
       renderNodeSlots(`${nodeId}_slots`, selectedValue);
+      handleFormUpdate();
     }
 
     // Handle change event for slot SELECT elements
     if (target.tagName === 'SELECT' && target.name.includes('_slot')) {
-      console.log(`Slot changed: ${target.name}, New Value: ${target.value}`);
+      handleFormUpdate();
     }
 
     // Handle change event for slot SELECT elements
     if (target.tagName === 'SELECT' && target.className.includes("node-number")) {
       checkDuplicateNodeNumber()
+      handleFormUpdate();
     }
 
     // Handle change event for local node SELECT
     if (target.id === 'localnode') {
       renderNodeSlots('localNodeSlots', target.value);
+      handleFormUpdate();
     };
 
   });
 
   systemsContainer.addEventListener('submit', (event) => {
-    const form = event.target;
-
-    // Handle form submission
-    if (form.id === 'dynamicForm') {
-      event.preventDefault();
-
-      // Validate Name Field
-      const nameInput = document.getElementById('systemName');
-      if (!nameInput.value.trim()) {
-        showError(nameInput, 'System name cannot be empty');
-        return
-      }
-
-      if (state.systemInfo.some(system => system.name === nameInput.value.trim())) {
-        showError(nameInput, 'Duplicate system name not allowed');
-        return;
-      }
-
-      if (checkDuplicateNodeNumber()) {
-        return
-      }
-
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => {
-        data[key] = value;
-      });
-
-      const slots = getSlots(data);
-      const nodeData = getNodes(data);
-      const payload = {
-        name: data["systemName"],
-        isActive: true,
-        localNode: data["localnode"],
-        slots: slots.length > 0 ? slots : undefined,
-        nodes: nodeData.length > 0 ? nodeData : undefined
-      };
+    event.preventDefault(); // Prevent form submission from reloading the page
+    if (validate()) {
+      const payload = getfileldData();
+      // Send the updated data to the extension
       vscode.postMessage({
         command: "add",
         data: payload
       });
     }
   });
+}
+
+
+function handleFormUpdate() {
+
+  if (!state.isEditMode) {
+    // Do not trigger update if not in edit mode
+    return;
+  }
+
+  if (validate()) {
+    const payload = getfileldData()
+    // Send the updated data to the extension
+    vscode.postMessage({
+      command: "update",
+      data: payload
+    });
+  }
+}
+
+/**
+ * Collects and processes form data from a dynamic form element to generate a payload object.
+ *
+ * @function
+ * @returns {Object} payload - The processed payload object containing system configuration data.
+ * @property {string} payload.name - The name of the system, retrieved from the form data.
+ * @property {boolean} payload.isActive - Indicates whether the system is active (always true).
+ * @property {string} payload.localNode - The local node identifier, retrieved from the form data.
+ * @property {Array|undefined} payload.slots - An array of slot data, or undefined if no slots are provided.
+ * @property {Array|undefined} payload.nodes - An array of node data, or undefined if no nodes are provided.
+ */
+function getfileldData() {
+  const form = document.getElementById('dynamicForm');
+  // Collect updated data
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => {
+    data[key] = value;
+  });
+
+  const slots = getSlots(data);
+  const nodeData = getNodes(data);
+  const payload = {
+    name: data["systemName"],
+    isActive: true,
+    localNode: data["localnode"],
+    slots: slots.length > 0 ? slots : undefined,
+    nodes: nodeData.length > 0 ? nodeData : undefined
+  };
+
+  return payload;
+}
+
+/**
+ * Validates the system configuration form.
+ *
+ * This function checks the following:
+ * - Ensures the system name field is not empty.
+ * - Ensures the system name is not a duplicate of an existing system name.
+ * - Checks for duplicate node numbers using the `checkDuplicateNodeNumber` function.
+ *
+ * If any validation fails, appropriate error messages are displayed, and the form is marked as invalid.
+ *
+ * @returns {boolean} `true` if the form is valid, otherwise `false`.
+ */
+function validate() {
+  let isFormValid = true
+  const nameInput = document.getElementById('systemName');
+
+  // Validate Name Field
+  if (!nameInput.value.trim()) {
+    showError(nameInput, 'System name cannot be empty');
+    isFormValid = false
+  }
+
+  // if (state.systemInfo.some(system => system.name === nameInput.value.trim())) {
+  //   showError(nameInput, 'Duplicate system name not allowed');
+  //   isFormValid = false
+  // }
+
+  if (checkDuplicateNodeNumber()) {
+    isFormValid = false
+  }
+  return isFormValid
 }
 
 function showError(input, message) {

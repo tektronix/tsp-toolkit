@@ -116,53 +116,47 @@ export class ConfigWebView implements WebviewViewProvider {
                     this.reloadUi(webviewView)
                     break
                 }
-                case "add":
-                    {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                        const newSystemDetails = message.data as SystemInfo
-                        const originalSystemInfo: SystemInfo[] =
-                            vscode.workspace
-                                .getConfiguration("tsp")
-                                .get("tspLinkSystemConfigurations") ?? []
-
-                        const newItem: SystemInfo = {
-                            name: newSystemDetails.name,
-                            localNode: newSystemDetails.localNode,
-                            isActive: newSystemDetails.isActive,
-                            slots: newSystemDetails.slots,
-                            nodes: newSystemDetails.nodes,
-                        }
-
-                        const updatedSystemInfos = [
-                            ...originalSystemInfo,
-                            newItem,
-                        ]
-
-                        await vscode.workspace
+                case "add": {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const newSystemDetails = message.data as SystemInfo
+                    const originalSystemInfo: SystemInfo[] =
+                        vscode.workspace
                             .getConfiguration("tsp")
-                            .update(
-                                "tspLinkSystemConfigurations",
-                                updatedSystemInfos,
-                                false,
-                            )
-                        const systemInfo: SystemInfo[] =
-                            vscode.workspace
-                                .getConfiguration("tsp")
-                                .get("tspLinkSystemConfigurations") ?? []
+                            .get("tspLinkSystemConfigurations") ?? []
 
-                        webviewView.webview.postMessage({
-                            command: "systems",
-                            payload: JSON.stringify({
-                                systemInfo: systemInfo,
-                                supportedModels: SUPPORTED_MODELS_DETAILS,
-                                selected_system: newSystemDetails.name,
-                            }),
-                        })
-                        await this.activateSystem(newSystemDetails.name)
-                        break
+                    const newItem: SystemInfo = {
+                        name: newSystemDetails.name,
+                        localNode: newSystemDetails.localNode,
+                        isActive: newSystemDetails.isActive,
+                        slots: newSystemDetails.slots,
+                        nodes: newSystemDetails.nodes,
                     }
 
+                    const updatedSystemInfos = [...originalSystemInfo, newItem]
+
+                    await vscode.workspace
+                        .getConfiguration("tsp")
+                        .update(
+                            "tspLinkSystemConfigurations",
+                            updatedSystemInfos,
+                            false,
+                        )
+                    const systemInfo: SystemInfo[] =
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("tspLinkSystemConfigurations") ?? []
+
+                    webviewView.webview.postMessage({
+                        command: "systems",
+                        payload: JSON.stringify({
+                            systemInfo: systemInfo,
+                            supportedModels: SUPPORTED_MODELS_DETAILS,
+                            selectedSystem: newSystemDetails.name,
+                        }),
+                    })
+                    await this.activateSystem(newSystemDetails.name)
                     break
+                }
                 case "delete": {
                     const originalSystemInfo: SystemInfo[] =
                         vscode.workspace
@@ -190,7 +184,7 @@ export class ConfigWebView implements WebviewViewProvider {
                         payload: JSON.stringify({
                             systemInfo: systemInfo,
                             supportedModels: SUPPORTED_MODELS_DETAILS,
-                            selected_system: systemInfo[0]
+                            selectedSystem: systemInfo[0]
                                 ? systemInfo[0].name
                                 : "",
                         }),
@@ -204,9 +198,53 @@ export class ConfigWebView implements WebviewViewProvider {
                     await this.activateSystem(system_name)
                     break
                 }
+                case "update": {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    const newSystemDetails = message.data as SystemInfo
+                    const originalSystemInfo: SystemInfo[] =
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("tspLinkSystemConfigurations") ?? []
 
-                case "update":
+                    const updatedSystemInfos = originalSystemInfo.map(
+                        (system) => {
+                            if (system.isActive) {
+                                return {
+                                    ...system,
+                                    name: newSystemDetails.name,
+                                    localNode: newSystemDetails.localNode,
+                                    slots: newSystemDetails.slots,
+                                    nodes: newSystemDetails.nodes,
+                                }
+                            }
+                            return system
+                        },
+                    )
+                    await vscode.workspace
+                        .getConfiguration("tsp")
+                        .update(
+                            "tspLinkSystemConfigurations",
+                            updatedSystemInfos,
+                            false,
+                        )
+
+                    const systemInfo: SystemInfo[] =
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("tspLinkSystemConfigurations") ?? []
+
+                    webviewView.webview.postMessage({
+                        command: "systemUpdated",
+                        payload: JSON.stringify({
+                            systemInfo: systemInfo,
+                        }),
+                    })
+
+                    vscode.window.showInformationMessage(
+                        `The system configuration "${newSystemDetails.name}" has been updated successfully.`,
+                    )
                     break
+                }
             }
         })
     }
@@ -223,7 +261,7 @@ export class ConfigWebView implements WebviewViewProvider {
             payload: JSON.stringify({
                 systemInfo: savedSystems,
                 supportedModels: SUPPORTED_MODELS_DETAILS,
-                selected_system: activeSystem ? activeSystem.name : null,
+                selectedSystem: activeSystem ? activeSystem.name : null,
             }),
         })
     }
@@ -246,7 +284,7 @@ export class ConfigWebView implements WebviewViewProvider {
             .getConfiguration("tsp")
             .update("tspLinkSystemConfigurations", updatedSystemInfos, false)
         vscode.window.showInformationMessage(
-            `System configuration ${item} is activated`,
+            `The system configuration "${item}" has been activated.`,
         )
     }
 
@@ -261,7 +299,7 @@ export class ConfigWebView implements WebviewViewProvider {
             payload: JSON.stringify({
                 systemInfo: savedSystems,
                 supportedModels: SUPPORTED_MODELS_DETAILS,
-                selected_system: system_name,
+                selectedSystem: system_name,
             }),
         })
     }
