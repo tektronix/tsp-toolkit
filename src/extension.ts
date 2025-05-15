@@ -6,7 +6,7 @@ import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
     ConnectionHelper,
-    NO_WORKSPACE_OPEN,
+    NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
@@ -185,7 +185,9 @@ export function activate(context: vscode.ExtensionContext) {
             name: "systemConfigurations.fetchConnectionNodes",
             cb: async () => {
                 if (!vscode.workspace.workspaceFolders) {
-                    vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+                    vscode.window.showInformationMessage(
+                        `${NO_OPEN_WORKSPACE_MESSAGE}`,
+                    )
                     return
                 }
 
@@ -222,13 +224,19 @@ export function activate(context: vscode.ExtensionContext) {
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
     // Instantiate a new instance of the ViewProvider class
-    const provider = new ConfigWebView(context.extensionUri)
+    const systemConfigWebViewprovider = new ConfigWebView(context.extensionUri)
+
+    registerCommand(
+        context,
+        "systemConfigurations.addSystem",
+        systemConfigWebViewprovider.addSystem.bind(systemConfigWebViewprovider),
+    )
 
     // Register the provider for a Webview View
     const systemConfigViewDisposable =
         vscode.window.registerWebviewViewProvider(
             ConfigWebView.viewType,
-            provider,
+            systemConfigWebViewprovider,
         )
     context.subscriptions.push(systemConfigViewDisposable)
 
