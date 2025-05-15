@@ -1,481 +1,613 @@
 // Get access to the VS Code API from within the webview context
 const vscode = acquireVsCodeApi();
 
+let nodeCount = 0;
+
+function resetNodeCounts() {
+  nodeCount = 0;
+}
+
 // Wait for the webview DOM to load before referencing any HTML elements or toolkit components
 window.addEventListener("load", main);
 
+const state = {
+  systemInfo: {},
+  supportedModels: {},
+  selectedSystemName: "",
+  isEditMode: false
+
+}
+
+// Utility function to create an element with attributes
+function createElement(tag, attributes = {}, innerHTML = '') {
+  const element = document.createElement(tag);
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  element.innerHTML = innerHTML;
+  return element;
+}
+
+// Utility function to clear and populate a container
+function clearAndPopulate(container, content) {
+  container.innerHTML = '';
+  container.appendChild(content);
+}
+
+// Function to render slots dynamically
+function renderSlots(noOfSlots, options, id) {
+  const slotContainer = createElement('div', { class: 'slot-group' });
+
+  for (let i = 1; i <= noOfSlots; i++) {
+    const label = createElement('label', { for: `${id}_slot[${i}]` }, `slot [ ${i} ]`);
+    const select = createElement('select', { id: `${id}_slot[${i}]`, name: `${id}_slot[${i}]` });
+
+    options.forEach(option => {
+      const optionElement = createElement('option', { value: option }, option);
+      select.appendChild(optionElement);
+    });
+
+    slotContainer.appendChild(label);
+    slotContainer.appendChild(select);
+  }
+
+  return slotContainer;
+}
+
 // Main function that gets executed once the webview DOM loads
 function main() {
-  // Pass a message back to the extension context
-  vscode.postMessage({
-    command: "getInitialSystems"
-  });
-
+  vscode.postMessage({ command: "getInitialSystems" });
   setVSCodeMessageListener();
+  setupEventDelegation();
 }
 
 // Set up an event listener to listen for messages passed from the extension context
 function setVSCodeMessageListener() {
-  const systemsContainer = document.getElementById('systems-container');
   window.addEventListener("message", (event) => {
-    const command = event.data.command;
-    switch (command) {
-      case "systems":
-        handleSystemsMessage(event.data.payload, systemsContainer);
-        break;
-      case "supportedModels":
-        handleSupportedModelsMessage(event.data.payload, systemsContainer);
-        break;
+    const { command, payload } = event.data;
+    if (command === "openWorkspaceNotFound") {
+      renderWorkspaceNotFound()
+    }
+    else if (command === "systems") {
+      resetNodeCounts()
+      state.isEditMode = true
+      renderSavedSystems(payload);
+    } else if (command === "supportedModels") {
+      resetNodeCounts()
+      state.isEditMode = false
+      addNewSystem(payload);
+    } else if (command === "systemUpdated") {
+      state.isEditMode = true
+      const data = JSON.parse(payload);
+      state.systemInfo = data.systemInfo;
     }
   });
 }
 
-function handleSystemsMessage(payload, systemsContainer) {
+function renderWorkspaceNotFound() {
+  const systemsContainer = document.getElementById('systems-container');
+  systemsContainer.innerHTML = `
+    <div class="empty-state">
+      <p>You have not yet opened a folder.</p>
+      <button id="openFolderBtn" class="vscode-style-button">Open Folder</button>
+    </div>
+  `;
+
+  // Add an event listener to the button to send a message to the extension
+  const openFolderButton = document.getElementById('openFolderBtn');
+  openFolderButton.addEventListener('click', () => {
+    vscode.postMessage({ command: 'openFolder' });
+  });
+}
+
+// Handle systems message and populate the UI
+function renderSavedSystems(payload) {
   const data = JSON.parse(payload);
-  const systems = data.systemInfo.filter(system => system.name);
-  const supportedModels = data.supportedModels;
-  systemsContainer.innerHTML = ''; // Clear existing content
+  const { systemInfo, supportedModels, selectedSystem } = data;
+  state.supportedModels = supportedModels;
+  state.systemInfo = systemInfo;
+  state.selectedSystemName = selectedSystem;
+  const systemsContainer = document.getElementById('systems-container');
 
-  if (systems.length > 0) {
-    populateUI(systems, supportedModels, systemsContainer);
-  }
-}
-
-function handleSupportedModelsMessage(payload, systemsContainer) {
-  const models = JSON.parse(payload);
-  const form = document.createElement('div');
-  systemsContainer.innerHTML = '';
-
-  // System name
-  const nameGroup = createFormGroup('System Name: ', 'Enter System Name');
-  form.appendChild(nameGroup);
-
-  // Local node dropdown
-  const localNodeGroup = createFormGroup('localnode: ', '', models);
-  form.appendChild(localNodeGroup);
-
-  const localNodeSelect = localNodeGroup.querySelector('select');
-  localNodeSelect.addEventListener('change', () => handleLocalNodeChange(localNodeSelect, models, localNodeGroup));
-
-  // Nodes area
-  const nodesContainer = getNodeControls(models);
-  form.appendChild(nodesContainer);
-
-  // Save button
-  const saveButton = createButton('Save', 'vscode-button');
-  saveButton.addEventListener('click', () => handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer));
-  form.appendChild(saveButton);
-
-  systemsContainer.appendChild(form);
-}
-
-function handleLocalNodeChange(localNodeSelect, models, localNodeGroup) {
-  const selectedKey = localNodeSelect.value;
-  const existingSlots = document.getElementById('slotsContainer');
-  if (existingSlots) existingSlots.remove();
-
-  if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
-    const slotContainer = document.createElement('div');
-    slotContainer.id = "slotsContainer";
-    slotContainer.className = "localnode-slots-container"
-    for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
-      const slotRow = document.createElement('div');
-      slotRow.className = "slot-container";
-      slotRow.appendChild(createSlotLabel(i, ''));
-      if (models[selectedKey].moduleOptions) {
-        const slotSelect = createDropdown('', 'vscode-dropdown');
-        models[selectedKey].moduleOptions.forEach(module => {
-          const option = document.createElement('option');
-          option.value = module;
-          option.textContent = module;
-          slotSelect.appendChild(option);
-        });
-        slotRow.appendChild(slotSelect);
-      }
-      slotContainer.appendChild(slotRow);
-    }
-    localNodeGroup.insertAdjacentElement('afterend', slotContainer);
-  }
-}
-
-function handleSaveButtonClick(nameGroup, localNodeSelect, nodesContainer) {
-  // Validate inputs
-  const systemNameInput = nameGroup.querySelector('input');
-  const existingError = nameGroup.querySelector('.nameError');
-  if (existingError) existingError.remove();
-  systemNameInput.classList.remove('error-border');
-
-  if (!systemNameInput.value.trim()) {
-    systemNameInput.classList.add('error-border');
-    const errorMessage = document.createElement('span');
-    errorMessage.className = 'nameError';
-    errorMessage.style.color = 'red';
-    errorMessage.textContent = 'System Name is required.';
-    nameGroup.appendChild(errorMessage);
+  if (state.systemInfo.length === 0) {
+    systemsContainer.innerHTML = `
+      <div class="empty-state">
+      <p>No system configurations found. You can:</p>
+      <ul>
+        <li>
+        Click the <strong><span class="icon codicon codicon-add"></span></strong> icon to manually add a new system configuration.
+        </li>
+        <li>
+        Click the <strong><span class="icon codicon codicon-type-hierarchy-sub"></span></strong> icon to automatically retrieve system configurations for a connected instrument.
+        </li>
+      </ul>
+      </div>
+    `;
     return;
   }
 
-  const nodeData = [];
-  nodesContainer.querySelectorAll('div.nodeRow').forEach(nodeRow => {
-    const rowID = nodeRow.dataset.rowid;
-    const nodeId = `node[${nodeRow.querySelector('select#nodeNumber').value}]`;
-    const mainframe = nodeRow.querySelector('#nodeModelName').value;
-    const slots = [];
+  const selectSystem = createElement('div', { class: "node-subgroup" }, `
+        <label for="systemSelector">Select System:</label>
+  `);
 
-    const slotContainers = document.querySelectorAll(`#nodeSlotsContainer${rowID} .slot-container`);
-    slotContainers.forEach(slotContainer => {
-      const slotId = slotContainer.querySelector('label').dataset.value;
-      const module = slotContainer.querySelector('select').value;
-      slots.push({ slotId, module });
-    });
+  // Create a dropdown for selecting system names
+  const dropdown = createElement('select', { id: 'systemSelector', 'data-event': 'system-selector' });
 
-    const nodeObj = { nodeId, mainframe };
-    if (slots.length > 0) {
-      nodeObj.slots = slots;
+  systemInfo.forEach(system => {
+    const option = createElement('option', { value: system.name }, system.name);
+    dropdown.appendChild(option);
+  });
+
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-selected-system', title: 'Delete Selected System' });
+
+
+  selectSystem.append(dropdown);
+  selectSystem.appendChild(deleteIcon);
+
+
+  // Create the form with pre-filled data
+  const form = createAddSystemForm(state.supportedModels);
+
+  // Clear and populate the container with the updated form
+  clearAndPopulate(systemsContainer, selectSystem);
+  systemsContainer.appendChild(form);
+
+
+  // Render the form with the initially selected system data
+  if (state.selectedSystemName) {
+    const initialSystem = systemInfo.find(system => system.name === state.selectedSystemName);
+    if (initialSystem) {
+      dropdown.value = initialSystem.name
+      renderFormWithData(form, initialSystem);
     }
-    nodeData.push(nodeObj);
+  }
+}
+
+function renderFormWithData(form, systemData) {
+  const systemNameInput = form.querySelector('#systemName');
+  systemNameInput.value = systemData.name;
+  systemNameInput.readOnly = true;
+
+  const localNodeSelect = form.querySelector('#localnode');
+  localNodeSelect.value = systemData.localNode;
+
+  // Render slots if available
+  const localNodeSlots = form.querySelector('#localNodeSlots');
+  localNodeSlots.innerHTML = ""
+  if (systemData.slots) {
+    clearAndPopulate(localNodeSlots, renderSlots(systemData.slots.length, state.supportedModels[systemData.localNode].moduleOptions, 'localNodeSlots'));
+    systemData.slots.forEach((slot, index) => {
+      const slotElement = localNodeSlots.querySelector(`#localNodeSlots_slot\\[${index + 1}\\]`);
+      if (slotElement) {
+        slotElement.value = slot.module;
+      }
+    });
+  }
+
+
+  // Render nodes if available
+  const nodeContainer = form.querySelector('#nodeContainer');
+  nodeContainer.innerHTML = ""
+  if (systemData.nodes) {
+    systemData.nodes.forEach(node => {
+      addNode();
+      const nodeRow = nodeContainer.lastChild.previousSibling; // Get the last added node row
+      const numberSelect = nodeRow.querySelector('.node-number');
+      const modelSelect = nodeRow.querySelector('select[name$="_mainframe"]');
+      if (numberSelect) numberSelect.value = parseInt(node.nodeId.match(/\d+/)?.[0] || "", 10);
+      if (modelSelect) modelSelect.value = node.mainframe;
+
+      // Render slots for the node if available
+      if (node.slots) {
+        const nodeSlotsContainer = nodeRow.nextSibling; // Slots container is next to the node row
+        clearAndPopulate(nodeSlotsContainer, renderSlots(node.slots.length, state.supportedModels[node.mainframe].moduleOptions, `${nodeRow.id}_slots`));
+        node.slots.forEach((slot, index) => {
+          const slotElement = nodeSlotsContainer.querySelector(`#${nodeRow.id}_slots_slot\\[${index + 1}\\]`);
+          if (slotElement) {
+            slotElement.value = slot.module;
+          }
+        });
+      }
+    });
+    // Expand the node accordion
+    const accordionContent = document.getElementById('accordionContent');
+    const accordionButton = document.getElementById('accordionToggle');
+    accordionContent.classList.add('show');
+    accordionButton.setAttribute('aria-expanded', true);
+  }
+}
+
+// Render local node slots dynamically
+function renderNodeSlots(id, selectedValue) {
+  const localNodeSlots = document.getElementById(id);
+  const details = state.supportedModels[selectedValue];
+  localNodeSlots.innerHTML = ""
+
+  if (details?.noOfSlots) {
+    clearAndPopulate(localNodeSlots, renderSlots(details.noOfSlots, details.moduleOptions, id));
+  }
+}
+
+// Add a new system dynamically
+function addNewSystem(payload) {
+  const data = JSON.parse(payload);
+  state.supportedModels = data.supportedModels;
+  state.systemInfo = data.systemInfo;
+  state.selectedSystemName = "";
+  const systemsContainer = document.getElementById('systems-container');
+  const form = createAddSystemForm(state.supportedModels);
+
+  const saveButton = createElement('div', { class: "form-group" }, `
+    <label></label>
+    <button class="vscode-style-button" data-id="save" type="submit">Save</button>`);
+  form.appendChild(saveButton);
+  clearAndPopulate(systemsContainer, form);
+}
+
+// Create the add system form
+function createAddSystemForm(supportedModels) {
+  const options = Object.keys(supportedModels)
+    .map(model => `<option value="${model}">${model}</option>`)
+    .join('');
+
+  const form = createElement('form', { id: 'dynamicForm', novalidate: '' }, `
+    <div class="form-group">
+      <label for="systemName">System Name:</label>
+      <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
+    </div>
+    <div class="form-group">
+      <label for="localnode">localnode:</label>
+      <select id="localnode" name="localnode">${options}</select>
+    </div>
+    <div id="localNodeSlots"></div>
+    <button type="button" class="accordion" id="accordionToggle" aria-expanded="false" aria-controls="accordionContent">
+       <span class="accordion-left">
+          <span class="chevron codicon codicon-chevron-right"></span>
+          <span>Nodes</span>
+        </span>
+      <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
+    </button>
+    <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
+    <div id="nodeContainer"></div>
+    </div>
+  `);
+
+  return form;
+}
+
+
+// Add a new node dynamically
+function addNode() {
+  const nodeContainer = document.getElementById('nodeContainer');
+
+  const nodeId = `node_${nodeCount++}`;
+  const nodeRow = createElement('div', { class: 'node-subgroup', id: nodeId });
+
+  const label = createElement('label', { for: `${nodeId}_mainframe` }, `
+    node [ <select class="node-number" name="${nodeId}_nodeId", id = "name="${nodeId}_nodeId""></select> ]
+  `);
+
+  const numberSelect = label.querySelector('select');
+  numberSelect.innerHTML = getAvailableNodeOptions().map(n => `<option value="${n}">${n}</option>`).join('');
+  numberSelect.value = 1;
+
+  const nodeModel = createElement('select', { name: `${nodeId}_mainframe`, id: `${nodeId}_mainframe` });
+  Object.keys(state.supportedModels).forEach(model => {
+    const option = createElement('option', { value: model }, model);
+    nodeModel.appendChild(option);
   });
 
+  const nodeslots = createElement('div', { id: `${nodeId}_slots` });
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' }); // Unicode for trashcan
+  nodeRow.append(label, nodeModel, deleteIcon);
+  nodeContainer.appendChild(nodeRow);
+  nodeContainer.appendChild(nodeslots);
+
+}
+
+function checkDuplicateNodeNumber() {
+  const nodeNumbers = {};
+  let hasDuplicate = false;
+
+  document.querySelectorAll('.node-number').forEach(select => {
+    // Clear previous error state
+    select.classList.remove('invalid-node-number');
+    select.removeAttribute('title'); // Remove any existing tooltip
+
+    const value = select.value;
+    if (nodeNumbers[value]) {
+      select.classList.add("invalid-node-number");
+      select.setAttribute('title', 'Duplicate node number detected!');
+      if (!nodeNumbers[value].classList.contains("invalid-node-number")) {
+        nodeNumbers[value].classList.add("invalid-node-number");
+        nodeNumbers[value].setAttribute('title', 'Duplicate node number detected!');
+      }
+
+      hasDuplicate = true;
+    } else {
+      nodeNumbers[value] = select;
+    }
+  });
+
+  return hasDuplicate;
+}
+
+// Get available node options
+function getAvailableNodeOptions() {
+  const maxNodes = 63; // Updated maximum nodes to 64
+  return Array.from({ length: maxNodes }, (_, i) => i + 1);
+}
+
+
+function getNodes(data) {
+  const nodes = [];
+  const nodeMap = {};
+
+  Object.keys(data).forEach((key) => {
+    if (key.startsWith("node_")) {
+      const [nodeId, property] = key.split("_").slice(1);
+      if (!nodeMap[nodeId]) {
+        nodeMap[nodeId] = {};
+      }
+
+      if (property === "mainframe") {
+        nodeMap[nodeId].mainframe = data[key];
+      } else if (property === "nodeId") {
+        nodeMap[nodeId].nodeId = `node[${data[key]}]`;
+      } else if (property.startsWith("slot")) {
+        if (!nodeMap[nodeId].slots)
+          nodeMap[nodeId].slots = []
+        const slotId = key.split("_").pop();
+        nodeMap[nodeId].slots.push({
+          slotId: slotId,
+          module: data[key]
+        });
+      }
+    }
+  });
+
+  Object.values(nodeMap).forEach((node) => {
+    nodes.push(node);
+  });
+
+  return nodes;
+}
+
+// Helper function to extract slots data
+function getSlots(data) {
   const slots = [];
-  const slotContainers = document.querySelectorAll('#slotsContainer .slot-container');
-  slotContainers.forEach(slotContainer => {
-    const slotId = slotContainer.querySelector('label').dataset.value;
-    const module = slotContainer.querySelector('select').value;
-    slots.push({ slotId, module });
+  Object.keys(data).forEach((key) => {
+    if (key.startsWith("localNodeSlots_slot")) {
+      const slotId = key.split("_").pop();
+      slots.push({
+        slotId: slotId,
+        module: data[key]
+      });
+    }
+  });
+  return slots;
+}
+
+function setupEventDelegation() {
+  const systemsContainer = document.getElementById('systems-container');
+
+  // Add a single event listener to the parent container
+  systemsContainer.addEventListener('click', (event) => {
+    const target = event.target;
+
+    // Handle delete icon click
+    if (target.classList.contains('delete-icon')) {
+      if (target.dataset.event === "delete-node") {
+        const nodeRow = target.closest('.node-subgroup');
+        if (nodeRow) {
+          const nodeId = nodeRow.id;
+          nodeRow.remove();
+          document.getElementById(`${nodeId}_slots`)?.remove(); // Remove associated slots
+        }
+        checkDuplicateNodeNumber()
+        handleFormUpdate()
+      }
+      else if (target.dataset.event === "delete-selected-system") {
+        const systemSelector = document.getElementById('systemSelector');
+        const selectedSystem = systemSelector ? systemSelector.value : null;
+        if (selectedSystem) {
+          vscode.postMessage({
+            command: "delete",
+            data: selectedSystem
+          });
+        }
+      }
+    }
+
+
+
+    // Handle add node button click
+    if (target.id === 'addNodeBtn') {
+      const accordionContent = document.getElementById('accordionContent');
+      const accordionButton = document.getElementById('accordionToggle');
+
+      // Expand the accordion if it's not already expanded
+      if (!accordionContent.classList.contains('show')) {
+        accordionContent.classList.add('show');
+        accordionButton.setAttribute('aria-expanded', true);
+      }
+
+      // Add a new node
+      addNode();
+      checkDuplicateNodeNumber();
+      handleFormUpdate();
+
+      // Stop further event propagation to prevent toggling
+      event.stopPropagation();
+      return;
+    }
+
+    // Handle accordion toggle
+    if (target.id === 'accordionToggle' || target.closest('#accordionToggle')) {
+      const accordionContent = document.getElementById('accordionContent');
+      const accordionButton = document.getElementById('accordionToggle');
+      const isOpen = accordionContent.classList.toggle('show');
+      accordionButton.setAttribute('aria-expanded', isOpen);
+    }
   });
 
+  systemsContainer.addEventListener('change', (event) => {
+    const target = event.target;
+
+    // Handle change event for the system selector dropdown
+    if (target.tagName === 'SELECT' && target.dataset.event === 'system-selector') {
+      resetNodeCounts()
+      const selectedSystem = state.systemInfo.find(system => system.name === target.value);
+      if (selectedSystem) {
+        state.selectedSystemName = selectedSystem.name;
+        const form = document.getElementById('dynamicForm');
+        renderFormWithData(form, selectedSystem);
+        vscode.postMessage({
+          command: "activate",
+          data: selectedSystem.name
+        });
+      }
+    }
+
+    // Handle change event for node model SELECT elements
+    if (target.tagName === 'SELECT' && target.name.endsWith('_mainframe')) {
+      const nodeId = target.closest('.node-subgroup').id;
+      const selectedValue = target.value;
+      renderNodeSlots(`${nodeId}_slots`, selectedValue);
+      handleFormUpdate();
+    }
+
+    // Handle change event for slot SELECT elements
+    if (target.tagName === 'SELECT' && target.name.includes('_slot')) {
+      handleFormUpdate();
+    }
+
+    // Handle change event for slot SELECT elements
+    if (target.tagName === 'SELECT' && target.className.includes("node-number")) {
+      checkDuplicateNodeNumber()
+      handleFormUpdate();
+    }
+
+    // Handle change event for local node SELECT
+    if (target.id === 'localnode') {
+      renderNodeSlots('localNodeSlots', target.value);
+      handleFormUpdate();
+    };
+
+  });
+
+  systemsContainer.addEventListener('submit', (event) => {
+    event.preventDefault(); // Prevent form submission from reloading the page
+    if (validate()) {
+      const payload = getfileldData();
+      // Send the updated data to the extension
+      vscode.postMessage({
+        command: "add",
+        data: payload
+      });
+    }
+  });
+}
+
+
+function handleFormUpdate() {
+
+  if (!state.isEditMode) {
+    // Do not trigger update if not in edit mode
+    return;
+  }
+
+  if (validate()) {
+    const payload = getfileldData()
+    // Send the updated data to the extension
+    vscode.postMessage({
+      command: "update",
+      data: payload
+    });
+  }
+}
+
+/**
+ * Collects and processes form data from a dynamic form element to generate a payload object.
+ *
+ * @function
+ * @returns {Object} payload - The processed payload object containing system configuration data.
+ * @property {string} payload.name - The name of the system, retrieved from the form data.
+ * @property {boolean} payload.isActive - Indicates whether the system is active (always true).
+ * @property {string} payload.localNode - The local node identifier, retrieved from the form data.
+ * @property {Array|undefined} payload.slots - An array of slot data, or undefined if no slots are provided.
+ * @property {Array|undefined} payload.nodes - An array of node data, or undefined if no nodes are provided.
+ */
+function getfileldData() {
+  const form = document.getElementById('dynamicForm');
+  // Collect updated data
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => {
+    data[key] = value;
+  });
+
+  const slots = getSlots(data);
+  const nodeData = getNodes(data);
   const payload = {
-    name: nameGroup.querySelector('input').value,
-    isActive: false,
-    localNode: localNodeSelect.value,
+    name: data["systemName"],
+    isActive: true,
+    localNode: data["localnode"],
     slots: slots.length > 0 ? slots : undefined,
     nodes: nodeData.length > 0 ? nodeData : undefined
   };
 
-  vscode.postMessage({
-    command: "add",
-    data: payload
-  });
+  return payload;
 }
 
+/**
+ * Validates the system configuration form.
+ *
+ * This function checks the following:
+ * - Ensures the system name field is not empty.
+ * - Ensures the system name is not a duplicate of an existing system name.
+ * - Checks for duplicate node numbers using the `checkDuplicateNodeNumber` function.
+ *
+ * If any validation fails, appropriate error messages are displayed, and the form is marked as invalid.
+ *
+ * @returns {boolean} `true` if the form is valid, otherwise `false`.
+ */
+function validate() {
+  let isFormValid = true
+  const nameInput = document.getElementById('systemName');
 
-function getNodeControls(models, existingNodes = []) {
-  const nodesAccordion = document.createElement('details'); // Create the accordion
-  nodesAccordion.id = "nodesControls";
-
-  const summary = document.createElement('summary'); // Create the summary for the accordion
-  summary.textContent = 'Nodes';
-  nodesAccordion.appendChild(summary);
-
-  const nodesContainer = document.createElement('div');
-  nodesContainer.className = 'nodes-container';
-
-  // Add the "+" button inside the accordion
-  const plusButton = createButton('+', '.round-vscode-button');
-  plusButton.style.marginTop = '10px';
-  nodesContainer.appendChild(plusButton);
-  nodesContainer.appendChild(createPlusButton(plusButton, models));
-
-
-  // Render existing nodes
-  existingNodes.forEach((node, index) => {
-    const nodeRow = createNodeRow(index + 1, models, parseInt(node.nodeId.match(/\d+/)[0], 10), node.mainframe, node.slots);
-    nodesContainer.appendChild(nodeRow);
-  });
-
-
-  nodesAccordion.appendChild(nodesContainer);
-  return nodesAccordion;
-}
-
-function createPlusButton(button, models) {
-  const nodesContainer = document.createElement('div');
-  let rowID = 0;
-  button.addEventListener('click', () => {
-    rowID += 1;
-    const nodeRow = createNodeRow(rowID, models);
-    nodesContainer.appendChild(nodeRow);
-  });
-
-  return nodesContainer;
-}
-
-function createNodeRow(rowID, models, nodeId = null, mainframe = null, slots = []) {
-  const nodeRow = document.createElement('div');
-  nodeRow.classList.add('nodeRow');
-  nodeRow.dataset.rowid = rowID;
-  nodeRow.appendChild(createLabel('node [ ', ''));
-  const nodeIdSelect = createNodeIdSelect(nodeId);
-  nodeRow.appendChild(nodeIdSelect);
-  nodeRow.appendChild(document.createTextNode(' ] '));
-
-  const modelSelect = createModuleSelect(Object.keys(models), mainframe);
-  onModuleSelectionChange(modelSelect, rowID, models, nodeRow, slots);
-  nodeRow.appendChild(modelSelect);
-
-  nodeRow.appendChild(createRemoveButton(nodeRow));
-  return nodeRow;
-}
-
-function createNodeIdSelect(selectedValue = null) {
-  const nodeSelect = createDropdown('', 'vscode-dropdown');
-  nodeSelect.id = "nodeNumber";
-  for (let i = 1; i <= 63; i++) {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = i;
-    if (selectedValue && selectedValue === i) {
-      opt.selected = true;
-    }
-    nodeSelect.appendChild(opt);
-  }
-  return nodeSelect;
-}
-
-function createModuleSelect(modelOptions, selectedValue = null) {
-  const modelSelect = createDropdown('', 'vscode-dropdown');
-  modelSelect.id = "nodeModelName";
-  modelOptions.forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = key;
-    if (selectedValue && selectedValue === key) {
-      option.selected = true;
-    }
-    modelSelect.appendChild(option);
-  });
-
-  return modelSelect;
-}
-
-function onModuleSelectionChange(modelSelect, rowID, models, nodeRow, existingSlots = []) {
-  modelSelect.addEventListener('change', () => {
-    const slotContainerClassName = "node-slots-container"
-    renderSlots(modelSelect.value, rowID, models, nodeRow, slotContainerClassName, existingSlots);
-  });
-}
-
-function renderSlots(selectedKey, rowID, models, nodeRow, slotContainerClassName, existingSlots = []) {
-  const existingSlotsContainer = document.getElementById(`nodeSlotsContainer${rowID}`);
-  if (existingSlotsContainer) existingSlotsContainer.remove();
-
-  if (selectedKey && models[selectedKey] && models[selectedKey].noOfSlots) {
-    const slotContainer = document.createElement('div');
-    slotContainer.id = `nodeSlotsContainer${rowID}`;
-    slotContainer.className = slotContainerClassName;
-    for (let i = 1; i <= models[selectedKey].noOfSlots; i++) {
-      const slot = existingSlots.find(slot => slot.slotId === `slot[${i}]`);
-      const slotRow = addSlot(i, models[selectedKey].moduleOptions, slot ? slot.module : null);
-      slotContainer.appendChild(slotRow);
-    }
-    nodeRow.insertAdjacentElement('afterend', slotContainer);
-  }
-};
-
-function addSlot(slotId, moduleOptions, selectedModule = null) {
-  const slotRow = document.createElement('div');
-  slotRow.className = 'slot-container';
-  slotRow.appendChild(createSlotLabel(slotId, ''));
-
-  const slotSelect = createDropdown('', 'vscode-dropdown');
-  moduleOptions.forEach(module => {
-    const option = document.createElement('option');
-    option.value = module;
-    option.textContent = module;
-    if (selectedModule && selectedModule === module) {
-      option.selected = true;
-    }
-    slotSelect.appendChild(option);
-  });
-  slotRow.appendChild(slotSelect);
-
-  return slotRow;
-}
-
-function createRemoveButton(nodeRow) {
-  // Remove button with icon
-  const removeIcon = document.createElement('span');
-  removeIcon.name = 'Remove selected system';
-  removeIcon.className = 'codicon codicon-trash delete-icon';
-  removeIcon.role = "button";
-  removeIcon.tabIndex = 0; // Make it focusable
-
-  removeIcon.addEventListener('click', () => {
-    const existingSlots = document.getElementById(`nodeSlotsContainer${nodeRow.dataset.rowid}`);
-    if (existingSlots) existingSlots.remove();
-    nodeRow.remove();
-  });
-  return removeIcon;
-}
-
-function populateUI(systems, supportedModels, systemsContainer) {
-  const systemDiv = document.createElement('div');
-  //systemDiv.className = 'system';
-
-  const systemsDropDownLabel = createLabel('System Name:', 'vscode-input-label');
-  const systemsDropDown = createDropdown('System Name', 'vscode-dropdown');
-
-
-
-  systemDiv.appendChild(systemsDropDownLabel);
-  systemDiv.appendChild(systemsDropDown);
-
-  // Remove button with icon
-  const removeIcon = document.createElement('span');
-  removeIcon.name = 'Remove selected system';
-  removeIcon.className = 'codicon codicon-trash delete-icon';
-  removeIcon.role = "button";
-  removeIcon.tabIndex = 0; // Make it focusable
-  removeIcon.addEventListener('click', () => {
-    vscode.postMessage({
-      command: 'remove',
-      data: systemsDropDown.value
-    });
-  });
-  systemDiv.appendChild(removeIcon);
-
-  // Activate button with icon
-  const activateIcon = document.createElement('span');
-  activateIcon.className = 'codicon codicon-check';
-  activateIcon.role = "button"
-  activateIcon.addEventListener('click', () => {
-    vscode.postMessage({
-      command: 'activate',
-      data: systemsDropDown.value
-    });
-  });
-  systemDiv.appendChild(activateIcon);
-
-  systems.forEach(system => {
-    const option = document.createElement('option');
-    option.value = system.name;
-    option.textContent = system.name;
-    systemsDropDown.appendChild(option);
-  });
-
-  systemsContainer.appendChild(systemDiv);
-
-  const localNodeDiv = document.createElement('div');
-  const localNodeLabel = createLabel('localnode: ', 'vscode-input-label');
-  localNodeLabel.classList.add("localnode-slots-container");
-  const localNodeInput = createInput('text', 'vscode-input', true);
-
-  localNodeDiv.appendChild(localNodeLabel);
-  localNodeDiv.appendChild(localNodeInput);
-  systemDiv.appendChild(localNodeDiv);
-
-  systemsDropDown.addEventListener('change', () => {
-    // Remove previously added controls
-    const existingControls = document.getElementById('nodesControls');
-    if (existingControls) {
-      existingControls.remove();
-    }
-
-    const selectedSystem = systems.find(system => system.name === systemsDropDown.value);
-    localNodeInput.value = selectedSystem ? selectedSystem.localNode : '';
-    // Remove previously rendered slots if any
-    const existingSlotsContainer = document.getElementById('nodeSlotsContainer');
-    if (existingSlotsContainer) {
-      existingSlotsContainer.remove();
-    }
-
-    if (selectedSystem && selectedSystem.slots) {
-      const slotContainerClassName = "localnode-slots-container"
-      renderSlots(localNodeInput.value, "", supportedModels, localNodeInput, slotContainerClassName, selectedSystem.slots);
-    }
-
-    if (selectedSystem && selectedSystem.nodes) {
-      const controls = getNodeControls(supportedModels, selectedSystem.nodes);
-      systemsContainer.appendChild(controls);
-    }
-
-    // fire `change` to render slots
-    const modelDropDowns = document.querySelectorAll('#nodeModelName');
-    modelDropDowns.forEach(dropDown => {
-      dropDown.dispatchEvent(new Event('change'));
-    });
-  });
-
-  // trigger the default selection
-  if (systems.length > 0) {
-    systemsDropDown.value = systems[0].name;
-    systemsDropDown.dispatchEvent(new Event('change'));
+  // Validate Name Field
+  if (!nameInput.value.trim()) {
+    showError(nameInput, 'System name cannot be empty');
+    isFormValid = false
   }
 
-
-
-}
-
-
-function createLabel(text, className) {
-  const label = document.createElement('label');
-  label.textContent = text;
-  label.className = className;
-  return label;
-}
-
-function createSlotLabel(slot_index, className) {
-  const label = document.createElement('label');
-  label.textContent = `slot [ ${slot_index} ]`;
-  label.dataset.value = `slot[${slot_index}]`
-  label.className = className;
-  return label;
-}
-
-function createDropdown(placeholder, className) {
-  const dropdown = document.createElement('select');
-  dropdown.placeholder = placeholder;
-  dropdown.className = className;
-  return dropdown;
-}
-
-function createInput(type, className, readOnly = false) {
-  const input = document.createElement('input');
-  input.type = type;
-  input.readOnly = readOnly;
-  input.className = className;
-  return input;
-}
-
-function createCollapsible(summaryText, className) {
-  const details = document.createElement('details');
-  const summary = document.createElement('summary');
-  summary.textContent = summaryText;
-  details.appendChild(summary);
-  details.className = className;
-  return details;
-}
-
-function createButton(text, className) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = text;
-  button.className = className;
-  return button;
-}
-
-function createFormGroup(labelText, placeholder, options = null) {
-  const group = document.createElement('div');
-  group.className = 'form-group';
-  const label = document.createElement('label');
-  label.textContent = labelText;
-  group.appendChild(label);
-
-  if (options) {
-    const select = createDropdown('', 'vscode-dropdown');
-    Object.keys(options).forEach(key => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = key;
-      select.appendChild(option);
-    });
-    group.appendChild(select);
-  } else {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = placeholder;
-    group.appendChild(input);
+  if (state.systemInfo.some(system => system.name === nameInput.value.trim() && system.name !== state.selectedSystemName)) {
+    showError(nameInput, 'Duplicate system name not allowed');
+    isFormValid = false
   }
 
-  return group;
+  if (checkDuplicateNodeNumber()) {
+    isFormValid = false
+  }
+  return isFormValid
+}
+
+function showError(input, message) {
+  if (!input.classList.contains('invalid')) {
+    input.classList.add('invalid');
+    input.setAttribute('title', message);
+
+    // Add an event listener to clear the error when the user starts typing
+    input.addEventListener('input', () => {
+      clearError(input);
+    }, { once: true });
+  }
+}
+
+// Function to clear the error
+function clearError(input) {
+  // Remove the 'invalid' class and tooltip
+  input.classList.remove('invalid');
+  input.removeAttribute('title');
 }
