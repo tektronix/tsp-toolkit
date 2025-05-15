@@ -13,7 +13,7 @@ window.addEventListener("load", main);
 const state = {
   systemInfo: {},
   supportedModels: {},
-  selectedSystem: {},
+  selectedSystemName: "",
   isEditMode: false
 
 }
@@ -87,7 +87,7 @@ function renderSavedSystems(payload) {
   const { systemInfo, supportedModels, selectedSystem } = data;
   state.supportedModels = supportedModels;
   state.systemInfo = systemInfo;
-  state.selectedSystem = selectedSystem;
+  state.selectedSystemName = selectedSystem;
   const systemsContainer = document.getElementById('systems-container');
 
   if (state.systemInfo.length === 0) {
@@ -135,8 +135,8 @@ function renderSavedSystems(payload) {
 
 
   // Render the form with the initially selected system data
-  if (state.selectedSystem) {
-    const initialSystem = systemInfo.find(system => system.name === state.selectedSystem);
+  if (state.selectedSystemName) {
+    const initialSystem = systemInfo.find(system => system.name === state.selectedSystemName);
     if (initialSystem) {
       dropdown.value = initialSystem.name
       renderFormWithData(form, initialSystem);
@@ -213,6 +213,8 @@ function renderNodeSlots(id, selectedValue) {
 function addNewSystem(payload) {
   const data = JSON.parse(payload);
   state.supportedModels = data.supportedModels;
+  state.systemInfo = data.systemInfo;
+  state.selectedSystemName = "";
   const systemsContainer = document.getElementById('systems-container');
   const form = createAddSystemForm(state.supportedModels);
 
@@ -244,7 +246,7 @@ function createAddSystemForm(supportedModels) {
           <span class="chevron codicon codicon-chevron-right"></span>
           <span>Nodes</span>
         </span>
-      <span class="plus-icon" id="addNodeBtn">+</span>
+      <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
     </button>
     <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
     <div id="nodeContainer"></div>
@@ -438,6 +440,7 @@ function setupEventDelegation() {
       resetNodeCounts()
       const selectedSystem = state.systemInfo.find(system => system.name === target.value);
       if (selectedSystem) {
+        state.selectedSystemName = selectedSystem.name;
         const form = document.getElementById('dynamicForm');
         renderFormWithData(form, selectedSystem);
         vscode.postMessage({
@@ -560,10 +563,10 @@ function validate() {
     isFormValid = false
   }
 
-  // if (state.systemInfo.some(system => system.name === nameInput.value.trim())) {
-  //   showError(nameInput, 'Duplicate system name not allowed');
-  //   isFormValid = false
-  // }
+  if (state.systemInfo.some(system => system.name === nameInput.value.trim() && system.name !== state.selectedSystemName)) {
+    showError(nameInput, 'Duplicate system name not allowed');
+    isFormValid = false
+  }
 
   if (checkDuplicateNodeNumber()) {
     isFormValid = false
