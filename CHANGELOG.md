@@ -19,7 +19,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.2.3]
 
 ### Fixed
-- System configurations UI controls allignemnt issues
+- System configurations UI controls alignment issues
+- (**tsp-toolkit-kic-lib**) Further progress indicator improvements
 
 ### Added
 - Update support for already saved systems
