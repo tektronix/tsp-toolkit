@@ -32,13 +32,16 @@ label {
   align-items: center;
   gap: 10px;
 }
+
 .accordion .chevron {
   display: inline-block;
   transition: transform 0.3s ease;
 }
+
 .accordion[aria-expanded="true"] .chevron {
   transform: rotate(90deg);
 }
+
 .plus-icon {
   font-size: 20px;
   cursor: pointer;
@@ -145,6 +148,7 @@ input[type="text"].invalid::placeholder {
   background-color: var(--vscode-inputValidation-errorBackground);
   color: var(--vscode-inputValidation-errorForeground);
 }
+
 .invalid-node-number:hover {
   background-color: var(--vscode-inputValidation-errorBackground);
   color: var(--vscode-inputValidation-errorForeground);
@@ -152,7 +156,8 @@ input[type="text"].invalid::placeholder {
 
 /* Tooltip styling (uses the native title attribute) */
 .invalid-node-number[title] {
-  cursor: help; /* Indicates that the element has additional information */
+  cursor: help;
+  /* Indicates that the element has additional information */
 }
 
 
@@ -160,17 +165,26 @@ input[type="text"]::placeholder {
   color: var(--vscode-input-placeholderForeground);
 }
 
-.save-button {
-  margin-top: 15px;
+
+.vscode-style-button {
+  margin-top: 10px;
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   border: 1px solid var(--vscode-button-border);
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
   transition: background-color 0.3s;
+  align-items: center;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  line-height: 18px;
+  padding: 4px;
+  text-align: center;
+  width: 100%
 }
 
-.save-button:hover {
+.vscode-style-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }

@@ -65,7 +65,10 @@ function main() {
 function setVSCodeMessageListener() {
   window.addEventListener("message", (event) => {
     const { command, payload } = event.data;
-    if (command === "systems") {
+    if (command === "openWorkspaceNotFound") {
+      renderWorkspaceNotFound()
+    }
+    else if (command === "systems") {
       resetNodeCounts()
       state.isEditMode = true
       renderSavedSystems(payload);
@@ -73,11 +76,27 @@ function setVSCodeMessageListener() {
       resetNodeCounts()
       state.isEditMode = false
       addNewSystem(payload);
-    }  else if (command === "systemUpdated") {
+    } else if (command === "systemUpdated") {
       state.isEditMode = true
       const data = JSON.parse(payload);
       state.systemInfo = data.systemInfo;
     }
+  });
+}
+
+function renderWorkspaceNotFound() {
+  const systemsContainer = document.getElementById('systems-container');
+  systemsContainer.innerHTML = `
+    <div class="empty-state">
+      <p>You have not yet opened a folder.</p>
+      <button id="openFolderBtn" class="vscode-style-button">Open Folder</button>
+    </div>
+  `;
+
+  // Add an event listener to the button to send a message to the extension
+  const openFolderButton = document.getElementById('openFolderBtn');
+  openFolderButton.addEventListener('click', () => {
+    vscode.postMessage({ command: 'openFolder' });
   });
 }
 
@@ -220,7 +239,7 @@ function addNewSystem(payload) {
 
   const saveButton = createElement('div', { class: "form-group" }, `
     <label></label>
-    <button class="save-button" data-id="save" type="submit">Save</button>`);
+    <button class="vscode-style-button" data-id="save" type="submit">Save</button>`);
   form.appendChild(saveButton);
   clearAndPopulate(systemsContainer, form);
 }

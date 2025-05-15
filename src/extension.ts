@@ -6,7 +6,7 @@ import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
     ConnectionHelper,
-    NO_WORKSPACE_OPEN,
+    NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
@@ -185,7 +185,9 @@ export function activate(context: vscode.ExtensionContext) {
             name: "systemConfigurations.fetchConnectionNodes",
             cb: async () => {
                 if (!vscode.workspace.workspaceFolders) {
-                    vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+                    vscode.window.showInformationMessage(
+                        `${NO_OPEN_WORKSPACE_MESSAGE}`,
+                    )
                     return
                 }
 

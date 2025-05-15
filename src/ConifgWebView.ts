@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { Uri, Webview, WebviewView, WebviewViewProvider } from "vscode"
 import {
-    NO_WORKSPACE_OPEN,
+    NO_OPEN_WORKSPACE_MESSAGE,
     SUPPORTED_MODELS_DETAILS,
     SystemInfo,
 } from "./resourceManager"
@@ -43,31 +43,22 @@ export class ConfigWebView implements WebviewViewProvider {
         })
     }
     private _getWebviewContent(webview: Webview) {
-        if (!vscode.workspace.workspaceFolders) {
-            return `<!DOCTYPE html>
-            <html lang="en">
-            <head></head>
-            <body>
-            <h1>${NO_WORKSPACE_OPEN}</h1>
-            </body>
-            </html>`
-        } else {
-            const webviewScriptUri = this.getUri(webview, this._extensionUri, [
-                "out",
-                "systemConfig.js",
-            ])
-            const stylesUri = this.getUri(webview, this._extensionUri, [
-                "out",
-                "styles.css",
-            ])
-            const codiconsUri = this.getUri(webview, this._extensionUri, [
-                "node_modules",
-                "@vscode/codicons",
-                "dist",
-                "codicon.css",
-            ])
-            const nonce = this.getNonce()
-            return /*html*/ `
+        const webviewScriptUri = this.getUri(webview, this._extensionUri, [
+            "out",
+            "systemConfig.js",
+        ])
+        const stylesUri = this.getUri(webview, this._extensionUri, [
+            "out",
+            "styles.css",
+        ])
+        const codiconsUri = this.getUri(webview, this._extensionUri, [
+            "node_modules",
+            "@vscode/codicons",
+            "dist",
+            "codicon.css",
+        ])
+        const nonce = this.getNonce()
+        return /*html*/ `
             <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,12 +78,11 @@ export class ConfigWebView implements WebviewViewProvider {
 </body>
 </html>
 `
-        }
     }
 
     public addSystem() {
         if (!vscode.workspace.workspaceFolders) {
-            vscode.window.showInformationMessage(`${NO_WORKSPACE_OPEN}`)
+            vscode.window.showInformationMessage(`${NO_OPEN_WORKSPACE_MESSAGE}`)
             return
         }
         const savedSystems: SystemInfo[] =
@@ -112,7 +102,29 @@ export class ConfigWebView implements WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(async (message) => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             switch (message.command) {
+                case "openFolder": {
+                    const uri = await vscode.window.showOpenDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: false,
+                        canSelectMany: true,
+                        openLabel: "Open Folder",
+                    })
+                    if (uri && uri.length > 0) {
+                        vscode.commands.executeCommand(
+                            "vscode.openFolder",
+                            uri[0],
+                        )
+                    }
+                    break
+                }
                 case "getInitialSystems": {
+                    if (!vscode.workspace.workspaceFolders) {
+                        webviewView.webview.postMessage({
+                            command: "openWorkspaceNotFound",
+                        })
+                        break
+                    }
+
                     this.reloadUi(webviewView)
                     break
                 }

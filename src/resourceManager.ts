@@ -9,8 +9,8 @@ const MPSU50_2ST = "MPSU50-2ST"
 const MSMU60_2 = "MSMU60-2"
 const EMPTY = "Empty"
 
-export const NO_WORKSPACE_OPEN =
-    "No workspace has been open, please open an workspace and reload this UI"
+export const NO_OPEN_WORKSPACE_MESSAGE =
+    "No workspace is open. Please open a workspace to continue."
 
 const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
     string,
