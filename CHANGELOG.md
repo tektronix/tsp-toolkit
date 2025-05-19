@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - System configurations UI controls alignment issues
 - (**tsp-toolkit-kic-lib**) Further progress indicator improvements
+- (**tsp-toolkit-kic-cli**) Recognize when socket has been terminated from device-side more quickly and close.
 
 ### Added
 - Update support for already saved systems
