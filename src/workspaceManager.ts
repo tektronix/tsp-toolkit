@@ -105,6 +105,11 @@ export async function configure_initial_workspace_configurations() {
  */
 export async function updateLuaLibraryConfigurations(): Promise<void> {
     try {
+        await updateConfiguration(
+            "Lua.workspace.library",
+            [],
+            vscode.ConfigurationTarget.Workspace,
+        )
         const newLibrarySettings: string[] = []
         newLibrarySettings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
 
@@ -125,6 +130,7 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
 
         const nodeDetails: Record<string, string[]> = {}
 
+        createCommonNodeSlotTables(luaDefinitionsFolderPath, "---@meta\n")
         if (activeSystem?.localNode) {
             nodeDetails[activeSystem.localNode] = ["localNode"]
         }
@@ -132,24 +138,40 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
         const slotDetails: Record<string, string[]> = {}
 
         if (activeSystem?.slots) {
+            // Collect slot IDs for the table
+            const slotIds: string[] = []
             for (const slot of activeSystem.slots) {
                 if (!slot.module.includes("Empty")) {
                     if (!slotDetails[slot.module]) {
                         slotDetails[slot.module] = []
                     }
                     slotDetails[slot.module].push(slot.slotId)
+                    slotIds.push(
+                        `[${slot.slotId.split("[")[1]} = ${slot.slotId}`,
+                    )
+                    createCommonNodeSlotTables(
+                        luaDefinitionsFolderPath,
+                        `---${slot.module}\n---@type table\n${slot.slotId}={}\n`,
+                    )
                 }
             }
+
+            const slotsTable = `slot = {${slotIds.join(", ")}}`
+            createCommonNodeSlotTables(luaDefinitionsFolderPath, slotsTable)
         }
 
         if (activeSystem?.nodes) {
+            const nodeIds: string[] = []
             for (const node of activeSystem.nodes) {
                 if (!nodeDetails[node.mainframe]) {
                     nodeDetails[node.mainframe] = []
                 }
                 nodeDetails[node.mainframe].push(node.nodeId)
 
+                nodeIds.push(`[${node.nodeId.split("[")[1]} = ${node.nodeId}`)
                 if (node?.slots) {
+                    // Collect slot IDs for the table
+                    const slotIds: string[] = []
                     for (const slot of node.slots) {
                         if (!slot.module.includes("Empty")) {
                             if (!slotDetails[slot.module]) {
@@ -158,10 +180,24 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
                             slotDetails[slot.module].push(
                                 node.nodeId + slot.slotId,
                             )
+                            slotIds.push(
+                                `[${slot.slotId.split("[")[1]} = ${node.nodeId}.${slot.slotId}`,
+                            )
+                            createCommonNodeSlotTables(
+                                luaDefinitionsFolderPath,
+                                `---${slot.module}\n---@type table\n${node.nodeId}.${slot.slotId}={}`,
+                            )
                         }
                     }
+                    const slotsTable = `${node.nodeId}.slot = {${slotIds.join(", ")}}`
+                    createCommonNodeSlotTables(
+                        luaDefinitionsFolderPath,
+                        slotsTable,
+                    )
                 }
             }
+            const nodeTable = `node = {${nodeIds.join(", ")}}`
+            createCommonNodeSlotTables(luaDefinitionsFolderPath, nodeTable)
         }
 
         for (const [model, nodes] of Object.entries(nodeDetails)) {
@@ -225,6 +261,8 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
             newLibrarySettings.push(luaDefinitionsFolderPath)
         }
 
+        // Wait for a few seconds before updating the configuration
+        await new Promise((resolve) => setTimeout(resolve, 2000))
         await updateConfiguration(
             "Lua.workspace.library",
             newLibrarySettings,
@@ -304,4 +342,15 @@ function createNodeSlotCmdFile(
         `${model}_node${nodeNum}_slot${slotNum}.lua`,
     )
     fs.writeFileSync(newNodeCmdFilePath, nodeCmdFileContent)
+}
+
+function createCommonNodeSlotTables(
+    luaDefinitionsFolderPath: string,
+    contains: string,
+) {
+    const newNodeCmdFilePath = join(
+        luaDefinitionsFolderPath,
+        "commonTables.lua",
+    )
+    fs.writeFileSync(newNodeCmdFilePath, `\n${contains}`, { flag: "a" })
 }
