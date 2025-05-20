@@ -46,6 +46,13 @@ export async function configure_initial_workspace_configurations() {
     )
 
     if (vscode.workspace.workspaceFolders) {
+        //increasing Lua.workspace.preloadFileSize to 2000KB,
+        //to handle the increasing file size of lua defination file
+        await updateConfiguration(
+            "Lua.workspace.preloadFileSize",
+            2000,
+            vscode.ConfigurationTarget.Workspace,
+        )
         await updateConfiguration(
             "Lua.workspace.ignoreDir",
             [],
