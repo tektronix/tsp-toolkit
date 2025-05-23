@@ -36,9 +36,10 @@ function clearAndPopulate(container, content) {
 
 // Function to render slots dynamically
 function renderSlots(noOfSlots, options, id) {
-  const slotContainer = createElement('div', { class: 'slot-group' });
+  const slotGrid = createElement('div', { class: 'grid-layout' });
 
   for (let i = 1; i <= noOfSlots; i++) {
+    const slotContainer = createElement('div', { class: 'slot-group' });
     const label = createElement('label', { for: `${id}_slot[${i}]` }, `slot [ ${i} ]`);
     const select = createElement('select', { id: `${id}_slot[${i}]`, name: `${id}_slot[${i}]` });
 
@@ -49,9 +50,10 @@ function renderSlots(noOfSlots, options, id) {
 
     slotContainer.appendChild(label);
     slotContainer.appendChild(select);
+    slotGrid.appendChild(slotContainer);
   }
 
-  return slotContainer;
+  return slotGrid;
 }
 
 // Main function that gets executed once the webview DOM loads
@@ -126,8 +128,8 @@ function renderSavedSystems(payload) {
     return;
   }
 
-  const selectSystem = createElement('div', { class: "node-subgroup" }, `
-        <label for="systemSelector">Select System:</label>
+  const selectSystem = createElement('div', { class: "selected-system" }, `
+        <label for="systemSelector">Selected System:</label>
   `);
 
   // Create a dropdown for selecting system names
@@ -140,9 +142,11 @@ function renderSavedSystems(payload) {
 
   const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-selected-system', title: 'Delete Selected System' });
 
+  const selectWithIcon = createElement('div', { class: 'select-with-icon' });
+  selectWithIcon.appendChild(dropdown);
+  selectWithIcon.appendChild(deleteIcon);
 
-  selectSystem.append(dropdown);
-  selectSystem.appendChild(deleteIcon);
+  selectSystem.append(selectWithIcon);
 
 
   // Create the form with pre-filled data
@@ -251,24 +255,30 @@ function createAddSystemForm(supportedModels) {
     .join('');
 
   const form = createElement('form', { id: 'dynamicForm', novalidate: '' }, `
-    <div class="form-group">
-      <label for="systemName">System Name:</label>
-      <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
-    </div>
-    <div class="form-group">
-      <label for="localnode">localnode:</label>
-      <select id="localnode" name="localnode">${options}</select>
-    </div>
+    
+      <div class="form-group">
+        <label for="systemName">System Name:</label>
+        <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
+      </div>
+      <div class="form-group">
+        <label for="localnode">localnode:</label>
+        <select id="localnode" name="localnode">${options}</select>
+      </div>
+    
     <div id="localNodeSlots"></div>
-    <button type="button" class="accordion" id="accordionToggle" aria-expanded="false" aria-controls="accordionContent">
-       <span class="accordion-left">
+    <div class="accordion-region">
+    <div class="accordion-header-region">
+      <button type="button" class="accordion" id="accordionToggle" aria-expanded="false" aria-controls="accordionContent">
+        <span class="accordion-left">
           <span class="chevron codicon codicon-chevron-right"></span>
           <span>Nodes</span>
         </span>
-      <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
-    </button>
-    <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
-    <div id="nodeContainer"></div>
+        <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
+      </button>
+      </div>
+      <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
+        <div id="nodeContainer"></div>
+      </div>
     </div>
   `);
 
@@ -297,10 +307,15 @@ function addNode() {
     nodeModel.appendChild(option);
   });
 
-  const nodeslots = createElement('div', { id: `${nodeId}_slots` });
-  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' }); // Unicode for trashcan
-  nodeRow.append(label, nodeModel, deleteIcon);
+  // Create a custom control wrapper for nodeModel and deleteIcon
+  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' });
+  const selectWithIcon = createElement('div', { class: 'select-with-icon' });
+  selectWithIcon.appendChild(nodeModel);
+  selectWithIcon.appendChild(deleteIcon);
+
+  nodeRow.append(label, selectWithIcon);
   nodeContainer.appendChild(nodeRow);
+  const nodeslots = createElement('div', { id: `${nodeId}_slots` });
   nodeContainer.appendChild(nodeslots);
 
 }
