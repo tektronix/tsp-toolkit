@@ -118,7 +118,7 @@ interface Slot {
     module: string
 }
 
-interface Node {
+export interface Node {
     nodeId: string
     mainframe: string
     slots?: Slot[]

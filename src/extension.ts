@@ -226,6 +226,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Instantiate a new instance of the ViewProvider class
     const systemConfigWebViewprovider = new ConfigWebView(context.extensionUri)
 
+    void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
     registerCommand(
         context,
         "systemConfigurations.addSystem",

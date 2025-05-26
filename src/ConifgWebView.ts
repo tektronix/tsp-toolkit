@@ -1,7 +1,9 @@
+import { join } from "node:path"
 import * as vscode from "vscode"
 import { Uri, Webview, WebviewView, WebviewViewProvider } from "vscode"
 import {
     NO_OPEN_WORKSPACE_MESSAGE,
+    Node,
     SUPPORTED_MODELS_DETAILS,
     SystemInfo,
 } from "./resourceManager"
@@ -81,6 +83,138 @@ export class ConfigWebView implements WebviewViewProvider {
 </body>
 </html>
 `
+    }
+
+    public async deprecateOldSystemConfigurations() {
+        if (vscode.workspace.workspaceFolders) {
+            const configFilePath = join(
+                vscode.workspace.workspaceFolders[0].uri.fsPath,
+                ".vscode/tspConfig/config.tsp.json",
+            )
+            if (
+                await vscode.workspace.fs
+                    .stat(vscode.Uri.file(configFilePath))
+                    .then(
+                        () => true,
+                        () => false,
+                    )
+            ) {
+                // if configurations is present
+                const systemInfo =
+                    await this.getOldConfiguration(configFilePath)
+                if (systemInfo) {
+                    const option = await vscode.window.showQuickPick(
+                        ["Yes", "No"],
+                        {
+                            canPickMany: false,
+                            title: "Old system configuration found do you want to move it in new structure?",
+                        },
+                    )
+
+                    if (option === "Yes") {
+                        const nodes: Node[] = []
+                        for (const key in systemInfo) {
+                            if (key.includes("node")) {
+                                nodes.push({
+                                    nodeId: key,
+                                    mainframe: systemInfo[key],
+                                })
+                            }
+                        }
+                        const newItem: SystemInfo = {
+                            name: "",
+                            localNode: systemInfo.self,
+                            isActive: false,
+                            nodes: nodes,
+                        }
+
+                        const originalSystemInfo: SystemInfo[] =
+                            vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("tspLinkSystemConfigurations") ?? []
+
+                        const updatedSystemInfos = [
+                            ...originalSystemInfo,
+                            newItem,
+                        ]
+
+                        await vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                "tspLinkSystemConfigurations",
+                                updatedSystemInfos,
+                                false,
+                            )
+                    }
+                }
+                // // if default file and folder present
+                // else if () {
+
+                // }
+                const configFolder = join(
+                    vscode.workspace.workspaceFolders[0].uri.fsPath,
+                    ".vscode/tspConfig/",
+                )
+                // delete this folder
+                try {
+                    await vscode.workspace.fs.delete(
+                        vscode.Uri.file(configFolder),
+                        { recursive: true, useTrash: false },
+                    )
+                    vscode.window.showInformationMessage(
+                        "Old configuration folder deleted successfully.",
+                    )
+                } catch (error) {
+                    vscode.window.showWarningMessage(
+                        "Failed to delete old configuration folder: " +
+                            (error instanceof Error
+                                ? error.message
+                                : String(error)),
+                    )
+                }
+            }
+        }
+    }
+
+    public async getOldConfiguration(
+        configFilePath: string,
+    ): Promise<{ [key: string]: string } | null> {
+        try {
+            const fileUri = vscode.Uri.file(configFilePath)
+            const fileData = await vscode.workspace.fs.readFile(fileUri)
+            const jsonStr = Buffer.from(fileData).toString("utf8")
+            interface OldConfig {
+                nodes?: { [key: string]: { model?: string } }
+                self?: string
+                [key: string]: unknown
+            }
+
+            const config = JSON.parse(jsonStr) as OldConfig
+
+            if (
+                config &&
+                typeof config === "object" &&
+                config.nodes &&
+                typeof config.nodes === "object" &&
+                config.self &&
+                typeof config.self === "string" &&
+                config.self.trim() !== ""
+            ) {
+                const result: { [key: string]: string } = {}
+                result["self"] = config.self
+                for (const nodeKey of Object.keys(config.nodes)) {
+                    const node = config.nodes[nodeKey]
+                    if (node && typeof node.model === "string") {
+                        const nodeNumber = nodeKey.match(/\d+/)?.[0] ?? nodeKey
+                        result[`node[${nodeNumber}]`] = node.model
+                    }
+                }
+                return result
+            }
+            return null
+        } catch {
+            return null
+        }
     }
 
     public addSystem() {
