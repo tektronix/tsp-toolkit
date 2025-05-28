@@ -10,6 +10,8 @@ body {
 label {
   text-align: left;
   color: var(--vscode-foreground);
+  padding-bottom: 5px;
+  padding-top: 5px
 }
 
 .accordion-region {
@@ -139,8 +141,8 @@ select {
   padding: 6px 8px;
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 4px;
-  background-color: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
+  background-color: var(--vscode-settings-dropdownBackground);
+  color: var(--vscode-settings-dropdownForeground);
   cursor: pointer;
   width: fit-content;
 }
@@ -234,13 +236,10 @@ input[type="text"]::placeholder {
   margin-inline: 5px;
   display: flex;
   align-items: center;
-  background: transparent;
-  color: var(--vscode-input-foreground);
   cursor: pointer;
-  border-radius: 0 4px 4px 0;
   transition: background 0.2s;
 }
 .select-with-icon .delete-icon:hover {
-  background: var(--vscode-button-hoverBackground);
-  color: var(--vscode-button-foreground);
+  background-color: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-sideBarSectionHeader-foreground);
 }
