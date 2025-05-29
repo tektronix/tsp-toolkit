@@ -226,19 +226,18 @@ export function activate(context: vscode.ExtensionContext) {
     // Instantiate a new instance of the ViewProvider class
     const systemConfigWebViewprovider = new ConfigWebView(context.extensionUri)
 
-    void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
-    registerCommand(
-        context,
-        "systemConfigurations.addSystem",
-        systemConfigWebViewprovider.addSystem.bind(systemConfigWebViewprovider),
-    )
-
     // Register the provider for a Webview View
     const systemConfigViewDisposable =
         vscode.window.registerWebviewViewProvider(
             ConfigWebView.viewType,
             systemConfigWebViewprovider,
         )
+    void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
+    registerCommand(
+        context,
+        "systemConfigurations.addSystem",
+        systemConfigWebViewprovider.addSystem.bind(systemConfigWebViewprovider),
+    )
     context.subscriptions.push(systemConfigViewDisposable)
 
     Log.debug(

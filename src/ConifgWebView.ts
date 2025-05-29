@@ -12,7 +12,18 @@ import { updateLuaLibraryConfigurations } from "./workspaceManager"
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
     private _webviewView!: vscode.WebviewView
-    constructor(private readonly _extensionUri: Uri) {}
+    constructor(private readonly _extensionUri: Uri) {
+        // Register a callback for configuration changes
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+                await this.getSystemName()
+                await updateLuaLibraryConfigurations()
+                vscode.window.showInformationMessage(
+                    "The system configuration has been updated successfully.",
+                )
+            }
+        })
+    }
     resolveWebviewView(
         webviewView: vscode.WebviewView,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -35,17 +46,6 @@ export class ConfigWebView implements WebviewViewProvider {
         // Sets up an event listener to listen for messages passed from the webview view context
         // and executes code based on the message that is recieved
         this._setWebviewMessageListener(webviewView)
-
-        // Register a callback for configuration changes
-        vscode.workspace.onDidChangeConfiguration(async (event) => {
-            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
-                await this.getSystemName()
-                await updateLuaLibraryConfigurations()
-                vscode.window.showInformationMessage(
-                    "The system configuration has been updated successfully.",
-                )
-            }
-        })
     }
     private _getWebviewContent(webview: Webview) {
         const webviewScriptUri = this.getUri(webview, this._extensionUri, [
@@ -103,12 +103,10 @@ export class ConfigWebView implements WebviewViewProvider {
                 const systemInfo =
                     await this.getOldConfiguration(configFilePath)
                 if (systemInfo) {
-                    const option = await vscode.window.showQuickPick(
-                        ["Yes", "No"],
-                        {
-                            canPickMany: false,
-                            title: "Old system configuration found do you want to move it in new structure?",
-                        },
+                    const option = await vscode.window.showWarningMessage(
+                        "Old system configuration found do you want to export it in new structure and delete old system configuration file and  folder?",
+                        "Yes",
+                        "No",
                     )
 
                     if (option === "Yes") {
@@ -121,8 +119,16 @@ export class ConfigWebView implements WebviewViewProvider {
                                 })
                             }
                         }
+                        const name = await this.getNewSystemName()
+                        if (!name) {
+                            vscode.window.showWarningMessage(
+                                "Unable to get the new system name",
+                            )
+                            return
+                        }
+
                         const newItem: SystemInfo = {
-                            name: "",
+                            name: name,
                             localNode: systemInfo.self,
                             isActive: false,
                             nodes: nodes,
@@ -145,38 +151,22 @@ export class ConfigWebView implements WebviewViewProvider {
                                 updatedSystemInfos,
                                 false,
                             )
+                        await this.activateSystem(name)
+                        vscode.commands.executeCommand(
+                            "systemConfigurations.focus",
+                        )
+                        const configFolder = join(
+                            vscode.workspace.workspaceFolders[0].uri.fsPath,
+                            ".vscode/tspConfig/",
+                        )
+                        await this.deleteOldSystemConfigurations(configFolder)
                     }
-                }
-                // // if default file and folder present
-                // else if () {
-
-                // }
-                const configFolder = join(
-                    vscode.workspace.workspaceFolders[0].uri.fsPath,
-                    ".vscode/tspConfig/",
-                )
-                // delete this folder
-                try {
-                    await vscode.workspace.fs.delete(
-                        vscode.Uri.file(configFolder),
-                        { recursive: true, useTrash: false },
-                    )
-                    vscode.window.showInformationMessage(
-                        "Old configuration folder deleted successfully.",
-                    )
-                } catch (error) {
-                    vscode.window.showWarningMessage(
-                        "Failed to delete old configuration folder: " +
-                            (error instanceof Error
-                                ? error.message
-                                : String(error)),
-                    )
                 }
             }
         }
     }
 
-    public async getOldConfiguration(
+    private async getOldConfiguration(
         configFilePath: string,
     ): Promise<{ [key: string]: string } | null> {
         try {
@@ -191,22 +181,32 @@ export class ConfigWebView implements WebviewViewProvider {
 
             const config = JSON.parse(jsonStr) as OldConfig
 
+            const result: { [key: string]: string } = {}
             if (
-                config &&
-                typeof config === "object" &&
-                config.nodes &&
-                typeof config.nodes === "object" &&
                 config.self &&
-                typeof config.self === "string" &&
-                config.self.trim() !== ""
+                config.self.trim() !== "" &&
+                typeof config.nodes === "object"
             ) {
-                const result: { [key: string]: string } = {}
                 result["self"] = config.self
                 for (const nodeKey of Object.keys(config.nodes)) {
                     const node = config.nodes[nodeKey]
                     if (node && typeof node.model === "string") {
                         const nodeNumber = nodeKey.match(/\d+/)?.[0] ?? nodeKey
-                        result[`node[${nodeNumber}]`] = node.model
+                        const nodeId = `node[${nodeNumber}]`
+                        if (
+                            Object.prototype.hasOwnProperty.call(result, nodeId)
+                        ) {
+                            return null
+                        }
+                        result[nodeId] = node.model
+                    }
+                }
+                //check if model in configuration are in supported model list
+                const supportedModels = Object.keys(SUPPORTED_MODELS_DETAILS)
+                for (const key in result) {
+                    const model = result[key]
+                    if (!supportedModels.includes(model)) {
+                        return null
                     }
                 }
                 return result
@@ -214,6 +214,24 @@ export class ConfigWebView implements WebviewViewProvider {
             return null
         } catch {
             return null
+        }
+    }
+
+    private async deleteOldSystemConfigurations(folderPath: string) {
+        // delete this folder
+        try {
+            await vscode.workspace.fs.delete(vscode.Uri.file(folderPath), {
+                recursive: true,
+                useTrash: false,
+            })
+            vscode.window.showInformationMessage(
+                "Old configuration folder deleted successfully.",
+            )
+        } catch (error) {
+            vscode.window.showWarningMessage(
+                "Failed to delete old configuration folder: " +
+                    (error instanceof Error ? error.message : String(error)),
+            )
         }
     }
 
@@ -459,23 +477,7 @@ export class ConfigWebView implements WebviewViewProvider {
             (system) => !system.name,
         )
         if (systemWithEmptyName) {
-            const options: vscode.InputBoxOptions = {
-                prompt: "Enter new system name",
-                validateInput: (value) => {
-                    const trimmedValue = value.trim()
-                    if (!trimmedValue) {
-                        return "System name cannot be empty"
-                    }
-                    const isDuplicate = existingSystems.some(
-                        (system) => system.name === trimmedValue,
-                    )
-                    if (isDuplicate) {
-                        return "Duplicate system name not allowed"
-                    }
-                    return null
-                },
-            }
-            const name = await vscode.window.showInputBox(options)
+            const name = await this.getNewSystemName()
             if (name) {
                 systemWithEmptyName.name = name
                 await vscode.workspace
@@ -500,6 +502,32 @@ export class ConfigWebView implements WebviewViewProvider {
                     )
             }
         }
+    }
+
+    private async getNewSystemName() {
+        const existingSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        const options: vscode.InputBoxOptions = {
+            prompt: "Enter new system name",
+            validateInput: (value) => {
+                const trimmedValue = value.trim()
+                if (!trimmedValue) {
+                    return "System name cannot be empty"
+                }
+                const isDuplicate = existingSystems.some(
+                    (system: { name: string }) => system.name === trimmedValue,
+                )
+                if (isDuplicate) {
+                    return "Duplicate system name not allowed"
+                }
+                return null
+            },
+        }
+        const name = await vscode.window.showInputBox(options)
+        return name
     }
 
     private getNonce() {
