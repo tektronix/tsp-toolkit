@@ -266,7 +266,6 @@ function createAddSystemForm(supportedModels) {
       </div>
     
     <div id="localNodeSlots"></div>
-    <div class="accordion-region">
     <div class="accordion-header-region">
       <button type="button" class="accordion" id="accordionToggle" aria-expanded="false" aria-controls="accordionContent">
         <span class="accordion-left">
@@ -275,11 +274,10 @@ function createAddSystemForm(supportedModels) {
         </span>
         <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
       </button>
-      </div>
       <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
         <div id="nodeContainer"></div>
       </div>
-    </div>
+      </div>
   `);
 
   return form;
@@ -317,6 +315,9 @@ function addNode() {
   nodeContainer.appendChild(nodeRow);
   const nodeslots = createElement('div', { id: `${nodeId}_slots` });
   nodeContainer.appendChild(nodeslots);
+
+  if (!nodeContainer.classList.contains('show'))
+    nodeContainer.classList.add('show');
 
 }
 
@@ -421,6 +422,10 @@ function setupEventDelegation() {
         }
         checkDuplicateNodeNumber()
         handleFormUpdate()
+      const nodeContainer = document.getElementById('nodeContainer');
+      
+      if(!nodeContainer.hasChildNodes())
+        nodeContainer.classList.remove('show')
       }
       else if (target.dataset.event === "delete-selected-system") {
         const systemSelector = document.getElementById('systemSelector');

@@ -14,26 +14,16 @@ label {
   padding-top: 5px
 }
 
-.accordion-region {
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 6px;
-  background: var(--vscode-sideBar-background);
-  margin-top: 18px;
-  margin-bottom: 18px;
-  padding: 12px 14px 12px 14px;
-  box-shadow: 0 1px 4px 0 var(--vscode-widget-shadow,rgba(0,0,0,0.08));
-  min-width: 180px; /* Prevent shrinking below this width */
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-
 .accordion-header-region {
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 6px;
   background: var(--vscode-sideBar-background);
+  margin-top: 20px;
   box-shadow: 0 1px 4px 0 var(--vscode-widget-shadow,rgba(0,0,0,0.08));
+  min-width: 175px; /* Prevent shrinking below this width */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .accordion {
@@ -55,6 +45,13 @@ label {
   box-shadow: none;
 }
 
+.show {
+  margin-top: 10px;
+  margin-left: 5px;
+  margin-bottom: 10px;
+  
+}
+
 .accordion-left {
   display: flex;
   align-items: center;
@@ -68,6 +65,10 @@ label {
 
 .accordion[aria-expanded="true"] .chevron {
   transform: rotate(90deg);
+}
+
+.accordion[aria-expanded="true"] {
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
 }
 
 .plus-icon {
@@ -91,7 +92,6 @@ label {
 
 .accordion-content.show {
   display: block;
-  margin-top: 15px;
 }
 
 .node-subgroup,
@@ -124,7 +124,7 @@ label {
   cursor: pointer;
 }
 
-@media (max-width: 340px) {
+@media (max-width: 335px) {
   .grid-layout{
     grid-template-columns: 1fr;
   }
