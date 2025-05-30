@@ -224,9 +224,6 @@ export class ConfigWebView implements WebviewViewProvider {
                 recursive: true,
                 useTrash: false,
             })
-            vscode.window.showInformationMessage(
-                "Old configuration folder deleted successfully.",
-            )
         } catch (error) {
             vscode.window.showWarningMessage(
                 "Failed to delete old configuration folder: " +
