@@ -104,7 +104,7 @@ export class ConfigWebView implements WebviewViewProvider {
                     await this.getOldConfiguration(configFilePath)
                 if (systemInfo) {
                     const option = await vscode.window.showWarningMessage(
-                        "Old system configuration found do you want to export it in new structure and delete old system configuration file and  folder?",
+                        "An old system configuration was found. Do you want to export it to the new structure and delete the old configuration file and folder?",
                         "Yes",
                         "No",
                     )
