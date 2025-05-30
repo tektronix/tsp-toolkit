@@ -192,6 +192,7 @@ function renderFormWithData(form, systemData) {
   // Render nodes if available
   const nodeContainer = form.querySelector('#nodeContainer');
   nodeContainer.innerHTML = ""
+  nodeContainer.classList.remove('show')
   if (systemData.nodes) {
     systemData.nodes.forEach(node => {
       addNode();
