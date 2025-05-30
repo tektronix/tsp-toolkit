@@ -1,7 +1,9 @@
+import { join } from "node:path"
 import * as vscode from "vscode"
 import { Uri, Webview, WebviewView, WebviewViewProvider } from "vscode"
 import {
     NO_OPEN_WORKSPACE_MESSAGE,
+    Node,
     SUPPORTED_MODELS_DETAILS,
     SystemInfo,
 } from "./resourceManager"
@@ -10,7 +12,15 @@ import { updateLuaLibraryConfigurations } from "./workspaceManager"
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
     private _webviewView!: vscode.WebviewView
-    constructor(private readonly _extensionUri: Uri) {}
+    constructor(private readonly _extensionUri: Uri) {
+        // Register a callback for configuration changes
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+                await this.getSystemName()
+                await updateLuaLibraryConfigurations()
+            }
+        })
+    }
     resolveWebviewView(
         webviewView: vscode.WebviewView,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -33,14 +43,6 @@ export class ConfigWebView implements WebviewViewProvider {
         // Sets up an event listener to listen for messages passed from the webview view context
         // and executes code based on the message that is recieved
         this._setWebviewMessageListener(webviewView)
-
-        // Register a callback for configuration changes
-        vscode.workspace.onDidChangeConfiguration(async (event) => {
-            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
-                await this.getSystemName()
-                await updateLuaLibraryConfigurations()
-            }
-        })
     }
     private _getWebviewContent(webview: Webview) {
         const webviewScriptUri = this.getUri(webview, this._extensionUri, [
@@ -78,6 +80,153 @@ export class ConfigWebView implements WebviewViewProvider {
 </body>
 </html>
 `
+    }
+
+    public async deprecateOldSystemConfigurations() {
+        if (vscode.workspace.workspaceFolders) {
+            const configFilePath = join(
+                vscode.workspace.workspaceFolders[0].uri.fsPath,
+                ".vscode/tspConfig/config.tsp.json",
+            )
+            if (
+                await vscode.workspace.fs
+                    .stat(vscode.Uri.file(configFilePath))
+                    .then(
+                        () => true,
+                        () => false,
+                    )
+            ) {
+                // if configurations is present
+                const systemInfo =
+                    await this.getOldConfiguration(configFilePath)
+                if (systemInfo) {
+                    const option = await vscode.window.showWarningMessage(
+                        "An old system configuration was found. Do you want to export it to the new structure and delete the old configuration file and folder?",
+                        "Yes",
+                        "No",
+                    )
+
+                    if (option === "Yes") {
+                        const nodes: Node[] = []
+                        for (const key in systemInfo) {
+                            if (key.includes("node")) {
+                                nodes.push({
+                                    nodeId: key,
+                                    mainframe: systemInfo[key],
+                                })
+                            }
+                        }
+                        const name = await this.getNewSystemName()
+                        if (!name) {
+                            vscode.window.showWarningMessage(
+                                "Unable to get the new system name",
+                            )
+                            return
+                        }
+
+                        const newItem: SystemInfo = {
+                            name: name,
+                            localNode: systemInfo.self,
+                            isActive: false,
+                            nodes: nodes,
+                        }
+
+                        const originalSystemInfo: SystemInfo[] =
+                            vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("tspLinkSystemConfigurations") ?? []
+
+                        const updatedSystemInfos = [
+                            ...originalSystemInfo,
+                            newItem,
+                        ]
+
+                        await vscode.workspace
+                            .getConfiguration("tsp")
+                            .update(
+                                "tspLinkSystemConfigurations",
+                                updatedSystemInfos,
+                                false,
+                            )
+                        await this.activateSystem(name)
+                        vscode.commands.executeCommand(
+                            "systemConfigurations.focus",
+                        )
+                        const configFolder = join(
+                            vscode.workspace.workspaceFolders[0].uri.fsPath,
+                            ".vscode/tspConfig/",
+                        )
+                        await this.deleteOldSystemConfigurations(configFolder)
+                    }
+                }
+            }
+        }
+    }
+
+    private async getOldConfiguration(
+        configFilePath: string,
+    ): Promise<{ [key: string]: string } | null> {
+        try {
+            const fileUri = vscode.Uri.file(configFilePath)
+            const fileData = await vscode.workspace.fs.readFile(fileUri)
+            const jsonStr = Buffer.from(fileData).toString("utf8")
+            interface OldConfig {
+                nodes?: { [key: string]: { model?: string } }
+                self?: string
+                [key: string]: unknown
+            }
+
+            const config = JSON.parse(jsonStr) as OldConfig
+
+            const result: { [key: string]: string } = {}
+            if (
+                config.self &&
+                config.self.trim() !== "" &&
+                typeof config.nodes === "object"
+            ) {
+                result["self"] = config.self
+                for (const nodeKey of Object.keys(config.nodes)) {
+                    const node = config.nodes[nodeKey]
+                    if (node && typeof node.model === "string") {
+                        const nodeNumber = nodeKey.match(/\d+/)?.[0] ?? nodeKey
+                        const nodeId = `node[${nodeNumber}]`
+                        if (
+                            Object.prototype.hasOwnProperty.call(result, nodeId)
+                        ) {
+                            return null
+                        }
+                        result[nodeId] = node.model
+                    }
+                }
+                //check if model in configuration are in supported model list
+                const supportedModels = Object.keys(SUPPORTED_MODELS_DETAILS)
+                for (const key in result) {
+                    const model = result[key]
+                    if (!supportedModels.includes(model)) {
+                        return null
+                    }
+                }
+                return result
+            }
+            return null
+        } catch {
+            return null
+        }
+    }
+
+    private async deleteOldSystemConfigurations(folderPath: string) {
+        // delete this folder
+        try {
+            await vscode.workspace.fs.delete(vscode.Uri.file(folderPath), {
+                recursive: true,
+                useTrash: false,
+            })
+        } catch (error) {
+            vscode.window.showWarningMessage(
+                "Failed to delete old configuration folder: " +
+                    (error instanceof Error ? error.message : String(error)),
+            )
+        }
     }
 
     public addSystem() {
@@ -322,23 +471,7 @@ export class ConfigWebView implements WebviewViewProvider {
             (system) => !system.name,
         )
         if (systemWithEmptyName) {
-            const options: vscode.InputBoxOptions = {
-                prompt: "Enter new system name",
-                validateInput: (value) => {
-                    const trimmedValue = value.trim()
-                    if (!trimmedValue) {
-                        return "System name cannot be empty"
-                    }
-                    const isDuplicate = existingSystems.some(
-                        (system) => system.name === trimmedValue,
-                    )
-                    if (isDuplicate) {
-                        return "Duplicate system name not allowed"
-                    }
-                    return null
-                },
-            }
-            const name = await vscode.window.showInputBox(options)
+            const name = await this.getNewSystemName()
             if (name) {
                 systemWithEmptyName.name = name
                 await vscode.workspace
@@ -363,6 +496,32 @@ export class ConfigWebView implements WebviewViewProvider {
                     )
             }
         }
+    }
+
+    private async getNewSystemName() {
+        const existingSystems: SystemInfo[] =
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("tspLinkSystemConfigurations") ?? []
+
+        const options: vscode.InputBoxOptions = {
+            prompt: "Enter new system name",
+            validateInput: (value) => {
+                const trimmedValue = value.trim()
+                if (!trimmedValue) {
+                    return "System name cannot be empty"
+                }
+                const isDuplicate = existingSystems.some(
+                    (system: { name: string }) => system.name === trimmedValue,
+                )
+                if (isDuplicate) {
+                    return "Duplicate system name not allowed"
+                }
+                return null
+            },
+        }
+        const name = await vscode.window.showInputBox(options)
+        return name
     }
 
     private getNonce() {
