@@ -108,6 +108,7 @@ label {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin-bottom: 20px;
+  margin-top: 10px;
   align-items: baseline;
   width: fit-content;
 }
