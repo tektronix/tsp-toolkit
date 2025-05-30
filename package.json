@@ -340,6 +340,14 @@
                 {
                     "command": "tsp.sendFile",
                     "when": "false"
+                },
+                {
+                    "command": "systemConfigurations.addSystem",
+                    "when": "false"
+                },
+                {
+                    "command": "systemConfigurations.fetchConnectionNodes",
+                    "when": "false"
                 }
             ],
             "view/item/context": [

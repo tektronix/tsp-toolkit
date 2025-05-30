@@ -18,9 +18,6 @@ export class ConfigWebView implements WebviewViewProvider {
             if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
                 await this.getSystemName()
                 await updateLuaLibraryConfigurations()
-                vscode.window.showInformationMessage(
-                    "The system configuration has been updated successfully.",
-                )
             }
         })
     }
