@@ -28,6 +28,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Update support for already saved systems
 
+### Changed
+- Update branding to be Tektronix instead of Keithley
+
 ## [1.2.2]
 
 ### Added
