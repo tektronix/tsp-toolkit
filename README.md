@@ -82,19 +82,22 @@ signature help, and documentation for the instruments in your TSP-Link network.
 If you are already connected to a physical instrument with your TSP-Link network configured,
 then it is possible to have TSP Toolkit automatically configure your project for you.
 
-1. Open any workspace folder in VSCode
-2. If your workspace folder does not already contain one, create a .tsp (for example `my-tsp-file.tsp`)
-3. Connect to your instrument using the discovery pane or the `TSP: Connect` command.
-4. Right-click on the `.vscode/tspConfig` folder
-5. Select "Fetch TSP-Link Nodes for Connected Instrument"
+1. Open any workspace folder in VSCode.
+2. Connect to your instrument using the discovery pane or the `TSP: Connect` command.
+3. Open the side bar by clicking the TSP Toolkit icon in the Activity Bar (usually on the left side of VSCode).
+4. In the TSP Toolkit side pane, expand the **SYSTEM CONFIGURATIONS** section.
+5. Click the **Fetch connected instrument and its TSP-Link nodes** icon.
+6. Enter a name for the new system when prompted.
 
 
 ### Manual Configuration
 
-1. Open any workspace folder in VSCode
-2. If your workspace folder does not already contain one, create a .tsp (for example `my-tsp-file.tsp`)
-3. Open `tspConfig/config.tsp.json`
-4. Enter your instrument model name for the `"self"` attribute in the JSON.
+1. Open any workspace folder in VSCode.
+2. Open the side bar by clicking the TSP Toolkit icon in the Activity Bar (usually on the left side of VSCode).
+3. In the TSP Toolkit side pane, expand the **SYSTEM CONFIGURATIONS** section.
+4. Click the **Add new System** icon.
+5. Enter the required system details and save.
+
 
 
 ## Feature Details
