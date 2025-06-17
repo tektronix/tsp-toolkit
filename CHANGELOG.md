@@ -16,6 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.2.4]
+
+### Fixed
+- Sanitize log files to remove sensitive information.
+
 ## [1.2.3]
 
 ### Fixed
@@ -331,7 +336,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.4
 [1.2.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.3
 [1.2.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.2
 [1.2.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.1
