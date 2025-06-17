@@ -254,7 +254,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (info_string === "") {
             Log.error(
-                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                "Unable to connect to instrument, could not get instrument information",
                 LOGLOC,
             )
             return null
