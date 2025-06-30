@@ -19,7 +19,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.2.4]
 
 ### Fixed
-- Sanitize log files to remove sensitive information.
+- Sanitize log files to remove sensitive information
+- (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
 
 ## [1.2.3]
 
