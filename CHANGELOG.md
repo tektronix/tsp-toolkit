@@ -24,7 +24,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
 ### Added
 - (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
-- (**tsp-toolkit-webhelp:**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
+- (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
 
 ## [1.2.3]
 
