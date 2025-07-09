@@ -25,6 +25,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
 - (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
+- (**tsp-toolkit-kic-cli**) Add better password support
+- (**tsp-toolkit-kic-cli**) Don't interrupt instruments while discovering instruments.
 
 ## [1.2.3]
 
