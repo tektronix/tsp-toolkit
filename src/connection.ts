@@ -202,7 +202,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
                 "info",
-                this.type.toLowerCase(),
                 "--json",
                 this.addr,
             ],
@@ -282,7 +281,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 `${new Date().toISOString().substring(0, 10)}-kic.log`,
             ),
             "dump",
-            this.type.toLowerCase(),
             this.addr,
             "--output",
             dump_path,
@@ -400,7 +398,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             `${new Date().toISOString().substring(0, 10)}-kic.log`,
                         ),
                         "connect",
-                        this.type.toLowerCase(),
                         this.addr,
                     ]
 
@@ -519,7 +516,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 `${new Date().toISOString().substring(0, 10)}-kic.log`,
             ),
             "reset",
-            this.type.toLowerCase(),
             this.addr,
         ])
 
