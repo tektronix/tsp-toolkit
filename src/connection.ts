@@ -192,7 +192,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     async checkLogin(
         timeout_ms?: number,
-    ): Promise<{ username: boolean; password: boolean }> {
+    ): Promise<{ username: boolean; password: boolean; keyring?: string }> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.checkLogin()",
@@ -237,6 +237,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         const requirements = await new Promise<{
             username: boolean
             password: boolean
+            keyring?: string
         }>((resolve) => {
             let data = ""
             this._background_process?.stderr?.on("data", (chunk) => {
@@ -246,10 +247,30 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 data += chunk
             })
             this._background_process?.on("close", (code) => {
-                const ret = { username: false, password: false }
+                const ret: {
+                    username: boolean
+                    password: boolean
+                    keyring?: string
+                } = {
+                    username: false,
+                    password: false,
+                    keyring: undefined,
+                }
+                const d = data.toString()
+                const [, details] = d.split(": ")
+                const reqs = details.split(",")
+                if (
+                    (reqs.length > 1 && d.search(/USERNAME/g) === -1) ||
+                    reqs.length > 2
+                ) {
+                    ret.keyring = reqs[reqs.length - 1].trim()
+                    resolve(ret)
+                    return
+                }
+
                 if (code != 0) {
                     ret.password = true
-                    if (data.toString().search(/USERNAME/g) !== -1) {
+                    if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
                     }
                 }
@@ -272,16 +293,22 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     async promptDetails(reqs: {
         username: boolean
         password: boolean
-    }): Promise<{ username?: string; password?: string }> {
+        keyring?: string
+    }): Promise<{ username?: string; password?: string; keyring?: string }> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.promptDetails()",
         }
         Log.debug("Prompting user for login details", LOGLOC)
 
-        const credentials: { username?: string; password?: string } = {
+        const credentials: {
+            username?: string
+            password?: string
+            keyring?: string
+        } = {
             username: undefined,
             password: undefined,
+            keyring: undefined,
         }
         if (reqs.username) {
             credentials.username = await vscode.window.showInputBox({
@@ -300,6 +327,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             })
         }
 
+        if (reqs.keyring) {
+            credentials.keyring = reqs.keyring
+        }
+
         return credentials
     }
 
@@ -312,6 +343,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     async login(credentials: {
         username?: string
         password?: string
+        keyring?: string
     }): Promise<string | null | undefined> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.login()" }
         Log.debug("Logging into instrument", LOGLOC)
@@ -325,16 +357,20 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             "login",
             this.addr,
         ]
-        if (!credentials.username && !credentials.password) {
-            return null
-        }
+        if (credentials.keyring) {
+            args.push("--keyring", credentials.keyring)
+        } else {
+            if (!credentials.username && !credentials.password) {
+                return null
+            }
 
-        if (credentials.username) {
-            args.push("--username", credentials.username)
-        }
+            if (credentials.username) {
+                args.push("--username", credentials.username)
+            }
 
-        if (credentials.password) {
-            args.push("--password", credentials.password)
+            if (credentials.password) {
+                args.push("--password", credentials.password)
+            }
         }
 
         this._background_process = child.spawn(EXECUTABLE, args, {
