@@ -478,7 +478,7 @@
     "optionalDependencies": {
         "@tektronix/kic-cli-darwin-arm64": "0.20.0-1",
         "@tektronix/kic-cli-linux-x64": "0.20.0-1",
-        "@tektronix/kic-cli-win32-x64": "0.20.0-1"
+        "@tektronix/kic-cli-win32-x64": "file:C:/Users/esarver1/Projects/tsp-toolkit-kic-cli/"
     },
     "extensionDependencies": [
         "sumneko.lua"
