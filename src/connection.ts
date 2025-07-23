@@ -256,19 +256,17 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     password: false,
                     keyring: undefined,
                 }
-                const d = data.toString()
-                const [, details] = d.split(": ")
-                const reqs = details.split(",")
-                if (
-                    (reqs.length > 1 && d.search(/USERNAME/g) === -1) ||
-                    reqs.length > 2
-                ) {
-                    ret.keyring = reqs[reqs.length - 1].trim()
-                    resolve(ret)
-                    return
-                }
-
                 if (code != 0) {
+                    const d = data.toString()
+                    const [, details] = d.split(": ")
+                    const reqs = details.split(",")
+                    if (
+                        (reqs.length > 1 && d.search(/USERNAME/g) === -1) ||
+                        reqs.length > 2
+                    ) {
+                        ret.keyring = reqs[reqs.length - 1].trim()
+                    }
+
                     ret.password = true
                     if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
@@ -310,6 +308,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             password: undefined,
             keyring: undefined,
         }
+        if (reqs.keyring) {
+            credentials.keyring = reqs.keyring
+            return credentials
+        }
+
         if (reqs.username) {
             credentials.username = await vscode.window.showInputBox({
                 title: "Enter Username",
@@ -325,10 +328,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 password: true,
                 prompt: "Enter the password for the instrument to which you are trying to connect.",
             })
-        }
-
-        if (reqs.keyring) {
-            credentials.keyring = reqs.keyring
         }
 
         return credentials
@@ -408,6 +407,88 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         return keyring_id
+    }
+
+    async ping(timeout_ms?: number): Promise<IIDNInfo | null> {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.ping()" }
+        Log.debug("Getting instrument information", LOGLOC)
+
+        const args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "ping",
+            "--json",
+            this.addr,
+        ]
+
+        if (this._keyring) {
+            args.push("--keyring", this._keyring)
+        }
+
+        this._background_process = child.spawn(EXECUTABLE, args, {
+            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+        })
+        if (timeout_ms) {
+            setTimeout(() => {
+                if (
+                    os.platform() === "win32" &&
+                    this._background_process?.pid
+                ) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        this._background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    this._background_process?.kill("SIGINT")
+                }
+            }, timeout_ms)
+        }
+        const info_string = await new Promise<string | null>((resolve) => {
+            let data = ""
+            this._background_process?.stderr?.on("data", (chunk) => {
+                Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+            })
+            this._background_process?.stdout?.on("data", (chunk) => {
+                data += chunk
+            })
+            this._background_process?.on("close", (code) => {
+                if (code === 0) {
+                    resolve(data)
+                }
+                resolve(null)
+            })
+        })
+
+        if (!info_string) {
+            return null
+        }
+
+        const exit_code = this._background_process.exitCode
+
+        this._background_process = undefined
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
+            LOGLOC,
+        )
+
+        if (info_string === "") {
+            Log.error(
+                "Unable to connect to instrument, could not get instrument information",
+                LOGLOC,
+            )
+            return null
+        }
+
+        return <IIDNInfo>JSON.parse(info_string)
     }
 
     async getInfo(timeout_ms?: number): Promise<IIDNInfo | null> {
@@ -576,6 +657,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     if (login_required) {
                         for (let i = 1; i <= 3; i++) {
                             //TODO: Prompt for the required information (if any)
+                            if (i > 1 && login_required.keyring) {
+                                login_required.keyring = undefined
+                            }
 
                             progress.report({
                                 message: `Attempt ${i} of 3: Prompting for instrument authentication details`,
@@ -599,7 +683,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         return new Promise((resolve) => resolve(false))
                     }
 
-                    const info = await this.getInfo()
+                    const info = await this.ping()
 
                     if (!info) {
                         vscode.window.showErrorMessage(
@@ -846,7 +930,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     //}
 
     async getUpdatedStatus(): Promise<void> {
-        const info = await this.getInfo(1000)
+        const info = await this.ping(1000)
         let new_status = ConnectionStatus.Inactive
         if (info?.serial_number === this._parent?.info.serial_number) {
             new_status = ConnectionStatus.Active
