@@ -15,6 +15,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+## [1.2.5]
+
+### Added
+- Add abort menu to abort current job on the connected instrument
 
 ## [1.2.4]
 
