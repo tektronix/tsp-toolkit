@@ -141,6 +141,13 @@ export function activate(context: vscode.ExtensionContext) {
             },
         },
         {
+            name: "InstrumentsExplorer.abort",
+            cb: async (e: Connection) => {
+                await startAbort(e)
+                vscode.window.showInformationMessage("Abort complete")
+            },
+        },
+        {
             name: "InstrumentsExplorer.upgradeFirmware",
             cb: async (e: Instrument) => {
                 await e.upgrade()
@@ -269,6 +276,11 @@ export function deactivate() {
 //Request the instrument to be reset
 function startReset(def: Connection): Promise<void> {
     return Promise.resolve(def.reset())
+}
+
+//Request the instrument to be reset
+function startAbort(def: Connection): Promise<void> {
+    return Promise.resolve(def.abort())
 }
 
 function updateExtensionSettings() {

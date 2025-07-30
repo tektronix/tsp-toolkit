@@ -871,6 +871,54 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         })
     }
 
+    async abort() {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.abort()",
+        }
+        if (this._terminal) {
+            Log.debug("Terminal exists, sending .abort", LOGLOC)
+            this.showTerminal()
+            this._terminal?.sendText(".abort")
+            return
+        }
+        if (this._background_process) {
+            //wait for a background process slot to open up if it is busy
+            Log.debug(
+                "Terminal doesn't exist and background process is busy. Waiting...",
+                LOGLOC,
+            )
+            await new Promise<void>((r) =>
+                this._background_process?.on("close", () => r()),
+            )
+            Log.debug(
+                "... Background process finished starting new abort call in background process",
+                LOGLOC,
+            )
+        }
+        this._background_process = child.spawn(EXECUTABLE, [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "abort",
+            this.type.toLowerCase(),
+            this.addr,
+        ])
+
+        await new Promise<void>((resolve) => {
+            this._background_process?.on("close", () => {
+                Log.trace(
+                    `Abort process exited with code: ${this._background_process?.exitCode}`,
+                    LOGLOC,
+                )
+                this._background_process = undefined
+                resolve()
+            })
+        })
+    }
+
     /**
      * Upgrade the instrument that can be connected to by this Connection.
      *

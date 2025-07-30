@@ -203,6 +203,11 @@
                 "icon": "$(discard)"
             },
             {
+                "command": "InstrumentsExplorer.abort",
+                "title": "Abort",
+                "icon": "$(circle-slash)"
+            },
+            {
                 "command": "InstrumentsExplorer.upgradeFirmware",
                 "title": "Upgrade Firmware",
                 "category": "TSP",
@@ -359,6 +364,11 @@
                 {
                     "command": "InstrumentsExplorer.reset",
                     "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
+                    "group": "inline"
+                },
+                {
+                    "command": "InstrumentsExplorer.abort",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Connected.*/",
                     "group": "inline"
                 },
                 {

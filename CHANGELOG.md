@@ -15,7 +15,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
-
 ## [1.2.4]
 
 ### Changed
@@ -27,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
 - (**tsp-toolkit-kic-cli**) Add better password support
 - (**tsp-toolkit-kic-cli**) Don't interrupt instruments while discovering instruments.
+- Add abort menu to abort current job on the connected instrument
 
 ## [1.2.3]
 
