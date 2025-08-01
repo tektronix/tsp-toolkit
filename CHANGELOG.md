@@ -19,8 +19,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - Sanitize log files to remove sensitive information
+- Allow user to connect to instruments that are "Offline" (just in case they weren't discovered)
+
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
+
 ### Added
 - (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
 - (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation

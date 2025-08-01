@@ -190,9 +190,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    async checkLogin(
-        timeout_ms?: number,
-    ): Promise<{ username: boolean; password: boolean; keyring?: string }> {
+    async checkLogin(timeout_ms?: number): Promise<{
+        username: boolean
+        password: boolean
+        keyring?: string
+    } | null> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.checkLogin()",
@@ -238,7 +240,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             username: boolean
             password: boolean
             keyring?: string
-        }>((resolve) => {
+        } | null>((resolve) => {
             let data = ""
             this._background_process?.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
@@ -256,7 +258,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     password: false,
                     keyring: undefined,
                 }
-                if (code != 0) {
+                if (code != 0 && data.length != 0) {
                     const d = data.toString()
                     const [, details] = d.split(": ")
                     const reqs = details.split(",")
@@ -271,6 +273,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
                     }
+                } else {
+                    resolve(null)
                 }
                 resolve(ret)
             })
@@ -605,6 +609,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     async connect(name?: string) {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
+        const orig_status = this.status
         this.status = ConnectionStatus.Connected
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
@@ -673,6 +678,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                                 break
                             }
                         }
+                    } else {
+                        vscode.window.showErrorMessage(
+                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                        )
+                        this.status = orig_status
+                        return new Promise((resolve) => resolve(false))
                     }
                     //Get instrument info
                     progress.report({
@@ -689,7 +700,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         vscode.window.showErrorMessage(
                             `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
                         )
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return new Promise((resolve) => resolve(false))
                     }
 
