@@ -378,7 +378,7 @@
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && !(viewItem =~ /CONN.*Connected.*/)",
                     "group": "inline"
                 },
                 {
