@@ -258,7 +258,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     password: false,
                     keyring: undefined,
                 }
-                if (code != 0 && data.length != 0) {
+                if (code != 0) {
+                    if (data.length === 0) {
+                        resolve(null)
+                        return
+                    }
                     const d = data.toString()
                     const [, details] = d.split(": ")
                     const reqs = details.split(",")
@@ -273,8 +277,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
                     }
-                } else {
-                    resolve(null)
                 }
                 resolve(ret)
             })
@@ -659,7 +661,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
                     const login_required = await this.checkLogin()
 
-                    if (login_required) {
+                    if (login_required !== null) {
                         for (let i = 1; i <= 3; i++) {
                             //TODO: Prompt for the required information (if any)
                             if (i > 1 && login_required.keyring) {
@@ -680,7 +682,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         }
                     } else {
                         vscode.window.showErrorMessage(
-                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                            `Unable to connect to instrument at ${this._addr}`,
+                        )
+                        Log.error(
+                            "Connection failed: unable to reach requested instrument.",
+                            LOGLOC,
                         )
                         this.status = orig_status
                         return new Promise((resolve) => resolve(false))
@@ -700,7 +706,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         vscode.window.showErrorMessage(
                             `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
                         )
-                        this.status = orig_status
+                        this.status = ConnectionStatus.Active
                         return new Promise((resolve) => resolve(false))
                     }
 
