@@ -292,14 +292,21 @@ function addNode() {
   const nodeId = `node_${nodeCount++}`;
   const nodeRow = createElement('div', { class: 'node-subgroup', id: nodeId });
 
-  const label = createElement('label', { for: `${nodeId}_mainframe` }, `
-    node [ <select class="node-number" name="${nodeId}_nodeId", id = "name="${nodeId}_nodeId""></select> ]
-  `);
+  // Instead of putting select inside label as HTML string:
+  const label = createElement('label', { for: `${nodeId}_nodeId`, class: 'node-label' }, 'node [');
+  const numberSelect = createElement('select', {
+    class: 'node-number',
+    name: `${nodeId}_nodeId`,
+    id: `${nodeId}_nodeId`
+  });
+  label.appendChild(numberSelect);
+  label.appendChild(document.createTextNode(']'));
 
-  const numberSelect = label.querySelector('select');
   numberSelect.innerHTML = getAvailableNodeOptions().map(n => `<option value="${n}">${n}</option>`).join('');
   numberSelect.value = 1;
 
+  // Create label for node model select
+  const nodeModelLabel = createElement('label',{}, 'Model:');
   const nodeModel = createElement('select', { name: `${nodeId}_mainframe`, id: `${nodeId}_mainframe` });
   Object.keys(state.supportedModels).forEach(model => {
     const option = createElement('option', { value: model }, model);
@@ -311,8 +318,10 @@ function addNode() {
   const selectWithIcon = createElement('div', { class: 'select-with-icon' });
   selectWithIcon.appendChild(nodeModel);
   selectWithIcon.appendChild(deleteIcon);
+  const nodeModelDiv = createElement('div', { class: 'form-group'});
+  nodeModelDiv.append(nodeModelLabel, selectWithIcon)
 
-  nodeRow.append(label, selectWithIcon);
+  nodeRow.append(label, nodeModelDiv);
   nodeContainer.appendChild(nodeRow);
   const nodeslots = createElement('div', { id: `${nodeId}_slots` });
   nodeContainer.appendChild(nodeslots);
@@ -423,10 +432,10 @@ function setupEventDelegation() {
         }
         checkDuplicateNodeNumber()
         handleFormUpdate()
-      const nodeContainer = document.getElementById('nodeContainer');
-      
-      if(!nodeContainer.hasChildNodes())
-        nodeContainer.classList.remove('show')
+        const nodeContainer = document.getElementById('nodeContainer');
+
+        if (!nodeContainer.hasChildNodes())
+          nodeContainer.classList.remove('show')
       }
       else if (target.dataset.event === "delete-selected-system") {
         const systemSelector = document.getElementById('systemSelector');

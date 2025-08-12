@@ -11,7 +11,8 @@ label {
   text-align: left;
   color: var(--vscode-foreground);
   padding-bottom: 5px;
-  padding-top: 5px
+  padding-top: 5px;
+  white-space: nowrap;
 }
 
 .accordion-header-region {
@@ -20,7 +21,7 @@ label {
   background: var(--vscode-sideBar-background);
   margin-top: 20px;
   box-shadow: 0 1px 4px 0 var(--vscode-widget-shadow,rgba(0,0,0,0.08));
-  min-width: 175px; /* Prevent shrinking below this width */
+  /* min-width: 175px; */ /* Prevent shrinking below this width */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -49,6 +50,7 @@ label {
   margin-top: 10px;
   margin-left: 5px;
   margin-bottom: 10px;
+  margin-right: 5px;
   
 }
 
@@ -100,56 +102,40 @@ label {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  /* gap: 8px; */
   margin-bottom: 8px;
 }
 
-.selected-system{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin-bottom: 20px;
-  margin-top: 10px;
-  align-items: baseline;
-  width: fit-content;
-}
 
-.grid-layout{
-  display: grid;
-  grid-template-columns: 150px 1fr;
+.selected-system,
+.grid-layout {
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  /* gap: 10px; */
-  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+@media(max-width: 280px){
+  .grid-layout {
+  display: grid;
+  }
 }
 
 .delete-icon {
   cursor: pointer;
 }
 
-@media (max-width: 335px) {
-  .grid-layout{
-    grid-template-columns: 1fr;
-  }
-  .selected-system{
-     display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin-bottom: 8px;
-  }
-}
-
 select {
-  padding: 6px 8px;
+  padding: 4px;
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 4px;
   background-color: var(--vscode-settings-dropdownBackground);
   color: var(--vscode-settings-dropdownForeground);
   cursor: pointer;
-  width: fit-content;
 }
 
 input[type="text"] {
-  padding: 6px 8px;
+  padding: 4px;
   border: 1px solid var(--vscode-editorWidget-border);
   border-radius: 4px;
   background-color: var(--vscode-input-background);
@@ -219,7 +205,7 @@ input[type="text"]::placeholder {
   border-radius: 4px;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
-  width: fit-content;
+  width: 100%;
 }
 .select-with-icon select {
   border: none;
@@ -228,10 +214,12 @@ input[type="text"]::placeholder {
   color: inherit;
   height: 100%;
   box-shadow: none;
-  padding: 6px 8px;
+  padding: 4px;
+  background-color: var(--vscode-settings-dropdownBackground);
+  color: var(--vscode-settings-dropdownForeground);
   background-color: var(--vscode-input-background);
   cursor: pointer;
-  width: fit-content;
+  width: 100%;
 }
 .select-with-icon .delete-icon {
   margin-inline: 5px;
@@ -243,4 +231,16 @@ input[type="text"]::placeholder {
 .select-with-icon .delete-icon:hover {
   background-color: var(--vscode-toolbar-hoverBackground);
   color: var(--vscode-sideBarSectionHeader-foreground);
+}
+
+.node-label {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+}
+.node-number {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
