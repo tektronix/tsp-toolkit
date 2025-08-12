@@ -23,6 +23,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
+- (**tsp-toolkit-kic-cli**) Update firmware upgrade timeout message
 
 ### Added
 - (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
