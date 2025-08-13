@@ -39,7 +39,7 @@ function renderSlots(noOfSlots, options, id) {
   const slotGrid = createElement('div', { class: 'grid-layout' });
 
   for (let i = 1; i <= noOfSlots; i++) {
-    const slotContainer = createElement('div', { class: 'slot-group' });
+    const slotContainer = createElement('div', { class: 'form-group' });
     const label = createElement('label', { for: `${id}_slot[${i}]` }, `slot [ ${i} ]`);
     const select = createElement('select', { id: `${id}_slot[${i}]`, name: `${id}_slot[${i}]` });
 
@@ -128,8 +128,8 @@ function renderSavedSystems(payload) {
     return;
   }
 
-  const selectSystem = createElement('div', { class: "selected-system" }, `
-        <label for="systemSelector">Selected System:</label>
+  const selectSystem = createElement('div', { class: "form-group" }, `
+        <label for="systemSelector">Selected System</label>
   `);
 
   // Create a dropdown for selecting system names
@@ -258,11 +258,11 @@ function createAddSystemForm(supportedModels) {
   const form = createElement('form', { id: 'dynamicForm', novalidate: '' }, `
     
       <div class="form-group">
-        <label for="systemName">System Name:</label>
+        <label for="systemName">System Name</label>
         <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
       </div>
       <div class="form-group">
-        <label for="localnode">localnode:</label>
+        <label for="localnode">localnode</label>
         <select id="localnode" name="localnode">${options}</select>
       </div>
     
@@ -306,7 +306,7 @@ function addNode() {
   numberSelect.value = 1;
 
   // Create label for node model select
-  const nodeModelLabel = createElement('label',{}, 'Model:');
+  const nodeModelLabel = createElement('label',{}, 'Model');
   const nodeModel = createElement('select', { name: `${nodeId}_mainframe`, id: `${nodeId}_mainframe` });
   Object.keys(state.supportedModels).forEach(model => {
     const option = createElement('option', { value: model }, model);

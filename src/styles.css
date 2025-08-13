@@ -97,8 +97,8 @@ label {
 }
 
 .node-subgroup,
-.form-group,
-.slot-group {
+.form-group
+{
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -107,7 +107,6 @@ label {
 }
 
 
-.selected-system,
 .grid-layout {
   display: flex;
   flex-direction: row;
