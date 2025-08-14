@@ -118,9 +118,10 @@ export function activate(context: vscode.ExtensionContext) {
         {
             name: "InstrumentsExplorer.connect",
             cb: async () => {
-                await pickConnection("New Connection")
+                await pickConnection()
             },
         },
+
         {
             name: "InstrumentsExplorer.showTerm",
             cb: (conn: Connection) => {
@@ -295,7 +296,7 @@ function updateExtensionSettings() {
             void vscode.window
                 .showInformationMessage(
                     setting +
-                        ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
+                    ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
                     ...["Remove", "Ignore"],
                 )
                 .then((selection) => {
@@ -352,23 +353,10 @@ function updateExtensionSettings() {
     })
 }
 
-async function pickConnection(
-    connection_info?: string,
-): Promise<Connection | undefined> {
+async function pickConnection(): Promise<Connection | undefined> {
     const options: vscode.QuickPickItem[] =
         InstrumentProvider.instance.getQuickPickOptions()
-
-    if (connection_info !== undefined) {
-        const options: vscode.InputBoxOptions = {
-            prompt: "Enter instrument IP address or VISA resource string",
-            validateInput: ConnectionHelper.instrConnectionStringValidator,
-        }
-        const address = await vscode.window.showInputBox(options)
-        if (address === undefined) {
-            return
-        }
-        await connect(address)
-    } else {
+    {
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
         quickPick.title = "Connect to an Instrument"
