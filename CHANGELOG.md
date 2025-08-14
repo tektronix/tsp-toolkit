@@ -20,6 +20,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Changed
 - Sanitize log files to remove sensitive information
 - Allow user to connect to instruments that are "Offline" (just in case they weren't discovered)
+- Offline instrument connection string is now included in the connection list dropdown
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet

@@ -197,7 +197,8 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             .filter(
                 (c) =>
                     c.status === ConnectionStatus.Active ||
-                    c.status === ConnectionStatus.Connected,
+                    c.status === ConnectionStatus.Connected ||
+                    c.status === ConnectionStatus.Inactive,
             )
             .sort((a, b) => a.name.localeCompare(b.name))
             .sort((a, b) => -(a.status - b.status))
