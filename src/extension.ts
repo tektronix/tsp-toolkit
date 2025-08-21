@@ -14,6 +14,10 @@ import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
 import { ConfigWebView } from "./ConifgWebView"
+import { activateTspDebug } from "./activateTspDebug"
+import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
+import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { CommunicationManager } from "./communicationmanager"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -261,6 +265,17 @@ export function activate(context: vscode.ExtensionContext) {
         LOGLOC,
     )
 
+    // Create an object of Communication Manager
+    const _activeConnectionManager = new CommunicationManager()
+    activateTspDebug(context, _activeConnectionManager)
+
+    const selectScriptGenData = new selectScriptGenDataProvider()
+    const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
+        treeDataProvider: selectScriptGenData,
+    })
+    selectScriptGenData.setTreeView(scriptGenTreeView)
+    new ScriptGenWebViewMgr(context, selectScriptGenData)
+
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
     return base_api
@@ -296,7 +311,7 @@ function updateExtensionSettings() {
             void vscode.window
                 .showInformationMessage(
                     setting +
-                    ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
+                        ' is deprecated. Select "Remove" to remove it from settings.json. If you wish to leave it, select "Ignore"',
                     ...["Remove", "Ignore"],
                 )
                 .then((selection) => {
@@ -353,7 +368,7 @@ function updateExtensionSettings() {
     })
 }
 
-async function pickConnection(): Promise<Connection | undefined> {
+export async function pickConnection(): Promise<Connection | undefined> {
     const options: vscode.QuickPickItem[] =
         InstrumentProvider.instance.getQuickPickOptions()
     {

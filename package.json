@@ -20,7 +20,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onStartupFinished"
+        "onStartupFinished",
+        "onDebugDynamicConfigurations:tspdebug"
     ],
     "pricing": "Free",
     "bugs": {
@@ -147,6 +148,11 @@
                 ]
             }
         ],
+        "breakpoints": [
+            {
+                "language": "lua"
+            }
+        ],
         "commands": [
             {
                 "command": "tsp.openTerminal",
@@ -240,6 +246,24 @@
                     "light": "resources/light/dependency.svg",
                     "dark": "resources/dark/dependency.svg"
                 }
+            },
+            {
+                "command": "tspdebug.debugContent",
+                "title": "Debug TSP File",
+                "category": "TSP Debug",
+                "icon": "$(debug-alt)"
+            },
+            {
+                "command": "tsp.viewScriptGenUI",
+                "title": "View Script Generation UI",
+                "category": "TSP",
+                "icon": "$(add)"
+            },
+            {
+                "command": "tsp.deleteScriptGenSession",
+                "title": "Delete session",
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
@@ -263,6 +287,29 @@
                     "default": [],
                     "scope": "window",
                     "description": "A list of dynamically switchable sets of instruments"
+                },
+                "tsp.showFunction": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether to show functions in Variables pane or not"
+                },
+                 "tsp.script_generation": {
+                        "type": "object",
+                        "scope": "window",
+                        "description": "A list of properties related to script generation instances.",
+                         "properties": {
+                            "I-V Characterization": {
+                                "type": "array",
+                                "description": "Properties for I-V Characterization script generation.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type":"string"},
+                                        "config": {"type": "string"}
+                                    }
+                                }
+                            }
+                    }
                 }
             }
         },
@@ -395,6 +442,16 @@
                     "command": "InstrumentsExplorer.remove",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
+                },
+                {
+                    "command": "tsp.viewScriptGenUI",
+                    "when": "viewItem == SavedIVCharTreeItem",
+                    "group": "inline"
+                },
+                {
+                    "command": "tsp.deleteScriptGenSession",
+                    "when": "viewItem == SavedIVCharInstance",
+                    "group": "inline"
                 }
             ],
             "editor/title/run": [
@@ -402,6 +459,11 @@
                     "command": "tsp.sendFile",
                     "when": "resourceExtname == .tsp",
                     "group": "navigation"
+                },
+                {
+                    "command": "tspdebug.debugContent",
+                    "when": "resourceExtname == .tsp",
+                    "group": "navigation@1"
                 }
             ]
         },
@@ -425,9 +487,67 @@
                     "id": "systemConfigurations",
                     "name": "System Configurations",
                     "type": "webview"
+                },
+                {
+                    "id": "ScriptGenView",
+                    "name": "Script Generation"
                 }
             ]
         },
+         "debuggers": [
+            {
+                "type": "tspdebug",
+                "languages": [
+                    "tsp"
+                ],
+                "label": "TSP Debug",
+                "program": "./out/extension.js",
+                "runtime": "node",
+                "configurationAttributes": {
+                    "launch": {
+                        "required": [
+                            "program"
+                        ],
+                        "properties": {
+                            "program": {
+                                "type": "string",
+                                "description": "Absolute path to a text file.",
+                                "default": "${workspaceFolder}/${file}"
+                            },
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Automatically stop after launch.",
+                                "default": false
+                            },
+                            "trace": {
+                                "type": "boolean",
+                                "description": "Enable logging the Debug Adapter Protocol"
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "tspdebug",
+                        "request": "launch",
+                        "name": "Debug TSP File",
+                        "program": "${workspaceFolder}/${file}"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "Debug TSP File: Launch",
+                        "description": "A new configuration for 'debugging' a tsp file.",
+                        "body": {
+                            "type": "tspdebug",
+                            "request": "launch",
+                            "name": "Debug TSP File",
+                            "program": "^\"\\${workspaceFolder}/\\${file}\""
+                        }
+                    }
+                ]
+            }
+        ],
         "submenus": [
             {
                 "label": "Module",
@@ -483,12 +603,19 @@
         "portfinder": "1.0.32",
         "sax-ts": "1.2.13",
         "xml-js": "1.6.11",
-        "@vscode/codicons": "0.0.36"
+        "@vscode/codicons": "0.0.36",
+        "@vscode/debugadapter": "^1.58.0"
+
     },
     "optionalDependencies": {
         "@tektronix/kic-cli-darwin-arm64": "0.20.0",
         "@tektronix/kic-cli-linux-x64": "0.20.0",
-        "@tektronix/kic-cli-win32-x64": "0.20.0"
+        "@tektronix/kic-cli-win32-x64": "0.20.0",
+        "@tektronix/kic-debug-win32-x64": "0.16.1-2",
+        "@tektronix/kic-debug-linux-x64": "0.16.1-2",
+        "@tektronix/script-gen-win32-x64": "0.1.0-0",
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-0",
+        "@tektronix/script-gen-linux-x64": "0.1.0-0"
     },
     "extensionDependencies": [
         "sumneko.lua"
