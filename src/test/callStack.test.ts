@@ -58,7 +58,7 @@ suite("CallStack Test Suite", function () {
         })
         stack = stack.substring(
             stack.indexOf("<stacks>"),
-            stack.indexOf("</stacks>") + "</stacks>".length
+            stack.indexOf("</stacks>") + "</stacks>".length,
         )
         stackObj.convertStackXmlStrToJson(stack)
         const stackInfo = stackObj.getStackFrames()
@@ -66,11 +66,11 @@ suite("CallStack Test Suite", function () {
         if (stackInfo) {
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[0]._attributes.currentline),
-                2
+                2,
             )
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[1]._attributes.currentline),
-                5
+                5,
             )
         }
     })
@@ -88,11 +88,11 @@ suite("CallStack Test Suite", function () {
         if (stackInfo) {
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[0]._attributes.currentline),
-                2
+                2,
             )
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[1]._attributes.currentline),
-                5
+                5,
             )
         }
     })
@@ -151,7 +151,7 @@ suite("CallStackWithWatchpoint Test Suite", function () {
         })
         stack = stack.substring(
             stack.indexOf("<stacks>"),
-            stack.indexOf("</stacks>") + "</stacks>".length
+            stack.indexOf("</stacks>") + "</stacks>".length,
         )
         stackObj.convertStackXmlStrToJson(stack)
         const stackInfo = stackObj.getStackFrames()
@@ -161,21 +161,21 @@ suite("CallStackWithWatchpoint Test Suite", function () {
                 assert.equal(
                     parseInt(
                         stackInfo.stacks[0].stack[0].watchpoints[0]
-                            .watchpoint[0]._attributes.value
+                            .watchpoint[0]._attributes.value,
                     ),
-                    20
+                    20,
                 )
                 assert.equal(
                     parseInt(
                         stackInfo.stacks[0].stack[1].watchpoints[0]
-                            .watchpoint[0]._attributes.value
+                            .watchpoint[0]._attributes.value,
                     ),
-                    30
+                    30,
                 )
                 assert.equal(
                     stackInfo.stacks[0].stack[0].watchpoints[0].watchpoint[0]
                         ._attributes.expression,
-                    "localY + 10"
+                    "localY + 10",
                 )
             }
         }
@@ -294,7 +294,7 @@ tHello' value='function: a0b08020' type='function' />
 
     function watchpointVerification(
         stacksInfo: StacksInfo | undefined,
-        expectedStackInfo: StacksInfo | undefined
+        expectedStackInfo: StacksInfo | undefined,
     ) {
         // write code to verify the watchpoints of stackInfo and expectedStackInfo
 
@@ -375,11 +375,11 @@ tHello' value='function: a0b08020' type='function' />
         if (stackInfo) {
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[0]._attributes.currentline),
-                2
+                2,
             )
             assert.equal(
                 parseInt(stackInfo.stacks[0].stack[1]._attributes.currentline),
-                5
+                5,
             )
         }
         const expectedStackInfo2: StacksInfo = {

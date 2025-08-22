@@ -20,7 +20,7 @@ suite("Set Variable Error Parser Test Suite", function () {
         setVarErrorParser.checkForSetVarError(xml)
         assert.equal(
             setVarErrorParser.error_msg,
-            " attempt to perform arithmetic on global `a' (a boolean value)"
+            " attempt to perform arithmetic on global `a' (a boolean value)",
         )
     })
 

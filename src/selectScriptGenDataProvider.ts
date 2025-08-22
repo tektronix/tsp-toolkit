@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { SavedScriptGenManager, tspScriptGen } from "./savedScriptGenManager"
 
 export class selectScriptGenDataProvider
-    implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
+implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
 {
     private _onDidChangeTreeData: vscode.EventEmitter<
         SelectScriptGenInstance | openFolder | undefined | void

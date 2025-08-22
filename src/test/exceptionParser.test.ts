@@ -20,13 +20,13 @@ suite("Exception Parser Test Suite", function () {
         testExceptionParser.checkForException(xml)
         assert.isTrue(
             testExceptionParser.exceptionInfo.includes(
-                "attempt to perform arithmetic on a nil value"
-            )
+                "attempt to perform arithmetic on a nil value",
+            ),
         )
 
         assert.equal(
             testExceptionParser.exceptnInfoForUI.Description,
-            "attempt to perform arithmetic on a nil value"
+            "attempt to perform arithmetic on a nil value",
         )
         assert.equal(testExceptionParser.exceptnInfoForUI.StackTrace.length, 3)
     })
@@ -67,22 +67,22 @@ acks' /></tspdbg-AA4E9540-A46C-467
             })
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace.length,
-                1
+                1,
             )
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].Level,
-                "0"
+                "0",
             )
 
             assert.isTrue(
                 testExceptionParser.exceptnInfoForUI.Description.includes(
-                    "bad argument"
-                )
+                    "bad argument",
+                ),
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].CurrLine,
-                "21"
+                "21",
             )
         })
 
@@ -99,48 +99,48 @@ acks' /></tspdbg-AA4E9540-A46C-467
 
             assert.isTrue(
                 testExceptionParser.exceptnInfoForUI.Description.includes(
-                    "attempt to call global"
-                )
+                    "attempt to call global",
+                ),
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace.length,
-                4
+                4,
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].Level,
-                "0"
+                "0",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[1].Level,
-                "1"
+                "1",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[2].Level,
-                "2"
+                "2",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[3].Level,
-                "3"
+                "3",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].CurrLine,
-                "4"
+                "4",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[2].Level,
-                "2"
+                "2",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[3].CurrLine,
-                "18"
+                "18",
             )
         })
 
@@ -173,53 +173,53 @@ string &quot;&quot;]:950: in function "kiExecuteWithDebugger&apos;&#x240a;&#x240
             })
             assert.isTrue(
                 testExceptionParser.exceptnInfoForUI.Description.includes(
-                    "xpcall"
-                )
+                    "xpcall",
+                ),
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace.length,
-                4
+                4,
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].Level,
-                "0"
+                "0",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[1].Level,
-                "1"
+                "1",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[2].Level,
-                "2"
+                "2",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[3].Level,
-                "3"
+                "3",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[0].CurrLine,
-                "4"
+                "4",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[1].CurrLine,
-                "9"
+                "9",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[2].CurrLine,
-                "15"
+                "15",
             )
 
             assert.equal(
                 testExceptionParser.exceptnInfoForUI.StackTrace[3].CurrLine,
-                "18"
+                "18",
             )
         })
     })
@@ -239,8 +239,8 @@ string &quot;&quot;]:950: in function "kiExecuteWithDebugger&apos;&#x240a;&#x240
         })
         assert.isTrue(
             testExceptionParser.exceptionInfo.includes(
-                "attempt to perform arithmetic on a nil value"
-            )
+                "attempt to perform arithmetic on a nil value",
+            ),
         )
     })
 })
