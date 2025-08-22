@@ -165,7 +165,7 @@ lua
 
         assert.isTrue(output[outputIndex].includes("am a\n"))
         outputIndex += 1
-        assert.isTrue(output[outputIndex].includes("lua \n"))
+        assert.isTrue(output[outputIndex].includes("lua\n"))
     })
 
     test("RunScriptWithoutBreakpoint", function () {
@@ -208,8 +208,8 @@ ion-end /></tspdbg-AA4E9540-A46C-4671-81D7-4FE69A9B6DC4>`
 
         assert.isTrue(
             output[0].includes(
-                "I \nam a\nlua i is \t1\ni is \t2\ni is \t3\ni is \t4\ni is \t5\ni is \t6\ni is \t7\ni is \t8\ni is \t9\ni is \t10\ni is \t11\ni is \t12\ni is \t13\ni is \t14\ni is \t15\nscript\n"
-            )
+                "I\nam a\nluai is \t1\ni is \t2\ni is \t3\ni is \t4\ni is \t5\ni is \t6\ni is \t7\ni is \t8\ni is \t9\ni is \t10\ni is \t11\ni is \t12\ni is \t13\ni is \t14\ni is \t15\nscript\n",
+            ),
         )
     })
 
@@ -377,7 +377,7 @@ Current	Voltage
             assert.isTrue(
                 testOutputParser
                     .getParsedOutput()
-                    .includes("Current	Voltage\n1.34095e-06	-1.00001")
+                    .includes("Current	Voltage\n1.34095e-06	-1.00001"),
             )
         }
     })
@@ -508,7 +508,7 @@ Rdg #	Time (s)	Current (A)
         }
         assert.equal(
             concatStringArr(output),
-            concatStringArr(expectedOutputArr)
+            concatStringArr(expectedOutputArr),
         )
     })
 })
