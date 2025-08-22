@@ -585,7 +585,7 @@
         "eslint-plugin-jsdoc": "50.2.2",
         "eslint-plugin-prettier": "5.2.1",
         "license-checker": "25.0.1",
-        "mocha": "^10.8.2",
+        "mocha": "^11.1.0",
         "nyc": "15.1.0",
         "prettier": "3.3.3",
         "source-map-support": "0.5.21",
