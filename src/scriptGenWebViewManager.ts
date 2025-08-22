@@ -1,5 +1,5 @@
 import * as cp from "node:child_process"
-import path from "node:path"
+import path, { join } from "node:path"
 import * as vscode from "vscode"
 import { SCRIPT_GEN_EXECUTABLE } from "./kic-script-gen-cli"
 import {
@@ -138,6 +138,26 @@ export class ScriptGenWebViewMgr {
     async openScriptGenPanel() {
         if (!this.panel) {
             this.panel = this.createWebviewPanel("TSP Script Generation")
+            this.panel.iconPath = {
+                light: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "light",
+                        "script-gen-pane-icon.svg",
+                    ),
+                ),
+                dark: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "dark",
+                        "script-gen-pane-icon.svg",
+                    ),
+                ),
+            }
 
             try {
                 await this.checkServerReady("http://127.0.0.1:27950", 10000)
