@@ -142,7 +142,9 @@ export class Log {
         location?: SourceLocation,
     ): void {
         //2024-10-15T12:34:56.789Z [INFO ] source-file.ts@Class.functionName: Some message to write to the log file
-        const content = `${timestamp.toISOString()} [${logLevelToString(level).padEnd(LOGLEVEL_PAD, " ")}] ${toString(location)}${msg}\n`
+        const content = `${timestamp.toISOString()} [${logLevelToString(
+            level,
+        ).padEnd(LOGLEVEL_PAD, " ")}] DBG:${toString(location)}${msg}\n`
         try {
             appendFileSync(this.file, content)
             console.log(content)
