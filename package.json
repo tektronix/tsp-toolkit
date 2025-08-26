@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",

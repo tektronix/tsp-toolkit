@@ -15,6 +15,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+## [1.2.5]
+
+### Added
+- Script generation feature
+- TSP debug functionality
+
 ## [1.2.4]
 
 ### Changed
@@ -29,8 +35,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Firmware upgrade for TTI and 2600 models getting stuck over slow connection
 
 ### Added
-- (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
-- (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
+- (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU50-2ST and MSMU60-2
+- (**tsp-toolkit-webhelp**) Added MP5103, MPSU50-2ST and MSMU60-2 webhelp documentation
 - (**tsp-toolkit-kic-cli**) Add better password support
 - (**tsp-toolkit-kic-cli**) Don't interrupt instruments while discovering instruments.
 - Add abort menu to abort current job on the connected instrument
@@ -350,7 +356,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.5
 [1.2.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.4
 [1.2.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.3
 [1.2.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.2
