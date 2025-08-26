@@ -25,6 +25,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
 - (**tsp-toolkit-kic-cli**) Update firmware upgrade timeout message
+- (**tsp-toolkit-kic-cli**) Getting error after firmware file transferred successfully
+- (**tsp-toolkit-kic-cli**) Firmware upgrade for TTI and 2600 models getting stuck over slow connection
 
 ### Added
 - (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
