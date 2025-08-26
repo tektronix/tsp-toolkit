@@ -53,7 +53,7 @@ export class TspRuntime extends EventEmitter {
     constructor(connDetails: ConnectionDetails) {
         super()
         this._debugChidProc = cp.spawn(DEBUG_EXECUTABLE, [
-            "connect",
+            connDetails.type.toLocaleLowerCase(),
             connDetails.addr,
         ])
 
