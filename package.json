@@ -593,7 +593,7 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.2",
+        "@tektronix/keithley_instrument_libraries": "0.19.3-0",
         "@tektronix/web-help-documents": "0.19.2",
         "@types/cheerio": "0.22.35",
         "cheerio": "1.0.0",

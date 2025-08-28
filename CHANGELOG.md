@@ -21,6 +21,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Script generation feature
 - TSP debug functionality
 
+### Fixed
+- (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
+
 ## [1.2.4]
 
 ### Changed
