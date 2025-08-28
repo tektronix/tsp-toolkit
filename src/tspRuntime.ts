@@ -53,7 +53,7 @@ export class TspRuntime extends EventEmitter {
     constructor(connDetails: ConnectionDetails) {
         super()
         this._debugChidProc = cp.spawn(DEBUG_EXECUTABLE, [
-            connDetails.type.toLocaleLowerCase(),
+            "connect",
             connDetails.addr,
         ])
 
@@ -65,6 +65,9 @@ export class TspRuntime extends EventEmitter {
         this._debugChidProc.stdout.on("data", (data) => {
             const str = data as string
 
+            if (str.includes("session-begin")) {
+                this._scriptAbort = false
+            }
             Log.trace(`data: ${str}`, {
                 file: "tspRuntime.ts",
                 func: "TspRuntime.constructor()",

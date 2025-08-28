@@ -611,8 +611,8 @@
         "@tektronix/kic-cli-darwin-arm64": "0.20.1",
         "@tektronix/kic-cli-linux-x64": "0.20.1",
         "@tektronix/kic-cli-win32-x64": "0.20.1",
-        "@tektronix/kic-debug-win32-x64": "0.16.1-2",
-        "@tektronix/kic-debug-linux-x64": "0.16.1-2",
+        "@tektronix/kic-debug-win32-x64": "0.16.1-3",
+        "@tektronix/kic-debug-linux-x64": "0.16.1-3",
         "@tektronix/script-gen-win32-x64": "0.1.0-1",
         "@tektronix/script-gen-darwin-arm64": "0.1.0-1",
         "@tektronix/script-gen-linux-x64": "0.1.0-1"
