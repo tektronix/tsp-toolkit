@@ -250,7 +250,7 @@
             {
                 "command": "tspdebug.debugContent",
                 "title": "Debug TSP File",
-                "category": "TSP Debug",
+                "category": "TSP",
                 "icon": "$(debug-alt)"
             },
             {
@@ -403,6 +403,14 @@
                 },
                 {
                     "command": "systemConfigurations.fetchConnectionNodes",
+                    "when": "false"
+                },
+                {
+                    "command": "tsp.viewScriptGenUI",
+                    "when": "false"
+                },
+                {
+                    "command": "tsp.deleteScriptGenSession",
                     "when": "false"
                 }
             ],

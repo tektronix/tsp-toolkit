@@ -9,6 +9,21 @@ scripts on TSP-enabled Tektronix and Keithley instruments. The extension include
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
+## Feature Details
+
+The Tektronix TSP Toolkit includes:
+
+- **Language Features:** Write your code with the assistance of autocompletion and
+  syntax checking
+- **Hover Help:** Access detailed information on individual commands such as definition,
+  accepted parameters, and usage examples
+- **Command Interface:** Send commands and interact directly with your instruments
+  through the terminal
+- **Instrument Autodiscovery:** Discover available instruments on your local network
+- **Instrument Firmware Upgrade:** Remotely upgrade the instrument firmware
+- **On-instrument TSP script debugger:** Debug TSP scripts directly on a connected instrument
+- **TSP Script Generator:** Create TSP scripts using a configuration-driven webview UI for streamlined script generation
+
 ## Demo Video
 
 <a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
@@ -98,20 +113,6 @@ then it is possible to have TSP Toolkit automatically configure your project for
 4. Click the **Add new System** icon.
 5. Enter the required system details and save.
 
-
-
-## Feature Details
-
-The Tektronix TSP Toolkit includes:
-
-- **Language Features:** Write your code with the assistance of autocompletion and
-  syntax checking
-- **Hover Help:** Access detailed information on individual commands such as definition,
-  accepted parameters, and usage examples
-- **Command Interface:** Send commands and interact directly with your instruments
-  through the terminal
-- **Instrument Autodiscovery:** Discover available instruments on your local network
-- **Instrument Firmware Upgrade:** Remotely upgrade the instrument firmware
 
 ## Supported Locales
 
