@@ -289,30 +289,26 @@
                     "description": "A list of dynamically switchable sets of instruments"
                 },
                 "tsp.showFunction": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Whether to show functions in Variables pane or not"
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether to show functions in Variables pane or not"
                 },
-                "tsp.script_generation": {
-                    "type": "object",
-                    "scope": "window",
-                    "description": "A list of properties related to script generation instances.",
-                    "properties": {
-                        "I-V Characterization": {
-                            "type": "array",
-                            "description": "Properties for I-V Characterization script generation.",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "config": {
-                                        "type": "string"
+                 "tsp.script_generation": {
+                        "type": "object",
+                        "scope": "window",
+                        "description": "A list of properties related to script generation instances.",
+                         "properties": {
+                            "I-V Characterization": {
+                                "type": "array",
+                                "description": "Properties for I-V Characterization script generation.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type":"string"},
+                                        "config": {"type": "string"}
                                     }
                                 }
                             }
-                        }
                     }
                 }
             }
@@ -493,6 +489,7 @@
                 {
                     "id": "InstrumentsExplorer",
                     "name": "Instruments"
+
                 },
                 {
                     "id": "systemConfigurations",
@@ -505,7 +502,7 @@
                 }
             ]
         },
-        "debuggers": [
+         "debuggers": [
             {
                 "type": "tspdebug",
                 "languages": [
@@ -578,10 +575,7 @@
         "copy-static": "copyfiles -u 1 src/**/*.{js,css} out"
     },
     "devDependencies": {
-        "@eslint/config-array": "^0.21.0",
-        "@eslint/object-schema": "^2.1.6",
         "@istanbuljs/nyc-config-typescript": "1.0.2",
-        "@npmcli/fs": "^4.0.0",
         "@types/chai": "4.3.18",
         "@types/mocha": "10.0.10",
         "@types/node": "22.10.2",
@@ -592,45 +586,46 @@
         "@vscode/vsce": "3.2.2",
         "chai": "^4.4.1",
         "copyfiles": "^2.4.1",
-        "eslint": "^9.34.0",
-        "eslint-config-prettier": "^10.1.8",
+        "eslint": "8.57.0",
+        "eslint-config-prettier": "8.2.0",
         "eslint-import-resolver-typescript": "3.6.3",
-        "eslint-plugin-import": "^2.32.0",
-        "eslint-plugin-jsdoc": "^54.1.1",
-        "eslint-plugin-prettier": "^5.5.4",
-        "glob": "^11.0.3",
+        "eslint-plugin-import": "2.29.1",
+        "eslint-plugin-jsdoc": "50.2.2",
+        "eslint-plugin-prettier": "5.2.1",
         "license-checker": "25.0.1",
-        "mocha": "^11.7.1",
+        "mocha": "^11.1.0",
         "nyc": "15.1.0",
         "prettier": "3.3.3",
-        "rimraf": "^6.0.1",
         "source-map-support": "0.5.21",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.9.2"
+        "ts-node": "10.9.2",
+        "typescript": "5.5.4"
     },
     "dependencies": {
         "@tektronix/keithley_instrument_libraries": "0.19.3-0",
         "@tektronix/web-help-documents": "0.19.2",
         "@types/cheerio": "0.22.35",
-        "@vscode/codicons": "0.0.36",
-        "@vscode/debugadapter": "^1.58.0",
         "cheerio": "1.0.0",
         "class-transformer": "0.5.1",
         "json-rpc-2.0": "1.7.0",
         "path-browserify": "1.0.1",
         "portfinder": "1.0.32",
         "sax-ts": "1.2.13",
-        "xml-js": "1.6.11"
+        "xml-js": "1.6.11",
+        "@vscode/codicons": "0.0.36",
+        "@vscode/debugadapter": "^1.58.0"
+
     },
     "optionalDependencies": {
         "@tektronix/kic-cli-darwin-arm64": "0.20.1",
         "@tektronix/kic-cli-linux-x64": "0.20.1",
         "@tektronix/kic-cli-win32-x64": "0.20.1",
-        "@tektronix/kic-debug-linux-x64": "0.16.1-3",
         "@tektronix/kic-debug-win32-x64": "0.16.1-3",
+        "@tektronix/kic-debug-linux-x64": "0.16.1-3",
+        "@tektronix/script-gen-win32-x64": "0.1.0-1",
         "@tektronix/script-gen-darwin-arm64": "0.1.0-1",
-        "@tektronix/script-gen-linux-x64": "0.1.0-1",
-        "@tektronix/script-gen-win32-x64": "0.1.0-1"
+        "@tektronix/script-gen-linux-x64": "0.1.0-1"
+
+   
     },
     "extensionDependencies": [
         "sumneko.lua"
