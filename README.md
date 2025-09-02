@@ -9,41 +9,6 @@ scripts on TSP-enabled Tektronix and Keithley instruments. The extension include
 syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
 code-completion suggestions, inline help, and TSP command documentation.
 
-## Feature Details
-
-The Tektronix TSP Toolkit includes:
-
-- **Language Features:** Write your code with the assistance of autocompletion and
-  syntax checking
-- **Hover Help:** Access detailed information on individual commands such as definition,
-  accepted parameters, and usage examples
-- **Command Interface:** Send commands and interact directly with your instruments
-  through the terminal
-- **Instrument Autodiscovery:** Discover available instruments on your local network
-- **Instrument Firmware Upgrade:** Remotely upgrade the instrument firmware
-- **On-instrument TSP script debugger:** Debug TSP scripts directly on a connected instrument
-- **TSP Script Generator:** Create TSP scripts using a configuration-driven webview UI for streamlined script generation
-
-## Demo Video
-
-<a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
-
-## Resources and Tutorials
-
-- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
-- [TSP Landing Page on Tek.com][tsp]
-- [TSP Video Series][tsp-video-series]
-- [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
-- [TSP Script Example Repository][tsp-script-examples]
-
-
-## Installed Extensions
-
-Tektronix TSP Toolkit will automatically install the [sumneko.lua][sumneko]
-extension to use all of the language features it provides.
-
-Extensions installed through the marketplace are subject to the [Marketplace Terms of Use][marketplace-tou].
-
 ## Quick Start
 
 - **Step 1.** Connect your TSP-enabled Tektronix and Keithley instrument to your local network (LAN).
@@ -52,47 +17,162 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 
     ![Open Folder][pic-open-folder]
 
-- **Step 4.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
-- **Step 5.** Edit and run your TSP scripts by right-clicking them in the file explorer,
+- **Step 4.** Access the TSP Toolkit by clicking on the TSP icon in the Activity Bar.
+- **Step 5.** Connect to your instrument using one of these methods:
+   - Use the Instrument Explorer to discover instruments on your network and connect with a right-click
+   - Click the "+" button in the Instrument Explorer to connect via IP address or VISA resource string
+   - Use the Command Palette (Ctrl+Shift+P) and run "TSP: Connect"
+- **Step 6.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
+- **Step 7.** Edit and run your TSP scripts by right-clicking them in the file explorer,
               file tabs, or editor window and selecting "Send Script to Terminal"
 
     ![Send Script to Terminal][pic-send-script-to-terminal]
 
-### Usage Notes
+## Demo Video
+
+<a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
+
+## Feature Overview
+
+The Tektronix TSP Toolkit includes:
+
+- **Language Features:** Write your code with the assistance of autocompletion and
+  syntax checking for TSP scripts
+- **Hover Help:** Access detailed information on individual commands such as definition,
+  accepted parameters, and usage examples
+- **Command Interface:** Send commands and interact directly with your instruments
+  through the integrated terminal
+- **Instrument Explorer:** Discover and manage available instruments on your local network with an intuitive tree view
+- **Instrument Firmware Upgrade:** Remotely upgrade the instrument firmware directly from the VS Code interface
+- **On-instrument TSP Script Debugger:** Debug TSP scripts directly on a connected instrument with breakpoints, variable inspection, and step execution
+- **Automated TSP Script Generation:** Create TSP scripts using a configuration-driven webview UI for streamlined script generation
+- **System Configurations Manager:** Save and manage multiple instrument configurations including TSP-Link™ networks
+
+## TSP View Container
+
+The TSP Toolkit provides a dedicated view container in the Activity Bar that offers access to all major features:
+
+### View Sections
+
+- **INSTRUMENTS**: Displays discovered and saved instruments on your network
+  - Connect to instruments
+  - Manage instrument connections
+  - Perform instrument operations (reset, abort, firmware upgrade)
+
+- **SYSTEM CONFIGURATIONS**: Configure your TSP-Link instrument network
+  - Create new system configurations
+  - Fetch configurations from connected instruments
+  - Switch between different configurations
+
+- **SCRIPT GENERATION**: Create and manage TSP scripts without manual coding
+  - Create new script generation sessions
+  - Access saved script configurations
+  - Generate ready-to-use TSP scripts
+
+### Accessing the View
+
+Click the TSP Toolkit icon <img src="./resources/tsp-toolkit-view-container-icon.svg" alt="TSP Toolkit Icon" width="24" height="24" style="vertical-align:middle;"> in the Activity Bar (usually on the left side of VS Code) to access all these features.
+
+## Working with Instruments
+
+### Instrument Explorer
+
+The Instrument Explorer provides an intuitive interface for discovering, connecting to, and managing your TSP-enabled instruments.
+
+#### Key Features
+
+- **Auto-Discovery**: Automatically find TSP instruments on your local network
+- **Manual Connection**: Connect to instruments via IP address or VISA resource string
+- **Instrument Management**: Save, rename, and remove instruments from your list
+- **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface
+- **Terminal Integration**: Open terminal connections to instruments with a single click
+- **Reset & Abort**: Control instrument state with reset and abort functions
+
+### Terminal Usage
+
+When connected to an instrument, you interact with it through the integrated terminal:
+
+- **Direct Command Execution**: Type TSP commands directly in the terminal and press Enter to execute them
+- **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`)
+  - `.help` - Display available terminal commands
+  - `.exit` - Properly close the terminal connection (recommended over using the trash icon)
+  - `.reset` - Reset the connected instrument
+  - `.abort` - Abort the current operation on the instrument
+
+#### Usage Notes
 
 When running scripts or commands via the terminal, errors are only fetched _after_ the
 requested action completes. No new errors will be printed while the operation is in
 progress.
 
-## Useful Commands
+For script execution, you can:
+1. Send individual commands directly in the terminal
+2. Send entire scripts using the "Send Script to Terminal" command
+3. Use print() statements in your scripts to see output in the terminal
 
-Open the Command Pallette (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS and
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on Windows or Linux), then type one of the
-following commands:
+## Working with TSP Scripts
 
-| Command                          | Description                                                                         | Shortcut                                        |
-|:---------------------------------|:------------------------------------------------------------------------------------|:------------------------------------------------|
-| TSP: Connect               | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |                                                 |
-| TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |                                                 |
+### Running Scripts
 
-To see all available Tektronix TSP Toolkit commands, open the Command Pallette and type `TSP`.
+To execute your TSP scripts on connected instruments:
 
-To see all available context-sensitive options, right-click on your active editor window while a `*.tsp` file is open:
+1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
+2. Click the Run icon in the editor title bar when a TSP file is open
 
-| Context-Sensitive Option     | Description                                                                                   |
-|:-----------------------------|:----------------------------------------------------------------------------------------------|
-| Send Script to All Terminals | Send the current script to all the currently connected instruments with active terminals open |
-| Send Script to Terminal      | Send the current script to the currently connected instrument                                 |
+You can also send a script to all connected instruments by right-clicking and selecting "Send Script to All Terminals".
+
+### Automated TSP Script Generation
+
+The Automated TSP Script Generation is a powerful feature that allows you to create TSP scripts through a graphical interface without needing to write code manually.
+
+#### Using the Automated TSP Script Generation
+
+1. Open the TSP Toolkit view container from the Activity Bar.
+2. Locate the **SCRIPT GENERATION** section.
+3. Click the "+" button and enter a name for your script.
+4. Configure your test parameters in the webview interface.
+5. Click **Open Script** to generate and view your TSP script.
+6. The generated script will appear in a side pane for further editing or execution.
+
+#### Managing Script Generation Sessions
+
+- **Save Sessions**: Your script generation configurations are automatically saved and can be accessed again later
+- **Delete Sessions**: Click the delete icon next to a saved session to remove it from your list.
+- **Edit Sessions**: Click on a saved session to reopen and modify it
+
+### TSP Script Debugging
+
+The TSP Toolkit includes a powerful on-instrument debugging capability that allows you to debug your TSP scripts directly on the connected instrument.
+
+#### Using the TSP Debugger
+
+1. Open a TSP script file in the editor
+2. Set breakpoints by clicking in the gutter next to line numbers
+3. Start debugging by:
+   - Using the Run and Debug view (Ctrl+Shift+D)
+   - Using the Command Palette and running "TSP: Debug TSP File"
+   - Click the debug icon in the editor title bar
+4. Use the debug controls to step through your code, inspect variables, and view the call stack
+
+#### Debug Features
+
+- **Breakpoints**: Set breakpoints in your TSP code to pause execution at specific points
+- **Variable Inspection**: View and monitor variable values during script execution
+- **Watch Expressions**: Add custom expressions to the watch panel to track specific variable values or evaluate expressions as your script runs
+- **Call Stack**: Navigate the execution call stack to understand the flow of your code
+- **Step Controls**: Step into, step over, and step out of functions during debugging
 
 
-## Configure Your Project
+## System Configuration
+
+### Configure Your Project
 
 There are two ways to configure your project to have language features for your TSP-Link
 node network: Automatic or Manual.
 After completing either method, you will be shown relevant code completion suggestions,
 signature help, and documentation for the instruments in your TSP-Link network.
 
-### Automatic Configuration
+#### Automatic Configuration
 
 If you are already connected to a physical instrument with your TSP-Link network configured,
 then it is possible to have TSP Toolkit automatically configure your project for you.
@@ -105,7 +185,7 @@ then it is possible to have TSP Toolkit automatically configure your project for
 6. Enter a name for the new system when prompted.
 
 
-### Manual Configuration
+#### Manual Configuration
 
 1. Open any workspace folder in VSCode.
 2. Open the side bar by clicking the TSP Toolkit icon in the Activity Bar (usually on the left side of VSCode).
@@ -113,8 +193,72 @@ then it is possible to have TSP Toolkit automatically configure your project for
 4. Click the **Add new System** icon.
 5. Enter the required system details and save.
 
+## Command Reference
 
-## Supported Locales
+### Common Commands
+
+Open the Command Palette (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS and
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on Windows or Linux), then type one of the
+following commands:
+
+| Command                          | Description                                                                         | 
+|:---------------------------------|:------------------------------------------------------------------------------------|
+| TSP: Connect                     | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |
+| TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |
+| TSP: Debug TSP File              | Start debugging the current TSP file on the connected instrument                    |
+| TSP Toolkit: Focus on Script Generation View   | Open the Automated TSP Script Generation interface                               |
+
+### Explorer Commands
+
+In the TSP Toolkit Explorer view, you can access these commands:
+
+| Command                           | Description                                                      |
+|:----------------------------------|:-----------------------------------------------------------------|
+| Refresh                           | Refresh the list of instruments on the network                    |
+| New Connection                    | Connect to an instrument by IP or VISA resource string            |
+| Show Terminal                     | Show the terminal for a connected instrument                      |
+| Rename                            | Rename a saved instrument                                         |
+| Reset                             | Reset the connected instrument                                    |
+| Abort                             | Abort the current operation on the instrument                     |
+| Upgrade Firmware                  | Upgrade the firmware on the connected instrument                  |
+| Remove                            | Remove an instrument from your saved list                         |
+
+### System Configuration Commands
+
+| Command                           | Description                                                      |
+|:----------------------------------|:-----------------------------------------------------------------|
+| Add new system                    | Add a new system configuration manually                          |
+| Fetch connected instrument and its TSP-Link nodes | Configure your workspace based on connected instruments |
+
+To see all available Tektronix TSP Toolkit commands, open the Command Palette and type `TSP`.
+
+### Context Menu Options
+
+Right-click on your active editor window while a `*.tsp` file is open to access:
+
+| Context-Sensitive Option     | Description                                                                                   |
+|:-----------------------------|:----------------------------------------------------------------------------------------------|
+| Send Script to All Terminals | Send the current script to all the currently connected instruments with active terminals open |
+| Send Script to Terminal      | Send the current script to the currently connected instrument                                 |
+
+## Resources and Documentation
+
+### Installed Extensions
+
+Tektronix TSP Toolkit will automatically install the [sumneko.lua][sumneko]
+extension to use all of the language features it provides.
+
+Extensions installed through the marketplace are subject to the [Marketplace Terms of Use][marketplace-tou].
+
+### Learning Resources
+
+- [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
+- [TSP Landing Page on Tek.com][tsp]
+- [TSP Video Series][tsp-video-series]
+- [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
+- [TSP Script Example Repository][tsp-script-examples]
+
+### Supported Locales
 
 The extension is currently only available in English.
 
