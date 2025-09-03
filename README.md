@@ -66,7 +66,7 @@ The TSP Toolkit provides a dedicated view container in the Activity Bar that off
 
 ### Accessing the View
 
-Click the TSP Toolkit icon <img src="./resources/tsp-toolkit-view-container-icon.svg" alt="TSP Toolkit Icon" width="24" height="24" style="vertical-align:middle;"> in the Activity Bar (usually on the left side of VS Code) to access all these features.
+Click the TSP Toolkit icon in the Activity Bar (usually on the left side of VS Code) to access all these features.
 
 ## Working with Instruments
 
