@@ -15,9 +15,8 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
   through the integrated terminal
 * **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface
 * **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection
-* **Automated Script Generation (Beta)** - Configuration-driven interface to create TSP scripts without manual coding
+* **[Beta] Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding
 * **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups
-
 
 ## Quick Start
 
@@ -29,7 +28,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 
 - **Step 4.** Access the TSP Toolkit by clicking on the TSP icon in the Activity Bar.
 - **Step 5.** Connect to your instrument using one of these methods:
-   - Use the Instrument Explorer to discover instruments on your network and connect with a right-click
+   - Use the Instrument Explorer to discover instruments on your network and connect by clicking the play button (▶️)
    - Click the "+" button in the Instrument Explorer to connect via IP address or VISA resource string
    - Use the Command Palette (Ctrl+Shift+P) and run "TSP: Connect"
 - **Step 6.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
@@ -45,21 +44,21 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 
 ## TSP View Container
 
-The TSP Toolkit provides a dedicated view container in the Activity Bar that offers access to all major features:
+TSP Toolkit provides a dedicated view container in the Activity Bar that offers access to all major features:
 
 ### View Sections
 
-- **INSTRUMENTS**: Displays discovered and saved instruments on your network
+- **Instruments**: Displays discovered and saved instruments on your network
   - Connect to instruments
   - Manage instrument connections
   - Perform instrument operations (reset, abort, firmware upgrade)
 
-- **SYSTEM CONFIGURATIONS**: Configure your TSP-Link instrument network
+- **System Configurations**: Configure your TSP-Link instrument network
   - Create new system configurations
   - Fetch configurations from connected instruments
   - Switch between different configurations
 
-- **SCRIPT GENERATION**: Create and manage TSP scripts without manual coding
+- **[Beta] Script Generation**: Create and manage TSP scripts without manual coding
   - Create new script generation sessions
   - Access saved script configurations
   - Generate ready-to-use TSP scripts
@@ -88,7 +87,7 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 When connected to an instrument, you interact with it through the integrated terminal:
 
 - **Direct Command Execution**: Type TSP commands directly in the terminal and press Enter to execute them
-- **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`)
+- **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`).Here are the most important ones:
   - `.help` - Display available terminal commands
   - `.exit` - Properly close the terminal connection (recommended over using the trash icon)
   - `.reset` - Reset the connected instrument
@@ -100,27 +99,26 @@ When running scripts or commands via the terminal, errors are only fetched _afte
 requested action completes. No new errors will be printed while the operation is in
 progress.
 
-For script execution, you can:
-1. Send individual commands directly in the terminal
-2. Send entire scripts using the "Send Script to Terminal" command
-3. Use print() statements in your scripts to see output in the terminal
-
 ## Working with TSP Scripts
 
 ### Running Scripts
 
-To execute your TSP scripts on connected instruments:
+To execute your TSP scripts on connected instruments, you can perform one of the following:
 
 1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
 2. Click the Run icon in the editor title bar when a TSP file is open
 
 You can also send a script to all connected instruments by right-clicking and selecting "Send Script to All Terminals".
 
-### Automated TSP Script Generation (Beta)
+### [Beta] Automated TSP Script Generation
 
 The Automated TSP Script Generation is a powerful feature that allows you to create TSP scripts through a graphical interface without needing to write code manually.
 
-> **Note:** System configuration must be completed before using the Automated TSP Script Generation feature, as channel IDs are populated based on your configured system.
+> ⚠️**Warning**
+> The Automated TSP Script Generation feature is currently in beta. If you encounter issues, please let us know so we can improve it.
+
+> ℹ️**Note:** 
+> System configuration must be completed before using the Automated TSP Script Generation feature, as channel IDs are populated based on your configured system.
 
 #### Using the Automated TSP Script Generation
 
@@ -202,7 +200,6 @@ following commands:
 | Command                          | Description                                                                         | 
 |:---------------------------------|:------------------------------------------------------------------------------------|
 | TSP: Connect                     | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |
-| TSP: Send Script to Terminal     | Sends the script in the current editor window to the currently connected instrument |
 | TSP: Debug TSP File              | Start debugging the current TSP file on the connected instrument                    |
 | TSP Toolkit: Focus on Script Generation View   | Open the Automated TSP Script Generation interface                               |
 
