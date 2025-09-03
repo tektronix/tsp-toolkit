@@ -3,11 +3,21 @@
 This is an open source project from Tektronix. We welcome
 any [feedback][tsp-toolkit-issues] on the GitHub repo for this project.
 
-Tektronix TSP™ Toolkit is a [Visual Studio Code][code] extension that provides rich
-support for Test Script Processor ([TSP][tsp]) technology to edit and execute
-scripts on TSP-enabled Tektronix and Keithley instruments. The extension includes command-set documentation and language features such as
-syntax error detection and code navigation (provided by [sumneko.lua][sumneko]) as well as
-code-completion suggestions, inline help, and TSP command documentation.
+Tektronix TSP™ Toolkit is a comprehensive [Visual Studio Code][code] extension that provides rich
+support for Test Script Processor ([TSP][tsp]) technology to enhance productivity when working with
+TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete development environment with:
+
+* **Instrument Discovery & Management** - Discover and manage available instruments on your local network with an intuitive tree view
+* **Intelligent Code Editing** - Syntax highlighting, error detection, code navigation, and completion suggestions for TSP scripts
+* **Hover Help** - Access detailed information on individual commands such as definition,
+  accepted parameters, and usage examples
+* **Command Interface** - Send commands and interact directly with your instruments
+  through the integrated terminal
+* **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface
+* **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection
+* **Automated Script Generation (Beta)** - Configuration-driven interface to create TSP scripts without manual coding
+* **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups
+
 
 ## Quick Start
 
@@ -32,21 +42,6 @@ code-completion suggestions, inline help, and TSP command documentation.
 
 <a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
 
-## Feature Overview
-
-The Tektronix TSP Toolkit includes:
-
-- **Language Features:** Write your code with the assistance of autocompletion and
-  syntax checking for TSP scripts
-- **Hover Help:** Access detailed information on individual commands such as definition,
-  accepted parameters, and usage examples
-- **Command Interface:** Send commands and interact directly with your instruments
-  through the integrated terminal
-- **Instrument Explorer:** Discover and manage available instruments on your local network with an intuitive tree view
-- **Instrument Firmware Upgrade:** Remotely upgrade the instrument firmware directly from the VS Code interface
-- **On-instrument TSP Script Debugger:** Debug TSP scripts directly on a connected instrument with breakpoints, variable inspection, and step execution
-- **Automated TSP Script Generation:** Create TSP scripts using a configuration-driven webview UI for streamlined script generation
-- **System Configurations Manager:** Save and manage multiple instrument configurations including TSP-Link™ networks
 
 ## TSP View Container
 
@@ -125,14 +120,17 @@ You can also send a script to all connected instruments by right-clicking and se
 
 The Automated TSP Script Generation is a powerful feature that allows you to create TSP scripts through a graphical interface without needing to write code manually.
 
+> **Note:** System configuration must be completed before using the Automated TSP Script Generation feature, as channel IDs are populated based on your configured system.
+
 #### Using the Automated TSP Script Generation
 
-1. Open the TSP Toolkit view container from the Activity Bar.
-2. Locate the **SCRIPT GENERATION** section.
-3. Click the "+" button and enter a name for your script.
-4. Configure your test parameters in the webview interface.
-5. Click **Open Script** to generate and view your TSP script.
-6. The generated script will appear in a side pane for further editing or execution.
+1. First, [configure your project](#configure-your-project) for your instrument system.
+2. Open the TSP Toolkit view container from the Activity Bar.
+3. Locate the **SCRIPT GENERATION** section.
+4. Click the "+" button and enter a name for your script.
+5. Configure your test parameters in the webview interface.
+6. Click **Open Script** to generate and view your TSP script.
+7. The generated script will appear in a side pane for further editing or execution.
 
 #### Managing Script Generation Sessions
 
@@ -208,27 +206,6 @@ following commands:
 | TSP: Debug TSP File              | Start debugging the current TSP file on the connected instrument                    |
 | TSP Toolkit: Focus on Script Generation View   | Open the Automated TSP Script Generation interface                               |
 
-### Explorer Commands
-
-In the TSP Toolkit Explorer view, you can access these commands:
-
-| Command                           | Description                                                      |
-|:----------------------------------|:-----------------------------------------------------------------|
-| Refresh                           | Refresh the list of instruments on the network                    |
-| New Connection                    | Connect to an instrument by IP or VISA resource string            |
-| Show Terminal                     | Show the terminal for a connected instrument                      |
-| Rename                            | Rename a saved instrument                                         |
-| Reset                             | Reset the connected instrument                                    |
-| Abort                             | Abort the current operation on the instrument                     |
-| Upgrade Firmware                  | Upgrade the firmware on the connected instrument                  |
-| Remove                            | Remove an instrument from your saved list                         |
-
-### System Configuration Commands
-
-| Command                           | Description                                                      |
-|:----------------------------------|:-----------------------------------------------------------------|
-| Add new system                    | Add a new system configuration manually                          |
-| Fetch connected instrument and its TSP-Link nodes | Configure your workspace based on connected instruments |
 
 To see all available Tektronix TSP Toolkit commands, open the Command Palette and type `TSP`.
 
@@ -304,8 +281,10 @@ for more information.
     - 2651A
     - 2657A
     - DMM7510
+    - MP5103
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
-  render the instrument inoperable, but will not complete successfully.
+  render the instrument inoperable, but will not complete successfully
+- Instrument discovery might not work for 2600-series and 3706A due to firmware limitation
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
