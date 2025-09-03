@@ -116,7 +116,7 @@ To execute your TSP scripts on connected instruments:
 
 You can also send a script to all connected instruments by right-clicking and selecting "Send Script to All Terminals".
 
-### Automated TSP Script Generation
+### Automated TSP Script Generation (Beta)
 
 The Automated TSP Script Generation is a powerful feature that allows you to create TSP scripts through a graphical interface without needing to write code manually.
 
