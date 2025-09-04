@@ -15,19 +15,31 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
+## [1.2.5]
+
+### Added
+- Script generation feature
+- TSP debug functionality
+
+### Fixed
+- (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
+
 ## [1.2.4]
 
 ### Changed
 - Sanitize log files to remove sensitive information
 - Allow user to connect to instruments that are "Offline" (just in case they weren't discovered)
+- Offline instrument connection string is now included in the connection list dropdown
 
 ### Fixed
-- (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from Trebuchet
+- (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from the MP5000
 - (**tsp-toolkit-kic-cli**) Update firmware upgrade timeout message
+- (**tsp-toolkit-kic-cli**) Getting error after firmware file transferred successfully
+- (**tsp-toolkit-kic-cli**) Firmware upgrade for TTI and 2600 models getting stuck over slow connection
 
 ### Added
-- (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU502ST and MSMU60-2
-- (**tsp-toolkit-webhelp**) Added MP5103, MPSU502ST and MSMU60-2 webhelp documentation
+- (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU50-2ST and MSMU60-2
+- (**tsp-toolkit-webhelp**) Added MP5103, MPSU50-2ST and MSMU60-2 webhelp documentation
 - (**tsp-toolkit-kic-cli**) Add better password support
 - (**tsp-toolkit-kic-cli**) Don't interrupt instruments while discovering instruments.
 - Add abort menu to abort current job on the connected instrument
@@ -347,7 +359,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.5
 [1.2.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.4
 [1.2.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.3
 [1.2.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.2

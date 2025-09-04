@@ -14,6 +14,10 @@ import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
 import { ConfigWebView } from "./ConifgWebView"
+import { activateTspDebug } from "./activateTspDebug"
+import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
+import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { CommunicationManager } from "./communicationmanager"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -118,9 +122,10 @@ export function activate(context: vscode.ExtensionContext) {
         {
             name: "InstrumentsExplorer.connect",
             cb: async () => {
-                await pickConnection("New Connection")
+                await pickConnection()
             },
         },
+
         {
             name: "InstrumentsExplorer.showTerm",
             cb: (conn: Connection) => {
@@ -260,6 +265,17 @@ export function activate(context: vscode.ExtensionContext) {
         LOGLOC,
     )
 
+    // Create an object of Communication Manager
+    const _activeConnectionManager = new CommunicationManager()
+    activateTspDebug(context, _activeConnectionManager)
+
+    const selectScriptGenData = new selectScriptGenDataProvider()
+    const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
+        treeDataProvider: selectScriptGenData,
+    })
+    selectScriptGenData.setTreeView(scriptGenTreeView)
+    new ScriptGenWebViewMgr(context, selectScriptGenData)
+
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
     return base_api
@@ -352,23 +368,10 @@ function updateExtensionSettings() {
     })
 }
 
-async function pickConnection(
-    connection_info?: string,
-): Promise<Connection | undefined> {
+export async function pickConnection(): Promise<Connection | undefined> {
     const options: vscode.QuickPickItem[] =
         InstrumentProvider.instance.getQuickPickOptions()
-
-    if (connection_info !== undefined) {
-        const options: vscode.InputBoxOptions = {
-            prompt: "Enter instrument IP address or VISA resource string",
-            validateInput: ConnectionHelper.instrConnectionStringValidator,
-        }
-        const address = await vscode.window.showInputBox(options)
-        if (address === undefined) {
-            return
-        }
-        await connect(address)
-    } else {
+    {
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
         quickPick.title = "Connect to an Instrument"

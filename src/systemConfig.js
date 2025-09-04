@@ -39,9 +39,13 @@ function renderSlots(noOfSlots, options, id) {
   const slotGrid = createElement('div', { class: 'grid-layout' });
 
   for (let i = 1; i <= noOfSlots; i++) {
-    const slotContainer = createElement('div', { class: 'slot-group' });
+    const slotContainer = createElement('div', { class: 'form-group' });
     const label = createElement('label', { for: `${id}_slot[${i}]` }, `slot [ ${i} ]`);
-    const select = createElement('select', { id: `${id}_slot[${i}]`, name: `${id}_slot[${i}]` });
+    const select = createElement('select', { 
+      id: `${id}_slot[${i}]`, 
+      name: `${id}_slot[${i}]`, 
+      'aria-label': `select_${id}_slot[${i}]`
+    });
 
     options.forEach(option => {
       const optionElement = createElement('option', { value: option }, option);
@@ -128,19 +132,26 @@ function renderSavedSystems(payload) {
     return;
   }
 
-  const selectSystem = createElement('div', { class: "selected-system" }, `
-        <label for="systemSelector">Selected System:</label>
+  const selectSystem = createElement('div', { class: "form-group" }, `
+        <label for="systemSelector">Selected System</label>
   `);
 
   // Create a dropdown for selecting system names
-  const dropdown = createElement('select', { id: 'systemSelector', 'data-event': 'system-selector' });
+  const dropdown = createElement('select', { id: 'systemSelector', 'data-event': 'system-selector' , 'aria-label': 'select_system'});
 
   systemInfo.forEach(system => {
     const option = createElement('option', { value: system.name }, system.name);
     dropdown.appendChild(option);
   });
 
-  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-selected-system', title: 'Delete Selected System' });
+  const deleteIcon = createElement('span', { 
+    class: 'codicon codicon-trash delete-icon', 
+    'data-event': 'delete-selected-system',
+    title: 'Delete Selected System',
+    'aria-label': 'delete_selected_system',
+    role: 'button',
+    tabindex: '0'
+  });
 
   const selectWithIcon = createElement('div', { class: 'select-with-icon' });
   selectWithIcon.appendChild(dropdown);
@@ -258,12 +269,12 @@ function createAddSystemForm(supportedModels) {
   const form = createElement('form', { id: 'dynamicForm', novalidate: '' }, `
     
       <div class="form-group">
-        <label for="systemName">System Name:</label>
-        <input type="text" id="systemName" name="systemName" placeholder = "Enter System Name" required />
+        <label for="systemName" >System Name</label>
+        <input type="text" id="systemName" name="systemName" aria-label= "system_name_input" placeholder = "Enter System Name" required />
       </div>
       <div class="form-group">
-        <label for="localnode">localnode:</label>
-        <select id="localnode" name="localnode">${options}</select>
+        <label for="localnode">localnode</label>
+        <select id="localnode" aria-label= "select_localnode" name="localnode">${options}</select>
       </div>
     
     <div id="localNodeSlots"></div>
@@ -273,7 +284,7 @@ function createAddSystemForm(supportedModels) {
           <span class="chevron codicon codicon-chevron-right"></span>
           <span>Nodes</span>
         </span>
-        <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node">+</span>
+        <span class="plus-icon" id="addNodeBtn" title="Add TSP-Link Node" aria-label="add_node" role="button" tabindex= "0">+</span>
       </button>
       <div id="accordionContent" class="accordion-content" role="region" aria-labelledby="accordionToggle">
         <div id="nodeContainer"></div>
@@ -292,27 +303,48 @@ function addNode() {
   const nodeId = `node_${nodeCount++}`;
   const nodeRow = createElement('div', { class: 'node-subgroup', id: nodeId });
 
-  const label = createElement('label', { for: `${nodeId}_mainframe` }, `
-    node [ <select class="node-number" name="${nodeId}_nodeId", id = "name="${nodeId}_nodeId""></select> ]
-  `);
+  // Instead of putting select inside label as HTML string:
+  const label = createElement('label', { for: `${nodeId}_nodeId`, class: 'node-label' }, 'node [');
+  const numberSelect = createElement('select', {
+    class: 'node-number',
+    name: `${nodeId}_nodeId`,
+    id: `${nodeId}_nodeId`,
+    'aria-label': `select_nodeId_${nodeId}`
+  });
+  label.appendChild(numberSelect);
+  label.appendChild(document.createTextNode(']'));
 
-  const numberSelect = label.querySelector('select');
   numberSelect.innerHTML = getAvailableNodeOptions().map(n => `<option value="${n}">${n}</option>`).join('');
   numberSelect.value = 1;
 
-  const nodeModel = createElement('select', { name: `${nodeId}_mainframe`, id: `${nodeId}_mainframe` });
+  // Create label for node model select
+  const nodeModelLabel = createElement('label',{}, 'Model');
+  const nodeModel = createElement('select', { 
+    name: `${nodeId}_mainframe`, 
+    id: `${nodeId}_mainframe`,
+    'aria-label': `select_${nodeId}_model` 
+  });
   Object.keys(state.supportedModels).forEach(model => {
     const option = createElement('option', { value: model }, model);
     nodeModel.appendChild(option);
   });
 
   // Create a custom control wrapper for nodeModel and deleteIcon
-  const deleteIcon = createElement('span', { class: 'codicon codicon-trash delete-icon', 'data-event': 'delete-node', title: 'Delete Node' });
+  const deleteIcon = createElement('span', { 
+    class: 'codicon codicon-trash delete-icon', 
+    'data-event': 'delete-node', 
+    title: 'Delete Node',
+    'aria-label': `delete_selected_node_${nodeId}`,
+    role: 'button',
+    tabindex: '0'
+  });
   const selectWithIcon = createElement('div', { class: 'select-with-icon' });
   selectWithIcon.appendChild(nodeModel);
   selectWithIcon.appendChild(deleteIcon);
+  const nodeModelDiv = createElement('div', { class: 'form-group'});
+  nodeModelDiv.append(nodeModelLabel, selectWithIcon)
 
-  nodeRow.append(label, selectWithIcon);
+  nodeRow.append(label, nodeModelDiv);
   nodeContainer.appendChild(nodeRow);
   const nodeslots = createElement('div', { id: `${nodeId}_slots` });
   nodeContainer.appendChild(nodeslots);
@@ -423,10 +455,10 @@ function setupEventDelegation() {
         }
         checkDuplicateNodeNumber()
         handleFormUpdate()
-      const nodeContainer = document.getElementById('nodeContainer');
-      
-      if(!nodeContainer.hasChildNodes())
-        nodeContainer.classList.remove('show')
+        const nodeContainer = document.getElementById('nodeContainer');
+
+        if (!nodeContainer.hasChildNodes())
+          nodeContainer.classList.remove('show')
       }
       else if (target.dataset.event === "delete-selected-system") {
         const systemSelector = document.getElementById('systemSelector');
