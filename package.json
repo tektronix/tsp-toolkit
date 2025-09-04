@@ -486,9 +486,9 @@
         "@vscode/codicons": "0.0.36"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.20.0-12",
-        "@tektronix/kic-cli-linux-x64": "0.20.0-12",
-        "@tektronix/kic-cli-win32-x64": "0.20.0-12"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.0-1",
+        "@tektronix/kic-cli-linux-x64": "0.21.0-1",
+        "@tektronix/kic-cli-win32-x64": "0.21.0-1"
     },
     "extensionDependencies": [
         "sumneko.lua"
