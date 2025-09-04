@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - TSP debug functionality
 
 ### Fixed
+- (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade
 - (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
 
 ## [1.2.4]
