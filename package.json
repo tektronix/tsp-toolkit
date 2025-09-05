@@ -166,12 +166,6 @@
                 "icon": "$(run)"
             },
             {
-                "command": "tsp.sendFileToAllInstr",
-                "title": "Send Script to All Terminals",
-                "enablement": "isKicTerminalActive",
-                "category": "TSP"
-            },
-            {
                 "command": "tsp.openTerminalIP",
                 "title": "Connect",
                 "category": "TSP",
@@ -319,11 +313,6 @@
                     "when": "activeEditor && resourceExtname == .tsp",
                     "command": "tsp.sendFile",
                     "group": "navigation"
-                },
-                {
-                    "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "tsp.sendFileToAllInstr",
-                    "group": "navigation"
                 }
             ],
             "explorer/context": [
@@ -331,22 +320,12 @@
                     "when": "activeEditor && resourceExtname == .tsp",
                     "command": "tsp.sendFile",
                     "group": "navigation"
-                },
-                {
-                    "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "tsp.sendFileToAllInstr",
-                    "group": "navigation"
                 }
             ],
             "editor/title/context": [
                 {
                     "when": "activeEditor && resourceExtname == .tsp",
                     "command": "tsp.sendFile",
-                    "group": "navigation"
-                },
-                {
-                    "when": "activeEditor && resourceExtname == .tsp",
-                    "command": "tsp.sendFileToAllInstr",
                     "group": "navigation"
                 }
             ],

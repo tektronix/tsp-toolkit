@@ -7,22 +7,22 @@ Tektronix TSP™ Toolkit is a comprehensive [Visual Studio Code][code] extension
 support for Test Script Processor ([TSP][tsp]) technology to enhance productivity when working with
 TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete development environment with:
 
-* **Instrument Discovery & Management** - Discover and manage available instruments on your local network with an intuitive tree view
-* **Intelligent Code Editing** - Syntax highlighting, error detection, code navigation, and completion suggestions for TSP scripts
+* **Instrument Discovery & Management** - Discover and manage available instruments on your local network with an intuitive tree view.
+* **Intelligent Code Editing** - Syntax highlighting, error detection, code navigation, and completion suggestions for TSP scripts.
 * **Hover Help** - Access detailed information on individual commands such as definition,
-  accepted parameters, and usage examples
+  accepted parameters, and usage examples.
 * **Command Interface** - Send commands and interact directly with your instruments
-  through the integrated terminal
-* **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface
-* **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection
-* **[Beta] Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding
-* **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups
+  through the integrated terminal.
+* **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface.
+* **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection.
+* **[Beta] Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
+* **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups.
 
 ## Quick Start
 
 - **Step 1.** Connect your TSP-enabled Tektronix and Keithley instrument to your local network (LAN).
-- **Step 2.** Install the [Tektronix TSP Toolkit Visual Studio Code Extension][tsp-toolkit-marketplace].
-- **Step 3.** Open or create a folder for your TSP project.
+- **Step 2.** Install the [Tektronix TSP Toolkit Visual Studio Code Extension][tsp-toolkit-marketplace]
+- **Step 3.** Open or create a folder for your TSP project
 
     ![Open Folder][pic-open-folder]
 
@@ -48,20 +48,20 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
 
 ### View Sections
 
-- **Instruments**: Displays discovered and saved instruments on your network
-  - Connect to instruments
-  - Manage instrument connections
-  - Perform instrument operations (reset, abort, firmware upgrade)
+- **Instruments**: Displays discovered and saved instruments on your network.
+  - Connect to instruments.
+  - Manage instrument connections.
+  - Perform instrument operations (reset, abort, firmware upgrade).
 
-- **System Configurations**: Configure your TSP-Link instrument network
-  - Create new system configurations
-  - Fetch configurations from connected instruments
-  - Switch between different configurations
+- **System Configurations**: Configure your TSP-Link instrument network.
+  - Create new system configurations.
+  - Fetch configurations from connected instruments.
+  - Switch between different configurations.
 
-- **[Beta] Script Generation**: Create and manage TSP scripts without manual coding
-  - Create new script generation sessions
-  - Access saved script configurations
-  - Generate ready-to-use TSP scripts
+- **[Beta] Script Generation**: Create and manage TSP scripts without manual coding.
+  - Create new script generation sessions.
+  - Access saved script configurations.
+  - Generate ready-to-use TSP scripts.
 
 ### Accessing the View
 
@@ -75,23 +75,23 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 
 #### Key Features
 
-- **Auto-Discovery**: Automatically find TSP instruments on your local network
-- **Manual Connection**: Connect to instruments via IP address or VISA resource string
-- **Instrument Management**: Save, rename, and remove instruments from your list
-- **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface
-- **Terminal Integration**: Open terminal connections to instruments with a single click
-- **Reset & Abort**: Control instrument state with reset and abort functions
+- **Auto-Discovery**: Automatically find TSP instruments on your local network.
+- **Manual Connection**: Connect to instruments via IP address or VISA resource string.
+- **Instrument Management**: Save, rename, and remove instruments from your list.
+- **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface.
+- **Terminal Integration**: Open terminal connections to instruments with a single click.
+- **Reset & Abort**: Control instrument state with reset and abort functions.
 
 ### Terminal Usage
 
 When connected to an instrument, you interact with it through the integrated terminal:
 
-- **Direct Command Execution**: Type TSP commands directly in the terminal and press Enter to execute them
-- **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`).Here are the most important ones:
-  - `.help` - Display available terminal commands
-  - `.exit` - Properly close the terminal connection (recommended over using the trash icon)
-  - `.reset` - Reset the connected instrument
-  - `.abort` - Abort the current operation on the instrument
+- **Direct Command Execution**: Type TSP commands directly in the terminal and press Enter to execute them.
+- **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`). Here are the most important ones:
+  - `.help` - Display available terminal commands.
+  - `.exit` - Properly close the terminal connection (recommended over using the trash icon).
+  - `.reset` - Reset the connected instrument.
+  - `.abort` - Abort the current operation on the instrument.
 
 #### Usage Notes
 
@@ -107,8 +107,6 @@ To execute your TSP scripts on connected instruments, you can perform one of the
 
 1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
 2. Click the Run icon in the editor title bar when a TSP file is open
-
-You can also send a script to all connected instruments by right-clicking and selecting "Send Script to All Terminals".
 
 ### [Beta] Automated TSP Script Generation
 
@@ -132,9 +130,9 @@ The Automated TSP Script Generation is a powerful feature that allows you to cre
 
 #### Managing Script Generation Sessions
 
-- **Save Sessions**: Your script generation configurations are automatically saved and can be accessed again later
+- **Save Sessions**: Your script generation configurations are automatically saved and can be accessed again later.
 - **Delete Sessions**: Click the delete icon next to a saved session to remove it from your list.
-- **Edit Sessions**: Click on a saved session to reopen and modify it
+- **Edit Sessions**: Click on a saved session to reopen and modify it.
 
 ### TSP Script Debugging
 
@@ -142,21 +140,21 @@ The TSP Toolkit includes a powerful on-instrument debugging capability that allo
 
 #### Using the TSP Debugger
 
-1. Open a TSP script file in the editor
-2. Set breakpoints by clicking in the gutter next to line numbers
+1. Open a TSP script file in the editor.
+2. Set breakpoints by clicking in the gutter next to line numbers.
 3. Start debugging by:
    - Using the Run and Debug view (Ctrl+Shift+D)
-   - Using the Command Palette and running "TSP: Debug TSP File"
-   - Click the debug icon in the editor title bar
-4. Use the debug controls to step through your code, inspect variables, and view the call stack
+   - Using the Command Palette and running "TSP: Debug TSP File".
+   - Click the debug icon in the editor title bar.
+4. Use the debug controls to step through your code, inspect variables, and view the call stack.
 
 #### Debug Features
 
-- **Breakpoints**: Set breakpoints in your TSP code to pause execution at specific points
-- **Variable Inspection**: View and monitor variable values during script execution
-- **Watch Expressions**: Add custom expressions to the watch panel to track specific variable values or evaluate expressions as your script runs
-- **Call Stack**: Navigate the execution call stack to understand the flow of your code
-- **Step Controls**: Step into, step over, and step out of functions during debugging
+- **Breakpoints**: Set breakpoints in your TSP code to pause execution at specific points.
+- **Variable Inspection**: View and monitor variable values during script execution.
+- **Watch Expressions**: Add custom expressions to the watch panel to track specific variable values or evaluate expressions as your script runs.
+- **Call Stack**: Navigate the execution call stack to understand the flow of your code.
+- **Step Controls**: Step into, step over, and step out of functions during debugging.
 
 
 ## System Configuration
@@ -212,7 +210,6 @@ Right-click on your active editor window while a `*.tsp` file is open to access:
 
 | Context-Sensitive Option     | Description                                                                                   |
 |:-----------------------------|:----------------------------------------------------------------------------------------------|
-| Send Script to All Terminals | Send the current script to all the currently connected instruments with active terminals open |
 | Send Script to Terminal      | Send the current script to the currently connected instrument                                 |
 
 ## Resources and Documentation
@@ -238,7 +235,7 @@ The extension is currently only available in English.
 
 
 ## Questions, Issues, Feature Requests, and Contributions
-- If you come across a problem with the extension, please file an [issue][tsp-toolkit-issues]
+- If you come across a problem with the extension, please file an [issue][tsp-toolkit-issues].
 - Any and all feedback is appreciated and welcome!
     - If someone has already filed an [issue][tsp-toolkit-issues] that encompasses your
       feedback, please leave a 👍/👎 reaction on the issue. Otherwise please start a new
@@ -280,8 +277,8 @@ for more information.
     - DMM7510
     - MP5103
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
-  render the instrument inoperable, but will not complete successfully
-- Instrument discovery might not work for 2600-series and 3706A due to firmware limitation
+  render the instrument inoperable, but will not complete successfully.
+- Instrument discovery might not work for 2600-series and 3706A due to firmware limitation.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
