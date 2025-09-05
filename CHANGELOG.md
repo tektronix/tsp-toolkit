@@ -20,6 +20,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Script generation feature
 - TSP debug functionality
+- Show error when trying to connect using VISA on macOS
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade

@@ -6,6 +6,7 @@ import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
     ConnectionHelper,
+    IoType,
     NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
@@ -18,6 +19,7 @@ import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
 import { CommunicationManager } from "./communicationmanager"
+import { isMacOS } from "./utility"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -473,6 +475,17 @@ function connectCmd(def: Connection) {
     const connection_str = def.addr
 
     if (ConnectionHelper.parseConnectionString(connection_str)) {
+        if (def.type === IoType.Visa && isMacOS) {
+            vscode.window.showErrorMessage(
+                "VISA connection is not supported on macOS.",
+            )
+            Log.error(
+                "Connection failed: VISA is not supported on macOS.",
+                LOGLOC,
+            )
+            return
+        }
+
         Log.debug("Connection string is valid. Creating Terminal", LOGLOC)
         void createTerminal(def)
     } else {
