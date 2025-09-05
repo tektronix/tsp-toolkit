@@ -5,9 +5,10 @@ const kic_cli = `@tektronix/kic-cli-${platform}-${arch}`
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const cli = require(kic_cli)
 
-const { EXECUTABLE, DISCOVER_EXECUTABLE } = cli as {
+const { EXECUTABLE, DISCOVER_EXECUTABLE, DEBUG_EXECUTABLE } = cli as {
     EXECUTABLE: string
     DISCOVER_EXECUTABLE: string
+    DEBUG_EXECUTABLE: string
 }
 
-export { EXECUTABLE, DISCOVER_EXECUTABLE }
+export { EXECUTABLE, DISCOVER_EXECUTABLE, DEBUG_EXECUTABLE }
