@@ -137,6 +137,7 @@ const PATHS: Paths = (function (app_name: string): Paths {
 
 const log_path = PATHS.log
 
+export const isMacOS = platform() === "darwin"
 /**
  * The appropriate location for user-level logs.
  * - **Windows**: C:\Users\USERNAME\AppData\Local\tsp-toolkit\Log

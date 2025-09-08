@@ -6,6 +6,7 @@ import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
     ConnectionHelper,
+    IoType,
     NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
@@ -18,6 +19,7 @@ import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
 import { CommunicationManager } from "./communicationmanager"
+import { isMacOS } from "./utility"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -65,6 +67,13 @@ export async function createTerminal(
         name = connection_details.name
     }
 
+    if (connection.type === IoType.Visa && isMacOS) {
+        vscode.window.showErrorMessage(
+            "VISA connection is not supported on macOS.",
+        )
+        Log.error("Connection failed: VISA is not supported on macOS.", LOGLOC)
+        return
+    }
     const conn: Connection = connection
 
     await conn.connect(name)
@@ -118,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
     // The commandId parameter must match the command field in package.json
     registerCommands(context, [
         { name: "tsp.openTerminal", cb: pickConnection },
-        { name: "tsp.openTerminalIP", cb: connectCmd },
+        { name: "tsp.openTerminalIP", cb: createTerminal },
         {
             name: "InstrumentsExplorer.connect",
             cb: async () => {
@@ -416,7 +425,7 @@ export async function pickConnection(): Promise<Connection | undefined> {
                         if (Ip === undefined) {
                             return
                         }
-                        resolve(await connect(Ip))
+                        resolve(await createTerminal(Ip))
                     }
                 } catch (error) {
                     vscode.window.showErrorMessage(
@@ -433,57 +442,12 @@ export async function pickConnection(): Promise<Connection | undefined> {
     }
 }
 
-async function connect(
-    inIp: string,
-    shouldPrompt?: boolean,
-): Promise<Connection | undefined> {
-    let Ip: string | undefined = inIp
-    if (shouldPrompt) {
-        const options: vscode.InputBoxOptions = {
-            prompt: "Connect to instrument?",
-            value: inIp,
-        }
-        Ip = await vscode.window.showInputBox(options)
-    }
-    if (Ip === undefined) {
-        return
-    }
-
-    if (ConnectionHelper.parseConnectionString(Ip)) {
-        return await createTerminal(Ip)
-    } else {
-        void vscode.window.showErrorMessage("Bad connection string")
-    }
-}
-
 //function startTerminateAllConn() {
 //    void _terminationMgr.terminateAllConn()
 //}
 
 async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
-}
-
-function connectCmd(def: Connection) {
-    const LOGLOC: SourceLocation = {
-        file: "extension.ts",
-        func: `connectCmd(${String(def)})`,
-    }
-
-    const connection_str = def.addr
-
-    if (ConnectionHelper.parseConnectionString(connection_str)) {
-        Log.debug("Connection string is valid. Creating Terminal", LOGLOC)
-        void createTerminal(def)
-    } else {
-        Log.error(
-            `Connection string "${connection_str}" is invalid. Unable to connect to instrument.`,
-            LOGLOC,
-        )
-        void vscode.window.showErrorMessage(
-            `Unable to connect. "${connection_str}" is not a valid connection string.`,
-        )
-    }
 }
 
 const base_api = {
