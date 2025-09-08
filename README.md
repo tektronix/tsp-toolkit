@@ -20,7 +20,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 
 ## Quick Start
 
-- **Step 1.** Connect your TSP-enabled Tektronix and Keithley instrument to your local network (LAN).
+- **Step 1.** Connect your TSP-enabled Tektronix or Keithley instrument to your local network (LAN) or directly to your computer via USB.
 - **Step 2.** Install the [Tektronix TSP Toolkit Visual Studio Code Extension][tsp-toolkit-marketplace].
 - **Step 3.** Open or create a folder for your TSP project.
 
