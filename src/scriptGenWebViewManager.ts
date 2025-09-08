@@ -171,6 +171,7 @@ export class ScriptGenWebViewMgr {
                 return
             }
             this._setWebviewMessageListener()
+            this.checkThemeChange()
 
             this.panel.onDidDispose(() => {
                 this.panel = undefined
@@ -228,6 +229,17 @@ export class ScriptGenWebViewMgr {
         if (this.child) {
             this.child.stdin?.write(`${chunk}\n`)
             console.log(`Sent data to Rust executable: ${chunk}`)
+        }
+    }
+
+    private sendThemeRefreshSignal() {
+        const payload = { refresh: true, reason: "theme-change" }
+        const chunk = JSON.stringify(payload)
+        if (this.child) {
+            this.child.stdin?.write(`${chunk}\n`)
+            console.log(
+                `Sent theme refresh signal to Rust executable: ${chunk}`,
+            )
         }
     }
 
@@ -343,6 +355,16 @@ export class ScriptGenWebViewMgr {
             const err = error as Error
             throw new Error(`Failed to load webview content: ${err.message}`)
         }
+    }
+
+    private checkThemeChange() {
+        vscode.window.onDidChangeActiveColorTheme(() => {
+            // Check if panel and child process exist before sending refresh signal
+            if (this.panel && this.child) {
+                this.sendThemeRefreshSignal()
+                console.log("Theme refresh signal sent to server")
+            }
+        })
     }
 
     handleError(
