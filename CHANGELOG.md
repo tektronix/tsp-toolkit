@@ -18,12 +18,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.2.5]
 
 ### Added
+- (**tsp-toolkit-kic-cli**) Wait for reset to complete before closing connection
 - Script generation feature
 - TSP debug functionality
 - Show error when trying to connect using VISA on macOS
 - (**tsp-toolkit-webhelp**) Including latest webhelp documentation for MP5103, MPSU50-2ST and MSMU60-2
 
 ### Fixed
+- (**tsp-toolkit-kic-cli**) TSP prompt returns on reads when connecting via Python
 - (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade
 - (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
 
