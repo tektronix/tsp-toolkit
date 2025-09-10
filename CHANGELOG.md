@@ -18,6 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.2.5]
 
 ### Added
+- Show error when upgrading firmware with empty file
 - (**tsp-toolkit-kic-cli**) Wait for reset to complete before closing connection
 - Script generation feature
 - TSP debug functionality
