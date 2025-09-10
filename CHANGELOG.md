@@ -26,7 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-webhelp**) Including latest webhelp documentation for MP5103, MPSU50-2ST and MSMU60-2
 
 ### Fixed
-- (**tsp-toolkit-kic-cli**) TSP prompt returns on reads when connecting via Python
+- (**tsp-toolkit-kic-cli**) TSP prompt is still enabled after terminal exits
 - (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade
 - (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
 
