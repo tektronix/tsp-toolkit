@@ -20,6 +20,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Script generation feature
 - TSP debug functionality
+- Show error when trying to connect using VISA on macOS
+- (**tsp-toolkit-webhelp**) Including latest webhelp documentation for MP5103, MPSU50-2ST and MSMU60-2
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade

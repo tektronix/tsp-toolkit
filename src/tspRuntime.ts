@@ -1,6 +1,6 @@
 import { EventEmitter } from "events"
 import * as cp from "node:child_process"
-import { DEBUG_EXECUTABLE } from "./kic-debug-cli"
+import { DEBUG_EXECUTABLE } from "./kic-cli"
 import { CallStack } from "./callStack"
 import {
     BreakPoint,
