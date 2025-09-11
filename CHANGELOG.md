@@ -15,7 +15,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
-## [1.2.5]
+## [1.3.0]
 
 ### Added
 - Show error when upgrading firmware with empty file
