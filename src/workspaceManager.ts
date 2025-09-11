@@ -71,10 +71,11 @@ export async function configure_initial_workspace_configurations() {
         await updateConfiguration(
             "Lua.runtime.builtin",
             {
-                basic: "disable",
+                basic: "enable",
+                builtin: "enable",
+                table: "enable",
                 bit: "disable",
                 bit32: "disable",
-                builtin: "disable",
                 coroutine: "disable",
                 debug: "disable",
                 ffi: "disable",
@@ -87,7 +88,6 @@ export async function configure_initial_workspace_configurations() {
                 package: "disable",
                 string: "disable",
                 "string.buffer": "disable",
-                table: "disable",
                 "table.clear": "disable",
                 "table.new": "disable",
                 utf8: "disable",
