@@ -238,7 +238,7 @@ export class ScriptGenWebViewMgr {
         if (this.child) {
             this.child.stdin?.write(`${chunk}\n`)
             console.log(
-                `Sent theme refresh signal to Rust executable`,
+                `Sent theme refresh signal to Rust executable: ${chunk}`,
             )
         }
     }
