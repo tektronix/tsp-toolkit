@@ -1,7 +1,7 @@
 import * as os from "os"
 import * as child from "child_process"
 import { join } from "path"
-import { mkdtempSync, statSync } from "fs"
+import { mkdtempSync } from "fs"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { IIDNInfo, InstrInfo, IoType } from "./resourceManager"
@@ -958,13 +958,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             await this.connect()
         }
         Log.debug("Terminal exists, sending .upgrade", LOGLOC)
-
-        const fileSize = statSync(filepath).size
-        if (fileSize === 0) {
-            vscode.window.showErrorMessage("Firmware file is empty (0 bytes)")
-            return
-        }
-
         vscode.window.showInformationMessage(
             `Starting upgrade on ${this._parent?.name}@${this._addr}${slot ? `, slot ${slot}` : ""}`,
         )

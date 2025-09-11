@@ -15,18 +15,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
 -->
-## [1.3.0]
+## [1.2.5]
 
 ### Added
-- Show error when upgrading firmware with empty file
-- (**tsp-toolkit-kic-cli**) Wait for reset to complete before closing connection
 - Script generation feature
 - TSP debug functionality
 - Show error when trying to connect using VISA on macOS
 - (**tsp-toolkit-webhelp**) Including latest webhelp documentation for MP5103, MPSU50-2ST and MSMU60-2
 
 ### Fixed
-- (**tsp-toolkit-kic-cli**) TSP prompt is still enabled after terminal exits
 - (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade
 - (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
 
@@ -365,8 +362,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.3.0...HEAD
-[1.3.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.0
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.5...HEAD
 [1.2.5]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.5
 [1.2.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.4
 [1.2.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.3
