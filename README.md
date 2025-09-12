@@ -281,6 +281,7 @@ for more information.
 - Instrument discovery might not work for 2600-series and 3706A due to firmware limitation.
 - Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
 - Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
+- Debugger does not function when the instrument is password protected
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
