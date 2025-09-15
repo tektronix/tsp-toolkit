@@ -137,7 +137,7 @@ export class ScriptGenWebViewMgr {
 
     async openScriptGenPanel() {
         if (!this.panel) {
-            this.panel = this.createWebviewPanel("TSP Script Generation")
+            this.panel = this.createWebviewPanel("[Beta] TSP Script Generation")
             this.panel.iconPath = {
                 light: vscode.Uri.file(
                     join(
