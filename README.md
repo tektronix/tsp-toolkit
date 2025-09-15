@@ -115,7 +115,7 @@ The Automated TSP Script Generation is a powerful feature that allows you to cre
 > ⚠️**Warning**
 > The Automated TSP Script Generation feature is currently in beta. If you encounter issues, please let us know so we can improve it.
 
-> ℹ️**Note:** 
+> ℹ️**Note:**
 > System configuration must be completed before using the Automated TSP Script Generation feature, as channel IDs are populated based on your configured system.
 
 #### Using the Automated TSP Script Generation
@@ -195,7 +195,7 @@ Open the Command Palette (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS 
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on Windows or Linux), then type one of the
 following commands:
 
-| Command                          | Description                                                                         | 
+| Command                          | Description                                                                         |
 |:---------------------------------|:------------------------------------------------------------------------------------|
 | TSP: Connect                     | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |
 | TSP: Debug TSP File              | Start debugging the current TSP file on the connected instrument                    |
@@ -279,6 +279,9 @@ for more information.
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
 - Instrument discovery might not work for 2600-series and 3706A due to firmware limitation.
+- Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
+- Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
+- Debugger does not function when the instrument is password protected
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
