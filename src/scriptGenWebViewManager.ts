@@ -100,7 +100,7 @@ export class ScriptGenWebViewMgr {
     async viewScriptGenUI() {
         if (this.existingSystems.length === 0) {
             vscode.window.showErrorMessage(
-                "No systems found. Please configure a system first.",
+                "System configurations not found. Please configure a system first.",
             )
             return
         }
@@ -137,7 +137,7 @@ export class ScriptGenWebViewMgr {
 
     async openScriptGenPanel() {
         if (!this.panel) {
-            this.panel = this.createWebviewPanel("TSP Script Generation")
+            this.panel = this.createWebviewPanel("[Beta] TSP Script Generation")
             this.panel.iconPath = {
                 light: vscode.Uri.file(
                     join(
@@ -171,6 +171,7 @@ export class ScriptGenWebViewMgr {
                 return
             }
             this._setWebviewMessageListener()
+            this.checkThemeChange()
 
             this.panel.onDidDispose(() => {
                 this.panel = undefined
@@ -240,6 +241,27 @@ export class ScriptGenWebViewMgr {
             this.child.stdin?.write(`${chunk}\n`)
             console.log(`Sent script path data to Rust executable: ${chunk}`)
         }
+    }
+
+    private sendThemeRefreshSignal() {
+        const payload = { refresh: true, reason: "theme-change" }
+        const chunk = JSON.stringify(payload)
+        if (this.child) {
+            this.child.stdin?.write(`${chunk}\n`)
+            console.log(
+                `Sent theme refresh signal to Rust executable: ${chunk}`,
+            )
+        }
+    }
+
+    private checkThemeChange() {
+        vscode.window.onDidChangeActiveColorTheme(() => {
+            // Check if panel and child process exist before sending refresh signal
+            if (this.panel && this.child) {
+                this.sendThemeRefreshSignal()
+                console.log("Theme refresh signal sent to server")
+            }
+        })
     }
 
     private sendScriptGenData(label: string) {
