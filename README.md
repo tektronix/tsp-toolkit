@@ -39,7 +39,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 
 ## Demo Video
 
-<a href="https://www.tek.com/en/video/product-demo/leveraging-test-script-processor-technology-with-keithley-tsp-toolkit"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
+<a href="https://www.youtube.com/watch?v=Srq5LtOH5UA"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
 
 
 ## TSP View Container
