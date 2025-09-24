@@ -18,6 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.3.1]
 
 ### Fixed
+- (**tsp-toolkit-script-gen**) Step and sweep plot y axis ticks incorrect for list mode
 - (**tsp-toolkit-script-gen**) Sweep plot x axis ticks cutoff when number of points increase
 
 ## [1.3.0]
