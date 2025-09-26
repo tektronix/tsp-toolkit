@@ -17,7 +17,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.3.1]
 
-### Added
+### Changed
 - (**tsp-toolkit-script-gen**) Source and Measure Range AUTO by default for bias, step, and sweep
 
 ### Fixed
