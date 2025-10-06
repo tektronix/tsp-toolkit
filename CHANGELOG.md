@@ -18,6 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.3.1]
 
 ### Changed
+- (**tsp-toolkit-script-gen**) Allow overrange MSMU60-2 voltage/current values
 - (**tsp-toolkit-script-gen**) Source and Measure Range AUTO by default for bias, step, and sweep
 
 ### Fixed
