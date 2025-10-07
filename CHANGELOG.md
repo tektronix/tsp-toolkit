@@ -24,6 +24,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - (**tsp-toolkit-script-gen**) Step and sweep plot y axis ticks incorrect for list mode
 - (**tsp-toolkit-script-gen**) Sweep plot x axis ticks cutoff when number of points increase
+- (**tsp-toolkit-script-gen**) Disable Start/Stop/Style controls when List checkbox is check and Disable Edit when unchecked
+
 
 ## [1.3.0]
 
