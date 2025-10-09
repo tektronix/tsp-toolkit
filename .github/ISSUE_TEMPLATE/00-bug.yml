@@ -27,7 +27,7 @@ body:
         to find this issue later on.
       placeholder: |
         e.g. "debugger", "crash", "lost connection"
-  - type: textarea
+  - type: input
     attributes:
       label: TSP Toolkit Version
       description: The version of `tektronix.tsp-toolkit` that you have installed.
