@@ -14,10 +14,12 @@ import {
 
 interface WebviewMessage {
     command: CommandType
+    payload: string
 }
 
 enum CommandType {
     open_script = "open_script",
+    update_session = "update_session",
 }
 const savedScriptGenManager = new SavedScriptGenManager()
 export class ScriptGenWebViewMgr {
@@ -94,6 +96,18 @@ export class ScriptGenWebViewMgr {
                 const ip = data.toString()
                 this.handleChildStdout(ip, this.scriptName)
             })
+
+            this.child?.on("error", (error) => {
+                console.error(
+                    `Error starting Rust executable: ${error.message}`,
+                )
+                this.panel!.webview.html =
+                    "<h1>Error starting Rust executable</h1>"
+            })
+
+            this.child?.stderr?.on("data", (error) => {
+                console.error(`received error on stderr: ${error}`)
+            })
         }
     }
 
@@ -122,16 +136,8 @@ export class ScriptGenWebViewMgr {
 
         this.scriptName = input // store the script name for later use
 
-        // Start the Rust executable
-        if (!this.child || this.child.killed || this.child.exitCode !== null) {
-            this.child = cp.spawn(SCRIPT_GEN_EXECUTABLE)
-            this.child?.stdout?.on("data", (data: Buffer) => {
-                const ip = data.toString()
-                this.handleChildStdout(ip, this.scriptName)
-            })
-        } else {
-            this.sendResetScriptGen()
-        }
+        this.spawnScriptGen()
+        this.sendResetScriptGen()
         await this.openScriptGenPanel()
     }
 
@@ -201,17 +207,6 @@ export class ScriptGenWebViewMgr {
                 ip.substring(ip.indexOf('{"request_type"')),
             )
         }
-        if (ip.includes('"request_type":"evaluated_response"') && input) {
-            this.updateScriptGenInstance(
-                input,
-                ip.substring(ip.indexOf('{"request_type"')),
-            )
-        }
-
-        this.child?.on("error", (error) => {
-            console.error(`Error starting Rust executable: ${error.message}`)
-            this.panel!.webview.html = "<h1>Error starting Rust executable</h1>"
-        })
     }
 
     private sendSystemConfigData() {
@@ -265,9 +260,6 @@ export class ScriptGenWebViewMgr {
     }
 
     private sendScriptGenData(label: string) {
-        if (!this.child) {
-            this.child = cp.spawn(SCRIPT_GEN_EXECUTABLE)
-        }
         const session = savedScriptGenManager.getConfig(label)
         if (this.child) {
             this.child.stdin?.write(`${session?.config}\n`)
@@ -310,18 +302,6 @@ export class ScriptGenWebViewMgr {
     }
 
     createWebviewPanel(title: string): vscode.WebviewPanel {
-        // const localResourceRoot = vscode.Uri.file(
-        //     path.join(
-        //         "C:",
-        //         "git",
-        //         "TekSpecific",
-        //         "tsp-toolkit-script-gen",
-        //         "script-gen-ui",
-        //         "dist",
-        //         "script-gen-ui",
-        //         "browser",
-        //     ),
-        // )
         return vscode.window.createWebviewPanel(
             "webview",
             title,
@@ -412,6 +392,20 @@ export class ScriptGenWebViewMgr {
                         )
                     }
                     break
+                }
+                case CommandType.update_session: {
+                    if (this.scriptName) {
+                        this.updateScriptGenInstance(
+                            this.scriptName,
+                            message.payload.substring(
+                                message.payload.indexOf('{"request_type"'),
+                            ),
+                        )
+                    } else {
+                        console.error(
+                            "Cannot update session: scriptName is undefined",
+                        )
+                    }
                 }
             }
         })
