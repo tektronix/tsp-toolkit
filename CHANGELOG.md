@@ -17,6 +17,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.3.1]
 
+### Added
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay adds a delay before starting the sweep curve 
+
 ### Changed
 - (**tsp-toolkit-script-gen**) Allow overrange MPSU50-2ST source voltage values
 - (**tsp-toolkit-script-gen**) Allow overrange MSMU60-2 source voltage/current values
