@@ -282,6 +282,8 @@ for more information.
 - Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
 - Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
 - Debugger does not function when the instrument is password protected
+- TSP script generation currently supports only 2-channel SMU configurations. Multi-channel setups beyond 2 channels are not yet supported.
+- Generating scripts in OneDrive folders may fail due to file-level permission issues. It is recommended to use a local folder for script generation to avoid such problems.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
