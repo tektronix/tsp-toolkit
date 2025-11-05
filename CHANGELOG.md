@@ -25,6 +25,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
+- (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
 
 ## [1.3.1]
 
