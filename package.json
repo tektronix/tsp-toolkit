@@ -595,12 +595,12 @@
 
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.1-0",
-        "@tektronix/kic-cli-linux-x64": "0.21.1-0",
-        "@tektronix/kic-cli-win32-x64": "0.21.1-0",
-        "@tektronix/script-gen-win32-x64": "0.1.0-29",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-29",
-        "@tektronix/script-gen-linux-x64": "0.1.0-29"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.1-1",
+        "@tektronix/kic-cli-linux-x64": "0.21.1-1",
+        "@tektronix/kic-cli-win32-x64": "0.21.1-1",
+        "@tektronix/script-gen-win32-x64": "0.1.0-30",
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-30",
+        "@tektronix/script-gen-linux-x64": "0.1.0-30"
 
     },
     "extensionDependencies": [
