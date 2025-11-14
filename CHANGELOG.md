@@ -24,13 +24,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
 
 ### Added
+- (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
 
 ## [1.3.1]
 
 ### Added
-- (**tsp-toolkit-script-gen**) Step to Sweep Delay adds a delay before starting the sweep curve 
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay adds a delay before starting the sweep curve
 
 ### Changed
 - (**tsp-toolkit-script-gen**) Allow overrange MPSU50-2ST source voltage values
