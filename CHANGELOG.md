@@ -18,6 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.0]
 
 ### Fixed
+- (**tsp-toolkit-kic-cli**) Error when sending large tsp script to terminal
 - (**tsp-toolkit-kic-cli**) Connecting to MP5000 mainframe over different interfaces prompts for password
 - (**tsp-toolkit-kic-cli**) CLI is unformatted on usbtmc
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
@@ -27,7 +28,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
-- (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script 
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
 
 ## [1.3.1]
 
