@@ -27,6 +27,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script 
 
 ## [1.3.1]
 
