@@ -24,6 +24,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
 - (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
+- (**tsp-toolkit-script-gen**) Remove range settings for MPSUs since they don't have any
+
 
 ### Added
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
