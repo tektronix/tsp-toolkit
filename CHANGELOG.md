@@ -26,6 +26,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
 - (**tsp-toolkit-script-gen**) Remove range settings for MPSUs since they don't have any
+- (**tsp-toolkit-script-gen**) Improve source limits for MSMUs
+- (**tsp-toolkit-script-gen**) Fix over-range support on MPSUs
+
 
 
 ### Added
