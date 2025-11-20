@@ -23,6 +23,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) CLI is unformatted on usbtmc
 - (**tsp-toolkit-kic-cli**) Firmware flashing issue with MP5103 mainframe and slots via USBTMC
 - (**tsp-toolkit-kic-cli**) Fix message when sending data larger than 100,000 bytes to instrument
+- (**tsp-toolkit-kic-cli**) Fix IO timeout error when performing module upgrade on MP5000 over USBTMC
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
 - (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
@@ -33,6 +34,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 
 ### Added
+- Known issue when attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string)
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST

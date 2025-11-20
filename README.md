@@ -282,8 +282,10 @@ for more information.
 - Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
 - Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
 - Debugger does not function when the instrument is password protected
-- TSP script generation currently supports only 2-channel SMU configurations. Multi-channel setups beyond 2 channels are not yet supported.
-- Generating scripts in read-only folders (example: OneDrive) may fail due to file-level permission issues. It is recommended to use a local folder for script generation to avoid such problems.
+- TSP script generation currently supports one TSP node (`localnode` only). All channels must be on the same node but may be in separate modules.
+- Generating scripts in OneDrive folders may fail due to file-level permission issues. This can be worked around by either using a local folder or changing your project folder to be one level deeper within your OneDrive folder.
+- Attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string) will result in an error and is not currently supported
+    - To connect to a raw socket _without_ VISA, simply enter the IP address instead of using the raw socket resource string.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
