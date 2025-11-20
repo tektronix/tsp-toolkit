@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Connecting to MP5000 mainframe over different interfaces prompts for password
 - (**tsp-toolkit-kic-cli**) CLI is unformatted on usbtmc
 - (**tsp-toolkit-kic-cli**) Firmware flashing issue with MP5103 mainframe and slots via USBTMC
+- (**tsp-toolkit-kic-cli**) Fix message when sending data larger than 100,000 bytes to instrument
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
 - (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
