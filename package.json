@@ -597,12 +597,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.1-7",
-        "@tektronix/kic-cli-linux-x64": "0.21.1-7",
-        "@tektronix/kic-cli-win32-x64": "0.21.1-7",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-37",
-        "@tektronix/script-gen-linux-x64": "0.1.0-37",
-        "@tektronix/script-gen-win32-x64": "0.1.0-37"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.1-8",
+        "@tektronix/kic-cli-linux-x64": "0.21.1-8",
+        "@tektronix/kic-cli-win32-x64": "0.21.1-8",
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-38",
+        "@tektronix/script-gen-linux-x64": "0.1.0-38",
+        "@tektronix/script-gen-win32-x64": "0.1.0-38"
     },
     "extensionDependencies": [
         "sumneko.lua"
