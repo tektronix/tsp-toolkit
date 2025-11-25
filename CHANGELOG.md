@@ -18,6 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.0]
 
 ### Fixed
+- (**tsp-toolkit-kic-cli**) Clean closure of kic executable during firmware upgrade
 - (**tsp-toolkit-kic-cli**) Error when sending large tsp script to terminal
 - (**tsp-toolkit-kic-cli**) Connecting to MP5000 mainframe over different interfaces prompts for password
 - (**tsp-toolkit-kic-cli**) CLI is unformatted on usbtmc
