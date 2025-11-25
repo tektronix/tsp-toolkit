@@ -306,6 +306,9 @@
                                     }
                                 }
                             }
+                        },
+                        "lineFrequency": {
+                            "type": "number"
                         }
                     }
                 }
