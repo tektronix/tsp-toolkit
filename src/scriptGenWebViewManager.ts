@@ -214,16 +214,15 @@ export class ScriptGenWebViewMgr {
 
         let lf = vscode.workspace.getConfiguration("tsp.script_generation").get<number>("lineFrequency")
         if (typeof lf !== "number" || isNaN(lf) || lf <= 0 || !Number.isFinite(lf) || lf > 120) {
-            lf = 60 
+            lf = 60
         }
 
-        const lineFrequency = {lineFrequency: lf}
+        const lineFrequency = { lineFrequency: lf }
 
         const chunk = JSON.stringify(payload)
         if (this.child) {
-            this.child.stdin?.write(`${chunk}\n`)
-            this.child.stdin?.write(`${JSON.stringify(lineFrequency)}\n`)
-            
+            this.child.stdin?.write(`${JSON.stringify(lineFrequency)}\n`)  // first send line frequency
+            this.child.stdin?.write(`${chunk}\n`)                   
             console.log(`Sent data to Rust executable: ${chunk}`)
         }
     }
