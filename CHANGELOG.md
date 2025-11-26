@@ -31,8 +31,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Remove range settings for MPSUs since they don't have any
 - (**tsp-toolkit-script-gen**) Improve source limits for MSMUs
 - (**tsp-toolkit-script-gen**) Fix over-range support on MPSUs
-
-
+- (**tsp-toolkit-script-gen**) Resolve issue with script not writing in OneDrive folders
+- (**tsp-toolkit-script-gen**) Resolve issue with list sweeps points resetting with unrelated changes
 
 ### Added
 - Known issue when attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string)
