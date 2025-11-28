@@ -600,9 +600,9 @@
         "@tektronix/kic-cli-darwin-arm64": "0.21.1-8",
         "@tektronix/kic-cli-linux-x64": "0.21.1-8",
         "@tektronix/kic-cli-win32-x64": "0.21.1-8",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-40",
-        "@tektronix/script-gen-linux-x64": "0.1.0-40",
-        "@tektronix/script-gen-win32-x64": "0.1.0-40"
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-41",
+        "@tektronix/script-gen-linux-x64": "0.1.0-41",
+        "@tektronix/script-gen-win32-x64": "0.1.0-41"
     },
     "extensionDependencies": [
         "sumneko.lua"
