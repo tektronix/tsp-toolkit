@@ -35,6 +35,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Resolve issue with script not writing in OneDrive folders
 - (**tsp-toolkit-script-gen**) Resolve issue with list sweeps points resetting with unrelated changes
 - (**tsp-toolkit-script-gen**) Resolve issue with list sweep points editing only on hitting enter key
+- (**tsp-toolkit-script-gen**) SMU limit validation
 
 ### Added
 - Known issue when attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string)
