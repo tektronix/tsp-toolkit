@@ -306,12 +306,26 @@
                                     }
                                 }
                             }
-                        },
-                        "lineFrequency": {
-                            "type": "number",
-                            "default": 60
                         }
                     }
+                },
+                "tsp.lineFrequency": {
+                    "type": "number",
+                    "enum": [
+                        50,
+                        60
+                    ],
+                    "default": 60,
+                    "scope": "window",
+                    "markdownDescriptions": [
+                        "50 Hz line line frequency",
+                        "60 Hz line line frequency"
+                    ],
+                    "enumItemLabels": [
+                        "50 Hz",
+                        "60 Hz"
+                    ],
+                    "description": "The power-line frequency of the outlet your instruments are plugged into."
                 }
             }
         },
@@ -604,9 +618,9 @@
         "@tektronix/kic-cli-darwin-arm64": "0.21.1-9",
         "@tektronix/kic-cli-linux-x64": "0.21.1-9",
         "@tektronix/kic-cli-win32-x64": "0.21.1-9",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-43",
-        "@tektronix/script-gen-linux-x64": "0.1.0-43",
-        "@tektronix/script-gen-win32-x64": "0.1.0-43"
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-44",
+        "@tektronix/script-gen-linux-x64": "0.1.0-44",
+        "@tektronix/script-gen-win32-x64": "0.1.0-44"
     },
     "extensionDependencies": [
         "sumneko.lua"

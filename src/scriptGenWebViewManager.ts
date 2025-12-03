@@ -78,7 +78,10 @@ export class ScriptGenWebViewMgr {
                 .get("tspLinkSystemConfigurations") ?? []
 
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+            if (
+                event.affectsConfiguration("tsp.tspLinkSystemConfigurations") ||
+                event.affectsConfiguration("tsp.lineFrequency")
+            ) {
                 this.existingSystems =
                     vscode.workspace
                         .getConfiguration("tsp")
@@ -212,8 +215,16 @@ export class ScriptGenWebViewMgr {
     private sendSystemConfigData() {
         const payload = { systems: this.existingSystems }
 
-        let lf = vscode.workspace.getConfiguration("tsp.script_generation").get<number>("lineFrequency")
-        if (typeof lf !== "number" || isNaN(lf) || lf <= 0 || !Number.isFinite(lf) || lf > 120) {
+        let lf = vscode.workspace
+            .getConfiguration("tsp")
+            .get<number>("lineFrequency")
+        if (
+            typeof lf !== "number" ||
+            isNaN(lf) ||
+            lf <= 0 ||
+            !Number.isFinite(lf) ||
+            lf > 120
+        ) {
             lf = 60
         }
 
@@ -221,9 +232,11 @@ export class ScriptGenWebViewMgr {
 
         const chunk = JSON.stringify(payload)
         if (this.child) {
-            this.child.stdin?.write(`${JSON.stringify(lineFrequency)}\n`)  // first send line frequency
-            console.log(`Sent line frequency data to Rust executable: ${JSON.stringify(lineFrequency)}`)
-            this.child.stdin?.write(`${chunk}\n`)                   
+            this.child.stdin?.write(`${JSON.stringify(lineFrequency)}\n`) // first send line frequency
+            console.log(
+                `Sent line frequency data to Rust executable: ${JSON.stringify(lineFrequency)}`,
+            )
+            this.child.stdin?.write(`${chunk}\n`)
             console.log(`Sent data to Rust executable: ${chunk}`)
         }
     }
