@@ -308,7 +308,8 @@
                             }
                         },
                         "lineFrequency": {
-                            "type": "number"
+                            "type": "number",
+                            "default": 60
                         }
                     }
                 }

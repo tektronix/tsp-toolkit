@@ -222,6 +222,7 @@ export class ScriptGenWebViewMgr {
         const chunk = JSON.stringify(payload)
         if (this.child) {
             this.child.stdin?.write(`${JSON.stringify(lineFrequency)}\n`)  // first send line frequency
+            console.log(`Sent line frequency data to Rust executable: ${JSON.stringify(lineFrequency)}`)
             this.child.stdin?.write(`${chunk}\n`)                   
             console.log(`Sent data to Rust executable: ${chunk}`)
         }
