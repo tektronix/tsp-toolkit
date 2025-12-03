@@ -39,11 +39,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Known issue when attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string)
+- Added power-line frequency setting (`tsp.lineFrequency`) to workspace settings to support Script Gen NPLC calculations. Defaults to 60 Hz.
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
 - (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
-- (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module 
+- (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module
+-
 
 ## [1.3.1]
 
