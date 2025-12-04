@@ -45,7 +45,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
 - (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
 - (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module
--
+- (**tsp-toolkit-script-gen**) Added Time Per Step above step plot
 
 ## [1.3.1]
 
