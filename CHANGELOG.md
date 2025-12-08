@@ -27,7 +27,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Fix IO timeout error when performing module upgrade on MP5000 over USBTMC
 - (**tsp-toolkit-kic-cli**) Aborting a Toolkit sent script leaves prompts disabled
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
-- (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
+- (**tsp-toolkit-script-gen**) Don't move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
 - (**tsp-toolkit-script-gen**) Remove range settings for MPSUs since they don't have any
 - (**tsp-toolkit-script-gen**) Improve source limits for MSMUs
@@ -46,6 +46,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
 - (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module
 - (**tsp-toolkit-script-gen**) Added Time Per Step above step plot
+
+### Changed
+- (**tsp-toolkit-script-gen**) Change X-axis of preview plots to show engineering units for improved readability
+
 
 ## [1.3.1]
 
