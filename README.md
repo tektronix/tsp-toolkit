@@ -15,7 +15,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
   through the integrated terminal.
 * **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface.
 * **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection.
-* **[Beta] Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
+* **Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
 * **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups.
 
 ## Quick Start
@@ -58,7 +58,7 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
   - Fetch configurations from connected instruments.
   - Switch between different configurations.
 
-- **[Beta] Script Generation**: Create and manage TSP scripts without manual coding.
+- **Script Generation**: Create and manage TSP scripts without manual coding.
   - Create new script generation sessions.
   - Access saved script configurations.
   - Generate ready-to-use TSP scripts.
@@ -108,12 +108,9 @@ To execute your TSP scripts on connected instruments, you can perform one of the
 1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
 2. Click the Run icon in the editor title bar when a TSP file is open
 
-### [Beta] Automated TSP Script Generation
+### Automated TSP Script Generation
 
 The Automated TSP Script Generation is a powerful feature that allows you to create TSP scripts through a graphical interface without needing to write code manually.
-
-> ⚠️**Warning**
-> The Automated TSP Script Generation feature is currently in beta. If you encounter issues, please let us know so we can improve it.
 
 > ℹ️**Note:**
 > System configuration must be completed before using the Automated TSP Script Generation feature, as channel IDs are populated based on your configured system.
@@ -121,6 +118,10 @@ The Automated TSP Script Generation is a powerful feature that allows you to cre
 #### Using the Automated TSP Script Generation
 
 1. First, [configure your project](#configure-your-project) for your instrument system.
+2. Ensure that the power-line frequency is set correctly based on the power-lines to which your system of instruments will be connected
+    - Open settings
+    - In the search bar type `@ext:tektronix.tsp-toolkit @id:tsp.lineFrequency`
+    - Set the appropriate line frequency (default is 60 Hz)
 2. Open the TSP Toolkit view container from the Activity Bar.
 3. Locate the **SCRIPT GENERATION** section.
 4. Click the "+" button and enter a name for your script.
