@@ -85,6 +85,14 @@
                         "completionEvents": []
                     },
                     {
+                        "id": "power-line-frequency-setting",
+                        "title": "Set your power-line frequency",
+                        "description": "Make sure to set your local power-line frequency (`tsp.lineFrequency`) in your extension settings.\nThis ensures the calculations within the I-V Characterization Script Generation feature are correct when using NPLC for measurments.",
+                        "completionEvents": ["onSettingChanged:tsp.lineFrequency"],
+                        "media": {"image": "./resources/walkthrough/LineFrequencySetting.png", "altText": "Modify tsp.lineFrequency setting to with 50 or 60 Hz"}
+
+                    },
+                    {
                         "id": "open-tsp-folder",
                         "title": "Open TSP Project Folder",
                         "description": "Open a folder containing TSP files or open a folder and create TSP files within the folder.\n[Open Folder](command:vscode.openFolder)",
