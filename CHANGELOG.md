@@ -26,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Fix message when sending data larger than 100,000 bytes to instrument
 - (**tsp-toolkit-kic-cli**) Fix IO timeout error when performing module upgrade on MP5000 over USBTMC
 - (**tsp-toolkit-kic-cli**) Aborting a Toolkit sent script leaves prompts disabled
+- (**tsp-toolkit-kic-cli**) Reject requests with a warning when a previous request is still in progress
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
 - (**tsp-toolkit-script-gen**) Don't move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
