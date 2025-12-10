@@ -85,6 +85,14 @@
                         "completionEvents": []
                     },
                     {
+                        "id": "power-line-frequency-setting",
+                        "title": "Set your power-line frequency",
+                        "description": "Make sure to set your local power-line frequency (`tsp.lineFrequency`) in your extension settings.\nThis ensures the calculations within the I-V Characterization Script Generation feature are correct when using NPLC for measurments.",
+                        "completionEvents": ["onSettingChanged:tsp.lineFrequency"],
+                        "media": {"image": "./resources/walkthrough/LineFrequencySetting.png", "altText": "Modify tsp.lineFrequency setting to with 50 or 60 Hz"}
+
+                    },
+                    {
                         "id": "open-tsp-folder",
                         "title": "Open TSP Project Folder",
                         "description": "Open a folder containing TSP files or open a folder and create TSP files within the folder.\n[Open Folder](command:vscode.openFolder)",
@@ -615,12 +623,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.1-10",
-        "@tektronix/kic-cli-linux-x64": "0.21.1-10",
-        "@tektronix/kic-cli-win32-x64": "0.21.1-10",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-51",
-        "@tektronix/script-gen-linux-x64": "0.1.0-51",
-        "@tektronix/script-gen-win32-x64": "0.1.0-51"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.1-12",
+        "@tektronix/kic-cli-linux-x64": "0.21.1-12",
+        "@tektronix/kic-cli-win32-x64": "0.21.1-12",
+        "@tektronix/script-gen-darwin-arm64": "0.1.0-53",
+        "@tektronix/script-gen-linux-x64": "0.1.0-53",
+        "@tektronix/script-gen-win32-x64": "0.1.0-53"
     },
     "extensionDependencies": [
         "sumneko.lua"
