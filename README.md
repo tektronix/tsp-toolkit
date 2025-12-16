@@ -286,6 +286,7 @@ for more information.
 - TSP script generation currently supports one MP5000 TSP node (`localnode` only). All channels must be on the same node but may be in separate modules.
 - Attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string) will result in an error and is not currently supported
     - To connect to a raw socket _without_ VISA, simply enter the IP address instead of using the raw socket resource string.
+- Stopping the debugger on an MP5000 requires an instrument restart to be able to reconnect.
 
 <!--Refs-->
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
