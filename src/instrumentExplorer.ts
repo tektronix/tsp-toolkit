@@ -18,6 +18,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
     private intervalID?: NodeJS.Timeout
     //private _kicProcessMgr: KicProcessMgr
     private _discoveryInProgress: boolean = false
+    private statusBarItem: vscode.StatusBarItem
 
     constructor(
         context: vscode.ExtensionContext,
@@ -47,20 +48,26 @@ export class InstrumentsExplorer implements vscode.Disposable {
             treeDataProvider,
         })
 
+        this.statusBarItem = vscode.window.createStatusBarItem(
+            vscode.StatusBarAlignment.Right,
+            100,
+        )
+        context.subscriptions.push(this.statusBarItem)
+
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            this.InstrumentsDiscoveryViewer.message =
-                "Checking saved instrument connections..."
+            this.statusBarItem.text = "Checking saved instrument connections..."
+            this.statusBarItem.show()
             this.treeDataProvider
                 ?.refresh(async () => {
                     await this.startDiscovery()
                 })
                 .then(
                     () => {
-                        this.InstrumentsDiscoveryViewer.message = undefined
+                        this.statusBarItem.hide()
                     },
                     (e) => {
-                        this.InstrumentsDiscoveryViewer.message = undefined
+                        this.statusBarItem.hide()
                         Log.error(`Unable to refresh instrument explorer: ${e}`)
                     },
                 )
@@ -91,23 +98,24 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
 
-        this.InstrumentsDiscoveryViewer.message =
-            "Checking saved instrument connections..."
+        this.statusBarItem.text = "Checking saved instrument connections..."
+        this.statusBarItem.show()
 
         this.treeDataProvider
             ?.refresh(async () => await this.startDiscovery())
             .then(
                 () => {
-                    this.InstrumentsDiscoveryViewer.message = undefined
+                    this.statusBarItem.hide()
                 },
                 (e: Error) => {
-                    this.InstrumentsDiscoveryViewer.message = undefined
+                    this.statusBarItem.hide()
                     Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
                 },
             )
     }
     dispose() {
         this.treeDataProvider?.dispose()
+        this.statusBarItem.dispose()
     }
 
     private startDiscovery(): Promise<void> {
@@ -117,8 +125,10 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
         return new Promise<void>((resolve) => {
             if (!this._discoveryInProgress) {
-                this.InstrumentsDiscoveryViewer.message =
+                this.statusBarItem.text = "Discovering"
+                this.statusBarItem.tooltip =
                     "Discovering new instrument connections..."
+                this.statusBarItem.show()
 
                 this._discoveryInProgress = true
                 const discover = child.spawn(
@@ -147,7 +157,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
                     if (code) {
                         Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
                     }
-                    this.InstrumentsDiscoveryViewer.message = ""
+                    this.statusBarItem.hide()
                     clearInterval(this.intervalID)
                     this._discoveryInProgress = false
                     resolve()
