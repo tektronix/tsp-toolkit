@@ -228,6 +228,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
+- [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
 
 ### Supported Locales
@@ -248,7 +249,7 @@ The extension is currently only available in English.
 
 We are constantly working to improve the stability and reliability of this software. Here
 are the known issues that we are working to fix.  If you come across new issues,
-please let us know! See the [next section](#questions-issues-feature-requests-and-contributions)
+please let us know! See the [previous section](#questions-issues-feature-requests-and-contributions)
 for more information.
 
 - Due to limitations in instrument firmware, script names longer than 27 characters will
@@ -287,8 +288,12 @@ for more information.
 - Attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string) will result in an error and is not currently supported
     - To connect to a raw socket _without_ VISA, simply enter the IP address instead of using the raw socket resource string.
 - Stopping the debugger on an MP5000 requires an instrument restart to be able to reconnect.
+- When upgrading an MP5103 mainframe over USBTMC or HiSLIP, IO errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
+- When upgrading TTI and 2600 products over VXI-11, IO Errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
+- There are occasional issues running scripts over VXI-11 on 2600 products that lead to mysterious TSP errors.
 
 <!--Refs-->
+[app-note-script-gen]: https://www.tek.com/en/application-note/accelerate-automation-effortless-script-generation-with-tsp-toolkit
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
 [code]: https://code.visualstudio.com/
 [marketplace-tou]: https://cdn.vsassets.io/v/M146_20190123.39/_content/Microsoft-Visual-Studio-Marketplace-Terms-of-Use.pdf
