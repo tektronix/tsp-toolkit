@@ -26,19 +26,20 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Fix message when sending data larger than 100,000 bytes to instrument
 - (**tsp-toolkit-kic-cli**) Fix IO timeout error when performing module upgrade on MP5000 over USBTMC
 - (**tsp-toolkit-kic-cli**) Aborting a Toolkit sent script leaves prompts disabled
+- (**tsp-toolkit-kic-cli**) Reject requests with a warning when a previous request is still in progress
+- (**tsp-toolkit-kic-cli**) Firmware flash doesn't show TSP errors that might occur with a bad FW image
 - (**tsp-toolkit-script-gen**) Cursor for plots moving to top
-- (**tsp-toolkit-script-gen**) Don`t move cursor when user starts making any UI change
+- (**tsp-toolkit-script-gen**) Don't move cursor when user starts making any UI change
 - (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
-- (**tsp-toolkit-script-gen**) Remove range settings for MPSUs since they don't have any
-- (**tsp-toolkit-script-gen**) Improve source limits for MSMUs
-- (**tsp-toolkit-script-gen**) Fix over-range support on MPSUs
+- (**tsp-toolkit-script-gen**) Remove range settings for MPSU modules since they don't have any
+- (**tsp-toolkit-script-gen**) Improve source limits for MSMU modules
+- (**tsp-toolkit-script-gen**) Fix over-range support on MPSU modules
 - (**tsp-toolkit-script-gen**) Resolve issue with script not writing in OneDrive folders
 - (**tsp-toolkit-script-gen**) Resolve issue with list sweeps points resetting with unrelated changes
 - (**tsp-toolkit-script-gen**) Resolve issue with list sweep points editing only on hitting enter key
 - (**tsp-toolkit-script-gen**) SMU limit validation
 
 ### Added
-- Known issue when attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string)
 - Added power-line frequency setting (`tsp.lineFrequency`) to workspace settings to support Script Gen NPLC calculations. Defaults to 60 Hz.
 - (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
 - (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
@@ -46,6 +47,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
 - (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module
 - (**tsp-toolkit-script-gen**) Added Time Per Step above step plot
+
+### Changed
+- (**tsp-toolkit-script-gen**) Change X-axis of preview plots to show engineering units for improved readability
+
 
 ## [1.3.1]
 
