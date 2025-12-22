@@ -272,18 +272,25 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
      * @param connection A new connection interface to add to this instrument
      */
     addConnection(connection: Connection): boolean {
-        const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type === connection.type,
+        // Find if a connection of the same type already exists (regardless of address)
+        const sameTypeIdx = this._connections.findIndex(
+            (v) => v.type === connection.type
         )
-        if (i > -1) {
-            if (
-                connection.status !== undefined &&
-                this._connections[i].status !== connection.status
-            ) {
-                this._connections[i].status = connection.status
-                //this._onChanged.fire()
+        if (sameTypeIdx > -1) {
+            // If the address is the same, just update status if needed
+            if (this._connections[sameTypeIdx].addr === connection.addr) {
+                if (
+                    connection.status !== undefined &&
+                    this._connections[sameTypeIdx].status !== connection.status
+                ) {
+                    this._connections[sameTypeIdx].status = connection.status
+                }
+                return false
+            } else {
+                // Address changed: remove the old connection
+                this._connections[sameTypeIdx].dispose()
+                this._connections.splice(sameTypeIdx, 1)
             }
-            return false
         }
         connection.onChangedStatus(() => {
             this.updateStatus()
