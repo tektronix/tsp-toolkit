@@ -974,6 +974,71 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return
     }
 
+    async startTspOutputSaving(output: string) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.startTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+        Log.debug(
+            `Terminal exists, sending .save --tsp --output ${output}`,
+            LOGLOC,
+        )
+        this._terminal?.sendText(`.save --tsp --output "${output}"`)
+    }
+
+    stopTspOutputSaving() {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.stopTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            return
+        }
+        Log.debug("Terminal exists, sending .save --end", LOGLOC)
+        this._terminal?.sendText(".save --end")
+    }
+
+    async saveBufferContents(
+        buffers: string[],
+        fields: string[],
+        delimiter: string,
+        output: string,
+    ) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.saveBufferContents()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+
+        const command = `.save --buffer "${buffers.join('" --buffer "')}" --format "${fields.join(",")}" --delimiter "${delimiter}" --output "${output}"`
+        Log.debug(`Terminal exists, sending ${command}`, LOGLOC)
+
+        this._terminal?.sendText(command)
+    }
+
+    async saveScriptOutput(script: string, output: string) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.stopTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+        Log.debug(
+            `Terminal exists, sending .save --script ${script} --output ${output}`,
+            LOGLOC,
+        )
+
+        this._terminal?.sendText(
+            `.save --script "${script}" --output "${output}"`,
+        )
+    }
+
     async sendScript(filepath: string) {
         if (!this._terminal) {
             await this.connect()
