@@ -450,6 +450,10 @@ async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
 }
 
+async function startUpdateIPAddr(def: Connection): Promise<void> {
+    await _instrExplorer.updateIPAddr(def)
+}
+
 const base_api = {
     fetchKicTerminals(): vscode.Terminal[] {
         const kicTerminals = vscode.window.terminals.filter(

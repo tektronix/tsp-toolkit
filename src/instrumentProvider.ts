@@ -160,6 +160,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 if (r.firmware_revision !== instrument.info.firmware_rev) {
                     r.firmware_revision = instrument.info.firmware_rev
                 }
+                // Update the address if it changed for this connection
+                const matchingConnection = instrument.connections.find(
+                    (c) => c.type === r.io_type
+                )
+                if (matchingConnection && r.instr_address !== matchingConnection.addr) {
+                    r.instr_address = matchingConnection.addr
+                }
             }
         }
 
