@@ -134,7 +134,68 @@ export function activate(context: vscode.ExtensionContext) {
                 await pickConnection()
             },
         },
+        {
+            name: "tsp.saveTspOutputStart",
+            cb: async (instr: Instrument) => {
+                await instr.startSaveTspOutput()
+            },
+        },
+        {
+            name: "tsp.saveTspOutputEnd",
+            cb: (instr: Instrument) => {
+                instr.stopSaveTspOutput()
+            },
+        },
+        {
+            name: "tsp.saveBuffersToFile",
+            cb: async (instr: Instrument) => {
+                //TODO: Implement
+                await instr.saveBufferContents()
+            },
+        },
+        {
+            name: "tsp.saveScriptOutput",
+            cb: async (e: vscode.Uri) => {
+                //TODO: Implement
+                const term = vscode.window.activeTerminal
+                if (
+                    (term?.creationOptions as vscode.TerminalOptions)
+                        ?.shellPath === EXECUTABLE
+                ) {
+                    let connection: Connection | undefined = undefined
+                    for (const i of InstrumentProvider.instance.instruments) {
+                        connection = i.connections.find(
+                            (c) => c.terminal?.processId === term?.processId,
+                        )
+                        if (connection) {
+                            break
+                        }
+                    }
 
+                    if (connection) {
+                        const output = await vscode.window.showSaveDialog({
+                            title: "Select Output File",
+                        })
+                        if (!output) {
+                            return
+                        }
+                        await connection.saveScriptOutput(
+                            e.fsPath,
+                            output.fsPath,
+                        )
+                    }
+                } else {
+                    const conn = await pickConnection()
+                    const output = await vscode.window.showSaveDialog({
+                        title: "Select Output File",
+                    })
+                    if (!output) {
+                        return
+                    }
+                    await conn?.saveScriptOutput(e.fsPath, output.fsPath)
+                }
+            },
+        },
         {
             name: "InstrumentsExplorer.showTerm",
             cb: (conn: Connection) => {
