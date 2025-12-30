@@ -168,8 +168,8 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
                 this.intervalID = setInterval(() => {
                     this.treeDataProvider?.getContent().then(
-                        () => {},
-                        () => {},
+                        () => { },
+                        () => { },
                     )
                 }, 1000)
             }
@@ -194,7 +194,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
             item.name = name
             this.treeDataProvider?.addOrUpdateInstrument(item)
             this.treeDataProvider?.doWithConfigWatcherOff(() => {
-                this.treeDataProvider?.updateSaved(item).catch(() => {})
+                this.treeDataProvider?.updateSaved(item).catch(() => { })
             })
         } else {
             Log.warn("Item not defined", {
@@ -209,7 +209,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
             placeHolder: "Enter new IP address",
             prompt: "Enter a valid IPv4 address",
         })
-        
+
         if (!newIP || newIP.trim().length === 0) {
             vscode.window.showErrorMessage("IP address update cancelled or empty")
             Log.warn("IP address update cancelled or empty", {
@@ -231,7 +231,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         const trimmedIP = newIP.trim()
         const validationError = ConnectionHelper.ipAddressValidator(trimmedIP)
         if (validationError) {
-            vscode.window.showErrorMessage('Invalid IP address')
+            vscode.window.showErrorMessage("Invalid IP address")
             Log.warn(`Invalid IP address: ${validationError}`, {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -247,7 +247,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         item.addr = trimmedIP
         this.treeDataProvider?.addOrUpdateInstrument(item.parent)
         this.treeDataProvider?.doWithConfigWatcherOff(() => {
-            this.treeDataProvider?.updateSaved(item.parent!).catch(() => {})
+            this.treeDataProvider?.updateSaved(item.parent!).catch(() => { })
         })
         Log.info(`IP address updated from ${oldIP} to ${trimmedIP} for ${item.parent.name}`, {
             file: "instruments.ts",
