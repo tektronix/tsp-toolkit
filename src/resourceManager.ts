@@ -195,6 +195,16 @@ export class ConnectionHelper {
         }
         return null
     }
+
+    public static ipAddressValidator = (val: string): string | null => {
+        if (!val || val.trim().length === 0) {
+            return "IP address cannot be empty"
+        }
+        if (!this.IPTest(val.trim())) {
+            return "Enter a valid IPv4 address"
+        }
+        return null
+    }
 }
 
 /**
