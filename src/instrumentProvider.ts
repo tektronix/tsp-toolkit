@@ -197,7 +197,8 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             .filter(
                 (c) =>
                     c.status === ConnectionStatus.Active ||
-                    c.status === ConnectionStatus.Connected,
+                    c.status === ConnectionStatus.Connected ||
+                    c.status === ConnectionStatus.Inactive,
             )
             .sort((a, b) => a.name.localeCompare(b.name))
             .sort((a, b) => -(a.status - b.status))
@@ -208,6 +209,18 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     iconPath: connectionStatusIcon(x.status),
                 }
             })
+    }
+
+    async getTerminalByPid(term_pid: number): Promise<Connection | undefined> {
+        for (const i of this.instruments) {
+            for (const c of i.connections) {
+                if (c.terminal && (await c.terminal.processId) === term_pid) {
+                    return c
+                }
+            }
+        }
+
+        return undefined
     }
 
     addOrUpdateInstrument(instrument: Instrument) {

@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, PathLike } from "node:fs"
 import { homedir, platform, tmpdir } from "node:os"
 import { basename, join } from "node:path"
 import { env } from "node:process"
+import vscode from "vscode"
+import { ConnectionDetails } from "./resourceManager"
 
 interface PathsInterface {
     data: PathLike
@@ -135,6 +137,7 @@ const PATHS: Paths = (function (app_name: string): Paths {
 
 const log_path = PATHS.log
 
+export const isMacOS = platform() === "darwin"
 /**
  * The appropriate location for user-level logs.
  * - **Windows**: C:\Users\USERNAME\AppData\Local\tsp-toolkit\Log
@@ -143,3 +146,11 @@ const log_path = PATHS.log
  */
 export const LOG_DIR = log_path
 export const COMMON_PATHS = PATHS
+
+export interface TspToolkitApi {
+    fetchKicTerminals(): vscode.Terminal[]
+    fetchConnDetails(
+        term_pid: Thenable<number | undefined> | undefined,
+    ): Promise<ConnectionDetails | undefined>
+    restartConnAfterDbg(details: ConnectionDetails): Promise<void>
+}

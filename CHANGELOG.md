@@ -16,11 +16,147 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.4.1]
+
+### Added
+- \[Beta] Add ability to save script output to a file
+- \[Beta] Add ability to save buffer contents to a file
+- \[Beta] Add ability to start and stop saving commands and output to a file
+
+## [1.4.0]
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) Clean closure of kic executable during firmware upgrade
+- (**tsp-toolkit-kic-cli**) Error when sending large tsp script to terminal
+- (**tsp-toolkit-kic-cli**) Connecting to MP5000 mainframe over different interfaces prompts for password
+- (**tsp-toolkit-kic-cli**) CLI is unformatted on usbtmc
+- (**tsp-toolkit-kic-cli**) Firmware flashing issue with MP5103 mainframe and slots via USBTMC
+- (**tsp-toolkit-kic-cli**) Fix message when sending data larger than 100,000 bytes to instrument
+- (**tsp-toolkit-kic-cli**) Fix IO timeout error when performing module upgrade on MP5000 over USBTMC
+- (**tsp-toolkit-kic-cli**) Aborting a Toolkit sent script leaves prompts disabled
+- (**tsp-toolkit-kic-cli**) Reject requests with a warning when a previous request is still in progress
+- (**tsp-toolkit-kic-cli**) Firmware flash doesn't show TSP errors that might occur with a bad FW image
+- (**tsp-toolkit-script-gen**) Cursor for plots moving to top
+- (**tsp-toolkit-script-gen**) Don't move cursor when user starts making any UI change
+- (**tsp-toolkit-script-gen**) Fix 3+ channel configurations in the generated script
+- (**tsp-toolkit-script-gen**) Remove range settings for MPSU modules since they don't have any
+- (**tsp-toolkit-script-gen**) Improve source limits for MSMU modules
+- (**tsp-toolkit-script-gen**) Fix over-range support on MPSU modules
+- (**tsp-toolkit-script-gen**) Resolve issue with script not writing in OneDrive folders
+- (**tsp-toolkit-script-gen**) Resolve issue with list sweeps points resetting with unrelated changes
+- (**tsp-toolkit-script-gen**) Resolve issue with list sweep points editing only on hitting enter key
+- (**tsp-toolkit-script-gen**) SMU limit validation
+
+### Added
+- Added power-line frequency setting (`tsp.lineFrequency`) to workspace settings to support Script Gen NPLC calculations. Defaults to 60 Hz.
+- (**tsp-toolkit-script-gen**) Measure Range has been added to the generated TSP script
+- (**tsp-toolkit-script-gen**) Make all the plot x axis timeline same
+- (**tsp-toolkit-script-gen**) Power envelope validation check has been implemented for MPSU50-2ST
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay implementation in script
+- (**tsp-toolkit-script-gen**) Timing requirements for MP5000 module
+- (**tsp-toolkit-script-gen**) Added Time Per Step above step plot
+
+### Changed
+- (**tsp-toolkit-script-gen**) Change X-axis of preview plots to show engineering units for improved readability
+
+
+## [1.3.1]
+
+### Added
+- (**tsp-toolkit-script-gen**) Step to Sweep Delay adds a delay before starting the sweep curve
+
+### Changed
+- (**tsp-toolkit-script-gen**) Allow overrange MPSU50-2ST source voltage values
+- (**tsp-toolkit-script-gen**) Allow overrange MSMU60-2 source voltage/current values
+- (**tsp-toolkit-script-gen**) Source and Measure Range AUTO by default for bias, step, and sweep
+
+### Fixed
+- (**tsp-toolkit-script-gen**) Step and sweep plot y axis ticks incorrect for list mode
+- (**tsp-toolkit-script-gen**) Sweep plot x axis ticks cutoff when number of points increase
+- (**tsp-toolkit-script-gen**) Disable Start/Stop/Style controls when List checkbox is check and Disable Edit when unchecked
+- (**tsp-toolkit-script-gen**) Fix expander chevron position when bias, step and/or sweep is/are empty
+
+
+## [1.3.0]
+
+### Added
+- Show error when upgrading firmware with empty file
+- (**tsp-toolkit-kic-cli**) Wait for reset to complete before closing connection
+- Script generation feature
+- TSP debug functionality
+- Show error when trying to connect using VISA on macOS
+- (**tsp-toolkit-webhelp**) Including latest webhelp documentation for MP5103, MPSU50-2ST and MSMU60-2
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) TSP prompt is still enabled after terminal exits
+- (**tsp-toolkit-kic-cli**) Update error message for empty firmware files during upgrade
+- (**tsp-toolkit-webhelp-to-json**) scriptVar and listY commands data types corrected
+
+## [1.2.4]
+
+### Changed
+- Sanitize log files to remove sensitive information
+- Allow user to connect to instruments that are "Offline" (just in case they weren't discovered)
+- Offline instrument connection string is now included in the connection list dropdown
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) Unable to fetch TSPLink network information from the MP5000
+- (**tsp-toolkit-kic-cli**) Update firmware upgrade timeout message
+- (**tsp-toolkit-kic-cli**) Getting error after firmware file transferred successfully
+- (**tsp-toolkit-kic-cli**) Firmware upgrade for TTI and 2600 models getting stuck over slow connection
+
+### Added
+- (**tsp-toolkit-webhelp-to-json**) Language feature support has been added for MP5103, MPSU50-2ST and MSMU60-2
+- (**tsp-toolkit-webhelp**) Added MP5103, MPSU50-2ST and MSMU60-2 webhelp documentation
+- (**tsp-toolkit-kic-cli**) Add better password support
+- (**tsp-toolkit-kic-cli**) Don't interrupt instruments while discovering instruments.
+- Add abort menu to abort current job on the connected instrument
+
+## [1.2.3]
+
+### Fixed
+- Deprecate old system configurations
+- Node and slot table autocompletion problem
+- System configurations UI controls alignment issues
+- (**tsp-toolkit-kic-lib**) Further progress indicator improvements
+- (**tsp-toolkit-kic-cli**) Recognize when socket has been terminated from device-side more quickly and close.
+
+### Added
+- Update support for already saved systems
+
+### Changed
+- Update branding to be Tektronix instead of Keithley
+
+## [1.2.2]
+
+### Added
+
+- System configurations webview UI implemented
+- slot input support for modules
+- UI option to fetch localnode and tsplink nodes for active connection
+- (**tsp-toolkit-kic-lib**) Progress indicators for very large scripts and firmware files
+
+### Changed
+
+- (**tsp-toolkit-kic-cli**) JSON structure updated to include module info
+- (**tsp-toolkit-kic-cli**) Write fetched configuration to setting.json file
+- (**tsp-toolkit-kic-lib**) No longer need to call `slot.stop` and `slot.start` since that is done by firmware now
+
+### Fixed
+
+- (**tsp-toolkit-kic-lib**) Issues with firmware updates over USBTMC on some instruments
+
+
 ## [1.2.1]
 
 ### Fixed
 
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+- Fix changes that broke advanced feature compatibility (closed beta)
+
+### Changed
+
+- Updated branding in README and package.json
 
 ## [1.2.0]
 
@@ -292,7 +428,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
+[1.4.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.0
+[1.3.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.1
+[1.3.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.0
+[1.2.4]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.4
+[1.2.3]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.3
+[1.2.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.2
 [1.2.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.1
 [1.2.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.2.0
 [1.1.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.1.1

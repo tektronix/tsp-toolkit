@@ -3,7 +3,7 @@ name: Feature Request
 description: Let us know about a feature that you think would be a good addition to TSP Toolkit!
 title: "[Feature]: "
 labels:
-  - bug
+  - feature
   - triage
 body:
   - type: checkboxes
@@ -28,5 +28,5 @@ body:
           As a user, I would like to be able to see my instruments list in a side panel
           as they are discovered so I can find the instrument I'm looking for quickly.
 
-          This would idealy include the model number, serial number, and connection 
+          This would idealy include the model number, serial number, and connection
           information for each instrument.

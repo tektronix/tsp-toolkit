@@ -1,7 +1,7 @@
 import * as os from "os"
 import * as child from "child_process"
 import { join } from "path"
-import { mkdtempSync } from "fs"
+import { mkdtempSync, statSync } from "fs"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { IIDNInfo, InstrInfo, IoType } from "./resourceManager"
@@ -90,6 +90,7 @@ export function contextValueStatus(
 export class Connection extends vscode.TreeItem implements vscode.Disposable {
     private _type: IoType = IoType.Lan
     private _addr: string = ""
+    private _keyring: string | null | undefined = undefined
     private _status: ConnectionStatus | undefined = undefined
 
     private _parent: Instrument | undefined = undefined
@@ -189,9 +190,16 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    async getInfo(timeout_ms?: number): Promise<IIDNInfo | null> {
-        const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
-        Log.debug("Getting instrument information", LOGLOC)
+    async checkLogin(timeout_ms?: number): Promise<{
+        username: boolean
+        password: boolean
+        keyring?: string
+    } | null> {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.checkLogin()",
+        }
+        Log.debug("Checking if instrument requires login", LOGLOC)
 
         this._background_process = child.spawn(
             EXECUTABLE,
@@ -201,15 +209,316 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     LOG_DIR,
                     `${new Date().toISOString().substring(0, 10)}-kic.log`,
                 ),
-                "info",
-                this.type.toLowerCase(),
-                "--json",
+                "check-login",
                 this.addr,
             ],
             {
                 env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
             },
         )
+        if (timeout_ms) {
+            setTimeout(() => {
+                if (
+                    os.platform() === "win32" &&
+                    this._background_process?.pid
+                ) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        this._background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    this._background_process?.kill("SIGINT")
+                }
+            }, timeout_ms)
+        }
+        const requirements = await new Promise<{
+            username: boolean
+            password: boolean
+            keyring?: string
+        } | null>((resolve) => {
+            let data = ""
+            this._background_process?.stderr?.on("data", (chunk) => {
+                Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+            })
+            this._background_process?.stdout?.on("data", (chunk) => {
+                data += chunk
+            })
+            this._background_process?.on("close", (code) => {
+                const ret: {
+                    username: boolean
+                    password: boolean
+                    keyring?: string
+                } = {
+                    username: false,
+                    password: false,
+                    keyring: undefined,
+                }
+                if (code != 0) {
+                    if (data.length === 0) {
+                        resolve(null)
+                        return
+                    }
+                    const d = data.toString()
+                    const [, details] = d.split(": ")
+                    const reqs = details.split(",")
+                    if (
+                        (reqs.length > 1 && d.search(/USERNAME/g) === -1) ||
+                        reqs.length > 2
+                    ) {
+                        ret.keyring = reqs[reqs.length - 1].trim()
+                    }
+
+                    ret.password = true
+                    if (d.search(/USERNAME/g) !== -1) {
+                        ret.username = true
+                    }
+                }
+                resolve(ret)
+            })
+        })
+
+        const exit_code = this._background_process.exitCode
+
+        this._background_process = undefined
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, requirements: ${JSON.stringify(requirements)}`,
+            LOGLOC,
+        )
+
+        return requirements
+    }
+
+    async promptDetails(reqs: {
+        username: boolean
+        password: boolean
+        keyring?: string
+    }): Promise<{ username?: string; password?: string; keyring?: string }> {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.promptDetails()",
+        }
+        Log.debug("Prompting user for login details", LOGLOC)
+
+        const credentials: {
+            username?: string
+            password?: string
+            keyring?: string
+        } = {
+            username: undefined,
+            password: undefined,
+            keyring: undefined,
+        }
+        if (reqs.keyring) {
+            credentials.keyring = reqs.keyring
+            return credentials
+        }
+
+        if (reqs.username) {
+            credentials.username = await vscode.window.showInputBox({
+                title: "Enter Username",
+                placeHolder: "username",
+                prompt: "Enter the username for the instrument to which you are trying to connect.",
+            })
+        }
+
+        if (reqs.password) {
+            credentials.password = await vscode.window.showInputBox({
+                title: "Enter Password",
+                placeHolder: "password",
+                password: true,
+                prompt: "Enter the password for the instrument to which you are trying to connect.",
+            })
+        }
+
+        return credentials
+    }
+
+    /**
+     * Login to the instrument and get back the ID of the stored credential from the system credential manager.
+     *
+     * @param credentials The username (optional) and password (optional) to use to login to the instrument
+     * @returns The keyring identifier used to access the instrument credentials
+     */
+    async login(credentials: {
+        username?: string
+        password?: string
+        keyring?: string
+    }): Promise<string | null | undefined> {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.login()" }
+        Log.debug("Logging into instrument", LOGLOC)
+
+        const args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "login",
+            this.addr,
+        ]
+        if (credentials.keyring) {
+            args.push("--keyring", credentials.keyring)
+        } else {
+            if (!credentials.username && !credentials.password) {
+                return null
+            }
+
+            if (credentials.username) {
+                args.push("--username", credentials.username)
+            }
+
+            if (credentials.password) {
+                args.push("--password", credentials.password)
+            }
+        }
+
+        this._background_process = child.spawn(EXECUTABLE, args, {
+            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+        })
+
+        const keyring_id = await new Promise<string>((resolve) => {
+            let data = ""
+            this._background_process?.stderr?.on("data", (chunk) => {
+                Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+            })
+            this._background_process?.stdout?.on("data", (chunk) => {
+                data += chunk
+            })
+            this._background_process?.on("close", () => {
+                resolve(data.trim())
+            })
+        })
+
+        const exit_code = this._background_process.exitCode
+
+        this._background_process = undefined
+
+        Log.trace(
+            `Login process exited with code: ${exit_code}, information: ${keyring_id.trim()}`,
+            LOGLOC,
+        )
+
+        if (keyring_id === "") {
+            Log.error(
+                "Unable to get keyring id after logging into instrument.",
+                LOGLOC,
+            )
+            return undefined
+        }
+
+        return keyring_id
+    }
+
+    async ping(timeout_ms?: number): Promise<IIDNInfo | null> {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.ping()" }
+        Log.debug("Getting instrument information", LOGLOC)
+
+        const args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "ping",
+            "--json",
+            this.addr,
+        ]
+
+        if (this._keyring) {
+            args.push("--keyring", this._keyring)
+        }
+
+        this._background_process = child.spawn(EXECUTABLE, args, {
+            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+        })
+        if (timeout_ms) {
+            setTimeout(() => {
+                if (
+                    os.platform() === "win32" &&
+                    this._background_process?.pid
+                ) {
+                    // The following was the only configuration of options found to work.
+                    // Do NOT remove the `/F` unless you have rigorously proven that it
+                    // consistently works.
+                    child.spawnSync("TaskKill", [
+                        "/PID",
+                        this._background_process.pid.toString(),
+                        "/T", // Terminate the specified process and any child processes
+                        "/F", // Forcefully terminate the specified processes
+                    ])
+                } else {
+                    this._background_process?.kill("SIGINT")
+                }
+            }, timeout_ms)
+        }
+        const info_string = await new Promise<string | null>((resolve) => {
+            let data = ""
+            this._background_process?.stderr?.on("data", (chunk) => {
+                Log.trace(`Info stderr: ${chunk}`, LOGLOC)
+            })
+            this._background_process?.stdout?.on("data", (chunk) => {
+                data += chunk
+            })
+            this._background_process?.on("close", (code) => {
+                if (code === 0) {
+                    resolve(data)
+                }
+                resolve(null)
+            })
+        })
+
+        if (!info_string) {
+            return null
+        }
+
+        const exit_code = this._background_process.exitCode
+
+        this._background_process = undefined
+
+        Log.trace(
+            `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
+            LOGLOC,
+        )
+
+        if (info_string === "") {
+            Log.error(
+                "Unable to connect to instrument, could not get instrument information",
+                LOGLOC,
+            )
+            return null
+        }
+
+        return <IIDNInfo>JSON.parse(info_string)
+    }
+
+    async getInfo(timeout_ms?: number): Promise<IIDNInfo | null> {
+        const LOGLOC = { file: "instruments.ts", func: "Connection.getInfo()" }
+        Log.debug("Getting instrument information", LOGLOC)
+
+        const args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "info",
+            "--json",
+            this.addr,
+        ]
+
+        if (this._keyring) {
+            args.push("--keyring", this._keyring)
+        }
+
+        this._background_process = child.spawn(EXECUTABLE, args, {
+            env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
+        })
         if (timeout_ms) {
             setTimeout(() => {
                 if (
@@ -254,7 +563,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (info_string === "") {
             Log.error(
-                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+                "Unable to connect to instrument, could not get instrument information",
                 LOGLOC,
             )
             return null
@@ -282,7 +591,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 `${new Date().toISOString().substring(0, 10)}-kic.log`,
             ),
             "dump",
-            this.type.toLowerCase(),
             this.addr,
             "--output",
             dump_path,
@@ -303,6 +611,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     async connect(name?: string) {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
+        const orig_status = this.status
         this.status = ConnectionStatus.Connected
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
@@ -340,6 +649,48 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         dump_path = await this.dumpOutputQueue()
                     }
 
+                    progress.report({
+                        message:
+                            "Checking if instrument requires authentication",
+                    })
+
+                    if (cancel.isCancellationRequested) {
+                        this.status = ConnectionStatus.Active
+                        return new Promise((resolve) => resolve(false))
+                    }
+
+                    const login_required = await this.checkLogin()
+
+                    if (login_required !== null) {
+                        for (let i = 1; i <= 3; i++) {
+                            //TODO: Prompt for the required information (if any)
+                            if (i > 1 && login_required.keyring) {
+                                login_required.keyring = undefined
+                            }
+
+                            progress.report({
+                                message: `Attempt ${i} of 3: Prompting for instrument authentication details`,
+                            })
+                            const login_details =
+                                await this.promptDetails(login_required)
+
+                            this._keyring = await this.login(login_details)
+                            if (this._keyring !== undefined) {
+                                // null indicates login was not necessary, though we shouldn't get null
+                                break
+                            }
+                        }
+                    } else {
+                        vscode.window.showErrorMessage(
+                            `Unable to connect to instrument at ${this._addr}`,
+                        )
+                        Log.error(
+                            "Connection failed: unable to reach requested instrument.",
+                            LOGLOC,
+                        )
+                        this.status = orig_status
+                        return new Promise((resolve) => resolve(false))
+                    }
                     //Get instrument info
                     progress.report({
                         message: "Getting instrument information",
@@ -349,7 +700,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         return new Promise((resolve) => resolve(false))
                     }
 
-                    const info = await this.getInfo()
+                    const info = await this.ping()
 
                     if (!info) {
                         vscode.window.showErrorMessage(
@@ -400,7 +751,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             `${new Date().toISOString().substring(0, 10)}-kic.log`,
                         ),
                         "connect",
-                        this.type.toLowerCase(),
                         this.addr,
                     ]
 
@@ -408,6 +758,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         for (const a of additional_terminal_args) {
                             terminal_args.push(a)
                         }
+                    }
+
+                    if (this._keyring) {
+                        terminal_args.push("--keyring", this._keyring)
                     }
 
                     Log.debug("Starting VSCode Terminal", LOGLOC)
@@ -519,7 +873,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 `${new Date().toISOString().substring(0, 10)}-kic.log`,
             ),
             "reset",
-            this.type.toLowerCase(),
             this.addr,
         ])
 
@@ -527,6 +880,54 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             this._background_process?.on("close", () => {
                 Log.trace(
                     `Reset process exited with code: ${this._background_process?.exitCode}`,
+                    LOGLOC,
+                )
+                this._background_process = undefined
+                resolve()
+            })
+        })
+    }
+
+    async abort() {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connection.abort()",
+        }
+        if (this._terminal) {
+            Log.debug("Terminal exists, sending .abort", LOGLOC)
+            this.showTerminal()
+            this._terminal?.sendText(".abort")
+            return
+        }
+        if (this._background_process) {
+            //wait for a background process slot to open up if it is busy
+            Log.debug(
+                "Terminal doesn't exist and background process is busy. Waiting...",
+                LOGLOC,
+            )
+            await new Promise<void>((r) =>
+                this._background_process?.on("close", () => r()),
+            )
+            Log.debug(
+                "... Background process finished starting new abort call in background process",
+                LOGLOC,
+            )
+        }
+        this._background_process = child.spawn(EXECUTABLE, [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "abort",
+            this.type.toLowerCase(),
+            this.addr,
+        ])
+
+        await new Promise<void>((resolve) => {
+            this._background_process?.on("close", () => {
+                Log.trace(
+                    `Abort process exited with code: ${this._background_process?.exitCode}`,
                     LOGLOC,
                 )
                 this._background_process = undefined
@@ -557,6 +958,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             await this.connect()
         }
         Log.debug("Terminal exists, sending .upgrade", LOGLOC)
+
+        const fileSize = statSync(filepath).size
+        if (fileSize === 0) {
+            vscode.window.showErrorMessage("Firmware file is empty (0 bytes)")
+            return
+        }
+
         vscode.window.showInformationMessage(
             `Starting upgrade on ${this._parent?.name}@${this._addr}${slot ? `, slot ${slot}` : ""}`,
         )
@@ -564,6 +972,71 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             `.upgrade ${slot ? `--slot ${slot}` : ""} "${filepath}"`,
         )
         return
+    }
+
+    async startTspOutputSaving(output: string) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.startTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+        Log.debug(
+            `Terminal exists, sending .save --tsp --output ${output}`,
+            LOGLOC,
+        )
+        this._terminal?.sendText(`.save --tsp --output "${output}"`)
+    }
+
+    stopTspOutputSaving() {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.stopTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            return
+        }
+        Log.debug("Terminal exists, sending .save --end", LOGLOC)
+        this._terminal?.sendText(".save --end")
+    }
+
+    async saveBufferContents(
+        buffers: string[],
+        fields: string[],
+        delimiter: string,
+        output: string,
+    ) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.saveBufferContents()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+
+        const command = `.save --buffer "${buffers.join('" --buffer "')}" --format "${fields.join(",")}" --delimiter "${delimiter}" --output "${output}"`
+        Log.debug(`Terminal exists, sending ${command}`, LOGLOC)
+
+        this._terminal?.sendText(command)
+    }
+
+    async saveScriptOutput(script: string, output: string) {
+        const LOGLOC = {
+            file: "instruments.ts",
+            func: "Connections.stopTspOutputSaving()",
+        }
+        if (!this._terminal) {
+            await this.connect()
+        }
+        Log.debug(
+            `Terminal exists, sending .save --script ${script} --output ${output}`,
+            LOGLOC,
+        )
+
+        this._terminal?.sendText(
+            `.save --script "${script}" --output "${output}"`,
+        )
     }
 
     async sendScript(filepath: string) {
@@ -581,7 +1054,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         this.showTerminal()
         this._terminal?.sendText(
-            `.nodes "${join(filepath, "config.tsp.json")}"`,
+            `.nodes "${join(filepath, ".vscode/settings.json")}"`,
         )
     }
 
@@ -594,7 +1067,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     //}
 
     async getUpdatedStatus(): Promise<void> {
-        const info = await this.getInfo(1000)
+        const info = await this.ping(1000)
         let new_status = ConnectionStatus.Inactive
         if (info?.serial_number === this._parent?.info.serial_number) {
             new_status = ConnectionStatus.Active

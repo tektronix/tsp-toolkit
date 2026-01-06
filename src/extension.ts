@@ -1,21 +1,25 @@
-import * as fs from "fs"
-import { join } from "path"
 import * as vscode from "vscode"
-import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
-import { ConnectionDetails, ConnectionHelper } from "./resourceManager"
-import { getNodeDetails } from "./tspConfigJsonParser"
 import {
-    configure_initial_workspace_configurations,
-    processWorkspaceFolders,
-    updateConfiguration,
-} from "./workspaceManager"
+    ConnectionDetails,
+    ConnectionHelper,
+    IoType,
+    NO_OPEN_WORKSPACE_MESSAGE,
+} from "./resourceManager"
+import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
 import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
+import { ConfigWebView } from "./ConifgWebView"
+import { activateTspDebug } from "./activateTspDebug"
+import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
+import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { CommunicationManager } from "./communicationmanager"
+import { isMacOS } from "./utility"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -63,6 +67,13 @@ export async function createTerminal(
         name = connection_details.name
     }
 
+    if (connection.type === IoType.Visa && isMacOS) {
+        vscode.window.showErrorMessage(
+            "VISA connection is not supported on macOS.",
+        )
+        Log.error("Connection failed: VISA is not supported on macOS.", LOGLOC)
+        return
+    }
     const conn: Connection = connection
 
     await conn.connect(name)
@@ -116,11 +127,73 @@ export function activate(context: vscode.ExtensionContext) {
     // The commandId parameter must match the command field in package.json
     registerCommands(context, [
         { name: "tsp.openTerminal", cb: pickConnection },
-        { name: "tsp.openTerminalIP", cb: connectCmd },
+        { name: "tsp.openTerminalIP", cb: createTerminal },
         {
             name: "InstrumentsExplorer.connect",
             cb: async () => {
-                await pickConnection("New Connection")
+                await pickConnection()
+            },
+        },
+        {
+            name: "tsp.saveTspOutputStart",
+            cb: async (instr: Instrument) => {
+                await instr.startSaveTspOutput()
+            },
+        },
+        {
+            name: "tsp.saveTspOutputEnd",
+            cb: (instr: Instrument) => {
+                instr.stopSaveTspOutput()
+            },
+        },
+        {
+            name: "tsp.saveBuffersToFile",
+            cb: async (instr: Instrument) => {
+                //TODO: Implement
+                await instr.saveBufferContents()
+            },
+        },
+        {
+            name: "tsp.saveScriptOutput",
+            cb: async (e: vscode.Uri) => {
+                //TODO: Implement
+                const term = vscode.window.activeTerminal
+                if (
+                    (term?.creationOptions as vscode.TerminalOptions)
+                        ?.shellPath === EXECUTABLE
+                ) {
+                    let connection: Connection | undefined = undefined
+                    for (const i of InstrumentProvider.instance.instruments) {
+                        connection = i.connections.find(
+                            (c) => c.terminal?.processId === term?.processId,
+                        )
+                        if (connection) {
+                            break
+                        }
+                    }
+
+                    if (connection) {
+                        const output = await vscode.window.showSaveDialog({
+                            title: "Select Output File",
+                        })
+                        if (!output) {
+                            return
+                        }
+                        await connection.saveScriptOutput(
+                            e.fsPath,
+                            output.fsPath,
+                        )
+                    }
+                } else {
+                    const conn = await pickConnection()
+                    const output = await vscode.window.showSaveDialog({
+                        title: "Select Output File",
+                    })
+                    if (!output) {
+                        return
+                    }
+                    await conn?.saveScriptOutput(e.fsPath, output.fsPath)
+                }
             },
         },
         {
@@ -140,6 +213,13 @@ export function activate(context: vscode.ExtensionContext) {
             cb: async (e: Connection) => {
                 await startReset(e)
                 vscode.window.showInformationMessage("Reset complete")
+            },
+        },
+        {
+            name: "InstrumentsExplorer.abort",
+            cb: async (e: Connection) => {
+                await startAbort(e)
+                vscode.window.showInformationMessage("Abort complete")
             },
         },
         {
@@ -184,8 +264,15 @@ export function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "tsp.configureTspLanguage",
-            cb: async (e: vscode.Uri) => {
+            name: "systemConfigurations.fetchConnectionNodes",
+            cb: async () => {
+                if (!vscode.workspace.workspaceFolders) {
+                    vscode.window.showInformationMessage(
+                        `${NO_OPEN_WORKSPACE_MESSAGE}`,
+                    )
+                    return
+                }
+
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
@@ -202,11 +289,15 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     if (connection) {
-                        await connection.getNodes(e.fsPath)
+                        await connection.getNodes(
+                            vscode.workspace.workspaceFolders[0].uri.fsPath,
+                        )
                     }
                 } else {
                     const conn = await pickConnection()
-                    await conn?.getNodes(e.fsPath)
+                    await conn?.getNodes(
+                        vscode.workspace.workspaceFolders[0].uri.fsPath,
+                    )
                 }
             },
         },
@@ -214,13 +305,28 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
     HelpDocumentWebView.createOrShow(context)
+    // Instantiate a new instance of the ViewProvider class
+    const systemConfigWebViewprovider = new ConfigWebView(context.extensionUri)
+
+    registerCommand(
+        context,
+        "systemConfigurations.addSystem",
+        systemConfigWebViewprovider.addSystem.bind(systemConfigWebViewprovider),
+    )
+    // Register the provider for a Webview View
+    const systemConfigViewDisposable =
+        vscode.window.registerWebviewViewProvider(
+            ConfigWebView.viewType,
+            systemConfigWebViewprovider,
+        )
+    void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
+
+    context.subscriptions.push(systemConfigViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
         LOGLOC,
     )
-    // call function which is required to call first time while activating the plugin
-    void processWorkspaceFolders()
 
     Log.debug("Update local and global configuration for TSP", LOGLOC)
     void configure_initial_workspace_configurations()
@@ -228,28 +334,17 @@ export function activate(context: vscode.ExtensionContext) {
         "Subscribing to TSP configuration changes in all workspace folders",
         LOGLOC,
     )
-    hookTspConfigFileChange(context, vscode.workspace.workspaceFolders?.slice())
 
-    // Register a handler to process files whenever file is saved
-    context.subscriptions.push(
-        vscode.workspace.onDidSaveTextDocument((textFilePath) => {
-            void onDidSaveTextDocument(textFilePath)
-        }),
-    )
-    // Register a handler to process files whenever a new workspace folder is added
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeWorkspaceFolders((event) => {
-            hookTspConfigFileChange(context, event.added.slice())
-            void processWorkspaceFolders()
-        }),
-    )
+    // Create an object of Communication Manager
+    const _activeConnectionManager = new CommunicationManager()
+    activateTspDebug(context, _activeConnectionManager)
 
-    // Register a handler to process files whenever a file is created is added
-    context.subscriptions.push(
-        vscode.workspace.onDidCreateFiles(() => {
-            void processWorkspaceFolders()
-        }),
-    )
+    const selectScriptGenData = new selectScriptGenDataProvider()
+    const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
+        treeDataProvider: selectScriptGenData,
+    })
+    selectScriptGenData.setTreeView(scriptGenTreeView)
+    new ScriptGenWebViewMgr(context, selectScriptGenData)
 
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
@@ -267,6 +362,11 @@ export function deactivate() {
 //Request the instrument to be reset
 function startReset(def: Connection): Promise<void> {
     return Promise.resolve(def.reset())
+}
+
+//Request the instrument to be reset
+function startAbort(def: Connection): Promise<void> {
+    return Promise.resolve(def.abort())
 }
 
 function updateExtensionSettings() {
@@ -338,148 +438,10 @@ function updateExtensionSettings() {
     })
 }
 
-/**
- * For each workspace folder its creating file watcher for "*config.tsp.json"
- * file so that if its get saved for any other process also its should able to
- * configure language library for that
- * @param context extension context
- * @param workspace_folders workspace folder list
- */
-function hookTspConfigFileChange(
-    context: vscode.ExtensionContext,
-    workspace_folders: vscode.WorkspaceFolder[] | undefined,
-) {
-    if (workspace_folders) {
-        for (const folder of workspace_folders) {
-            const folderPath = folder.uri
-
-            const fileWatcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(folderPath, "**/*.tsp.json"),
-            )
-            // Event listener for file changes
-            fileWatcher.onDidChange(onDidChangeTspConfigFile)
-            fileWatcher.onDidCreate(onDidChangeTspConfigFile)
-
-            context.subscriptions.push(fileWatcher)
-        }
-    }
-}
-
-/**
- * Event listener for ".vscode/tspConfig/config.tsp.json"
- * @param uri text file uri
- */
-export async function onDidChangeTspConfigFile(uri: vscode.Uri) {
-    void onDidSaveTextDocument(await vscode.workspace.openTextDocument(uri))
-}
-
-/**
- * Event listener for save text document event
- * check for file path if its ".vscode/tspConfig/config.tsp.json"
- * then read the file and fetch node details form it
- * update the library path in setting.json file of selected workspace folder
- * @param textDocument text document path
- */
-async function onDidSaveTextDocument(textDocument: vscode.TextDocument) {
-    const workspace_path = vscode.workspace.getWorkspaceFolder(textDocument.uri)
-    const filePath = textDocument.uri.fsPath
-
-    if (
-        filePath.endsWith("config.tsp.json") &&
-        fs.existsSync(filePath) &&
-        workspace_path
-    ) {
-        const new_library_settings: string[] = []
-        new_library_settings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
-
-        const lua_definitions_folder_path = join(
-            COMMAND_SETS,
-            "nodes_definitions",
-        )
-        if (fs.existsSync(lua_definitions_folder_path)) {
-            fs.rmSync(lua_definitions_folder_path, {
-                recursive: true,
-                force: true,
-            })
-        }
-        fs.mkdirSync(lua_definitions_folder_path, { recursive: true })
-        const nodeDetails = getNodeDetails(filePath)
-
-        const supported_models = fs
-            .readdirSync(COMMAND_SETS)
-            .filter((folder) =>
-                fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory(),
-            )
-
-        for (const [model, nodes] of Object.entries(nodeDetails)) {
-            if (!supported_models.includes(model.toUpperCase())) {
-                void vscode.window.showInformationMessage(
-                    `${model} model is not supported`,
-                )
-                return
-            }
-
-            const lib_base_path = join(COMMAND_SETS, model.toUpperCase())
-            new_library_settings.push(join(lib_base_path, "Helper"))
-
-            if (nodes.some((str) => str.includes("self"))) {
-                new_library_settings.push(join(lib_base_path, "AllTspCommands"))
-            }
-
-            nodes.forEach((node) => {
-                if (node.includes("node")) {
-                    const node_num = parseInt(node.match(/\d+/)?.[0] || "", 10)
-                    const node_cmd_file_path = join(
-                        lib_base_path,
-                        "tspLinkSupportedCommands",
-                        "definitions.txt",
-                    )
-                    const node_cmd_file_content = fs
-                        .readFileSync(node_cmd_file_path, "utf8")
-                        .replace(/\$node_number\$/g, node_num.toString())
-                    const new_node_cmd_file_path = join(
-                        lua_definitions_folder_path,
-                        `${model}_node${node_num}.lua`,
-                    )
-                    fs.writeFileSync(
-                        new_node_cmd_file_path,
-                        node_cmd_file_content,
-                    )
-                }
-            })
-        }
-
-        // check if lua_definitions_folder_path is not empty
-
-        if (fs.readdirSync(lua_definitions_folder_path).length !== 0) {
-            new_library_settings.push(lua_definitions_folder_path)
-        }
-        await updateConfiguration(
-            "Lua.workspace.library",
-            new_library_settings,
-            vscode.ConfigurationTarget.WorkspaceFolder,
-            workspace_path,
-        )
-    }
-}
-
-async function pickConnection(
-    connection_info?: string,
-): Promise<Connection | undefined> {
+export async function pickConnection(): Promise<Connection | undefined> {
     const options: vscode.QuickPickItem[] =
         InstrumentProvider.instance.getQuickPickOptions()
-
-    if (connection_info !== undefined) {
-        const options: vscode.InputBoxOptions = {
-            prompt: "Enter instrument IP address or VISA resource string",
-            validateInput: ConnectionHelper.instrConnectionStringValidator,
-        }
-        const address = await vscode.window.showInputBox(options)
-        if (address === undefined) {
-            return
-        }
-        await connect(address)
-    } else {
+    {
         const quickPick = vscode.window.createQuickPick()
         quickPick.items = options
         quickPick.title = "Connect to an Instrument"
@@ -524,7 +486,7 @@ async function pickConnection(
                         if (Ip === undefined) {
                             return
                         }
-                        resolve(await connect(Ip))
+                        resolve(await createTerminal(Ip))
                     }
                 } catch (error) {
                     vscode.window.showErrorMessage(
@@ -541,57 +503,12 @@ async function pickConnection(
     }
 }
 
-async function connect(
-    inIp: string,
-    shouldPrompt?: boolean,
-): Promise<Connection | undefined> {
-    let Ip: string | undefined = inIp
-    if (shouldPrompt) {
-        const options: vscode.InputBoxOptions = {
-            prompt: "Connect to instrument?",
-            value: inIp,
-        }
-        Ip = await vscode.window.showInputBox(options)
-    }
-    if (Ip === undefined) {
-        return
-    }
-
-    if (ConnectionHelper.parseConnectionString(Ip)) {
-        return await createTerminal(Ip)
-    } else {
-        void vscode.window.showErrorMessage("Bad connection string")
-    }
-}
-
 //function startTerminateAllConn() {
 //    void _terminationMgr.terminateAllConn()
 //}
 
 async function startRename(def: Instrument): Promise<void> {
     await _instrExplorer.rename(def)
-}
-
-function connectCmd(def: Connection) {
-    const LOGLOC: SourceLocation = {
-        file: "extension.ts",
-        func: `connectCmd(${String(def)})`,
-    }
-
-    const connection_str = def.addr
-
-    if (ConnectionHelper.parseConnectionString(connection_str)) {
-        Log.debug("Connection string is valid. Creating Terminal", LOGLOC)
-        void createTerminal(def)
-    } else {
-        Log.error(
-            `Connection string "${connection_str}" is invalid. Unable to connect to instrument.`,
-            LOGLOC,
-        )
-        void vscode.window.showErrorMessage(
-            `Unable to connect. "${connection_str}" is not a valid connection string.`,
-        )
-    }
 }
 
 const base_api = {
@@ -604,39 +521,26 @@ const base_api = {
         return kicTerminals
     },
 
-    // eslint-disable-next-line @typescript-eslint/require-await
     async fetchConnDetails(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         term_pid: Thenable<number | undefined> | undefined,
     ): Promise<ConnectionDetails | undefined> {
+        const pid = await term_pid
+        if (pid) {
+            const connection =
+                await InstrumentProvider.instance.getTerminalByPid(pid)
+            if (connection) {
+                return {
+                    name: connection.terminal?.name ?? "",
+                    addr: connection.addr,
+                    type: connection.type,
+                }
+            }
+        }
         return undefined
-        // if (_kicProcessMgr !== undefined) {
-        //     const kicCell = _kicProcessMgr.kicList.find(
-        //         (x) => x.terminalPid === term_pid,
-        //     )
-        //     const connDetails = kicCell?.connection
-        //     kicCell?.sendTextToTerminal(".exit")
-        //     let found = false
-        //     await kicCell?.getTerminalState().then(
-        //         () => {
-        //             found = true
-        //         },
-        //         () => {
-        //             found = false
-        //         },
-        //     )
-        //     if (found) {
-        //         return Promise.resolve(connDetails)
-        //     }
-        //     return Promise.reject(
-        //         new Error(
-        //             "Couldn't close terminal. Please check instrument state",
-        //         ),
-        //     )
-        // }
     },
 
-    async restartConnAfterDbg(name: string, connection: Connection) {
-        await connection.connect(name)
+    async restartConnAfterDbg(details: ConnectionDetails) {
+        const conn = InstrumentProvider.instance.getConnection(details)
+        await conn?.connect(details.name)
     },
 }

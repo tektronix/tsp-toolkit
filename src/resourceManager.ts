@@ -1,6 +1,60 @@
+import * as fs from "fs"
+import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 //export const IPV4_ADDR_RE = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/
+
+const MPSU50_2ST = "MPSU50-2ST"
+const MSMU60_2 = "MSMU60-2"
+const EMPTY = "Empty"
+
+export const NO_OPEN_WORKSPACE_MESSAGE =
+    "No workspace is open. Please open a workspace to continue."
+
+const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
+    string,
+    { noOfSlots?: number; moduleOptions?: string[] }
+> = {
+    MP5103: {
+        noOfSlots: 3,
+        moduleOptions: [EMPTY, MPSU50_2ST, MSMU60_2],
+    },
+}
+
+/**
+ * An array of supported model names.
+ *
+ * This array is populated by reading the directories within the COMMAND_SETS directory.
+ * Each directory name represents a supported model.
+ *
+ * @type {string[]}
+ */
+let models: string[] = fs
+    .readdirSync(COMMAND_SETS)
+    .filter((folder: string) =>
+        fs.statSync(`${COMMAND_SETS}/${folder}`).isDirectory(),
+    )
+
+// Remove "tsp-lua-5.0" and "nodes_definitions" from the supported models
+models = models.filter(
+    (model) =>
+        model !== "tsp-lua-5.0" &&
+        model !== "nodes_definitions" &&
+        model !== MPSU50_2ST &&
+        model !== MSMU60_2,
+)
+
+export const SUPPORTED_MODELS_DETAILS = models.reduce<
+    Record<string, { noOfSlots?: number; moduleOptions?: string[] }>
+>((acc, item) => {
+    if (TREBUCHET_SUPPORTED_MODELS_DETAILS[item]) {
+        acc[item] = TREBUCHET_SUPPORTED_MODELS_DETAILS[item]
+    } else {
+        acc[item] = {}
+    }
+    return acc
+}, {})
 
 //interface for *idn? response
 export interface IIDNInfo {
@@ -57,6 +111,33 @@ export class InstrInfo implements IInstrInfo {
     instr_categ = ""
     friendly_name = ""
     socket_port?: string | undefined
+}
+
+interface Slot {
+    slotId: string
+    module: string
+}
+
+export interface Node {
+    nodeId: string
+    mainframe: string
+    slots?: Slot[]
+}
+
+interface ISystemInfo {
+    name: string
+    localNode: string
+    isActive: boolean
+    slots?: Slot[]
+    nodes?: Node[]
+}
+
+export class SystemInfo implements ISystemInfo {
+    name = ""
+    isActive = false
+    localNode = ""
+    slots?: Slot[] = []
+    nodes?: Node[] = []
 }
 
 export interface ConnectionDetails {

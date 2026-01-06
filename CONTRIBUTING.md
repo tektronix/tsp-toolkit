@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-In order to contribute code to this project you must have the following dependencies installed:
+In order to contribute code to this project, you must have the following dependencies installed:
 
 * NodeJS version 20.11.0 or later
 * Rust (latest stable version)
