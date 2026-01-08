@@ -25,6 +25,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+- (**tsp-toolkit-kic-cli**) Reduce number of messages send to instrument when closing debugger
 
 ## [1.4.0]
 
