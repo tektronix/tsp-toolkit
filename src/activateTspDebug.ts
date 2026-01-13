@@ -173,7 +173,7 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
         vscode.DebugAdapterDescriptor | undefined
     > {
         if (!DebugHelper.connection) {
-            return Promise.resolve(undefined)
+            return Promise.reject(new Error("No connection available"))
         }
         return Promise.resolve(
             new vscode.DebugAdapterInlineImplementation(
