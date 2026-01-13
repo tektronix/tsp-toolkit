@@ -200,8 +200,8 @@ export class ConnectionHelper {
         if (!val || val.trim().length === 0) {
             return "IP address cannot be empty"
         }
-        if (!this.IPTest(val.trim())) {
-            return "Enter a valid IPv4 address"
+        if (!this.IPTest(val.trim()) && !this.VisaResourceStringTest(val.trim())) {
+            return "Enter valid IPv4 address or VISA resource string"
         }
         return null
     }

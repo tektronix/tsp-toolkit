@@ -205,8 +205,8 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
     public async updateIPAddr(item: Connection) {
         const newIP = await vscode.window.showInputBox({
-            placeHolder: "Enter new IP address",
-            prompt: "Enter a valid IPv4 address",
+            placeHolder: "Enter new IP address or VISA resource string",
+            prompt: "Enter a valid IPv4 address or VISA resource string",
         })
 
         if (!newIP || newIP.trim().length === 0) {
@@ -230,7 +230,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         const trimmedIP = newIP.trim()
         const validationError = ConnectionHelper.ipAddressValidator(trimmedIP)
         if (validationError) {
-            vscode.window.showErrorMessage("Invalid IP address")
+            vscode.window.showErrorMessage("Invalid IP address or VISA resource string")
             Log.warn(`Invalid IP address: ${validationError}`, {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
