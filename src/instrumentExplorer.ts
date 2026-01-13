@@ -228,7 +228,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
 
         const trimmedIP = newIP.trim()
-        const validationError = ConnectionHelper.ipAddressValidator(trimmedIP)
+        const validationError = ConnectionHelper.instrConnectionStringValidator(trimmedIP)
         if (validationError) {
             vscode.window.showErrorMessage("Invalid IP address or VISA resource string")
             Log.warn(`Invalid IP address: ${validationError}`, {
