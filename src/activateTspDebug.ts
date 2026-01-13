@@ -7,15 +7,14 @@ import {
     ProviderResult,
     WorkspaceFolder,
 } from "vscode"
-import { ConnectionDetails, DebugHelper } from "./resourceManager"
+import { DebugHelper } from "./resourceManager"
 import { TspDebugSession } from "./tspDebug"
-import { CommunicationManager } from "./communicationmanager"
 import { Log } from "./logging"
-import { TspToolkitApi } from "./utility"
+import { getActiveConnection, pickConnection } from "./extension"
+import { Connection } from "./connection"
 
 export function activateTspDebug(
     context: vscode.ExtensionContext,
-    acm: CommunicationManager,
     factory?: vscode.DebugAdapterDescriptorFactory,
 ) {
     // play  button clicked
@@ -23,33 +22,69 @@ export function activateTspDebug(
     context.subscriptions.push(
         vscode.commands.registerCommand(
             "tspdebug.debugContent",
-            (resource: vscode.Uri) => {
+            async (resource: vscode.Uri) => {
                 const LOGLOC = {
                     file: "activateTspDebug.ts",
                     func: "CMD:tspdebug.debugContent()",
                 }
-                let targetResource = resource
 
+                // Determine target resource
+                let targetResource = resource
                 if (!targetResource && vscode.window.activeTextEditor) {
                     targetResource = vscode.window.activeTextEditor.document.uri
                 }
 
-                if (targetResource) {
-                    const dbg = vscode.debug.startDebugging(undefined, {
-                        type: "tspdebug",
-                        name: "Debug TSP File",
-                        request: "launch",
-                        program: targetResource.fsPath,
-                    })
-                    dbg.then(
-                        () => {
-                            vscode.commands.executeCommand(
-                                "workbench.panel.repl.view.focus",
-                            )
-                            Log.debug("Debugger started", LOGLOC)
-                        },
-                        () => Log.error("Unable to start debugger", LOGLOC),
+                if (!targetResource) {
+                    vscode.window.showErrorMessage(
+                        "No file to debug. Please open a TSP file.",
                     )
+                    Log.error("No target resource found for debugging", LOGLOC)
+                    return
+                }
+
+                // Get connection
+                const conn = await get_connection()
+                if (!conn) {
+                    Log.error("No connection available for debugging", LOGLOC)
+                    return
+                }
+
+                // Set up debug helper
+                DebugHelper.debuggeeFilePath = targetResource.fsPath
+                DebugHelper.connection = conn
+
+                try {
+                    const started = await vscode.debug.startDebugging(
+                        undefined,
+                        {
+                            type: "tspdebug",
+                            name: "Debug TSP File",
+                            request: "launch",
+                            program: targetResource.fsPath,
+                        },
+                    )
+
+                    if (started) {
+                        await vscode.commands.executeCommand(
+                            "workbench.panel.repl.view.focus",
+                        )
+                        Log.debug("Debugger started successfully", LOGLOC)
+                    } else {
+                        vscode.window.showErrorMessage(
+                            "Failed to start debugger.",
+                        )
+                        Log.error(
+                            "Debugger failed to start (returned false)",
+                            LOGLOC,
+                        )
+                    }
+                } catch (error) {
+                    const errorMsg =
+                        error instanceof Error ? error.message : String(error)
+                    vscode.window.showErrorMessage(
+                        `Unable to start debugger: ${errorMsg}`,
+                    )
+                    Log.error(`Unable to start debugger: ${errorMsg}`, LOGLOC)
                 }
             },
         ),
@@ -85,7 +120,7 @@ export function activateTspDebug(
     )
 
     if (!factory) {
-        factory = new InlineDebugAdapterFactory(acm)
+        factory = new InlineDebugAdapterFactory()
     }
 
     context.subscriptions.push(
@@ -132,202 +167,33 @@ class TspConfigurationProvider implements vscode.DebugConfigurationProvider {
 }
 
 class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
-    private _acm: CommunicationManager
-    constructor(acm: CommunicationManager) {
-        this._acm = acm
-    }
+    constructor() {}
 
-    async createDebugAdapterDescriptor(): Promise<
+    createDebugAdapterDescriptor(): Promise<
         vscode.DebugAdapterDescriptor | undefined
     > {
-        /**
-         * debugTermPid stores the terminalPid of connection currently selected
-         * by user for debugging
-         */
-
-        let start_dbg = false
-
-        await this.debugger_pre_check().then(
-            () => {
-                start_dbg = true
-            },
-            (rej) => {
-                return Promise.reject(new Error(new String(rej).toString()))
-            },
+        if (!DebugHelper.connection) {
+            return Promise.resolve(undefined)
+        }
+        return Promise.resolve(
+            new vscode.DebugAdapterInlineImplementation(
+                new TspDebugSession(DebugHelper.connection),
+            ),
         )
+    }
+}
 
-        if (start_dbg) {
-            return new vscode.DebugAdapterInlineImplementation(
-                new TspDebugSession(
-                    this._acm.InstrDetails,
-                    this._acm.doReconnect,
-                ),
-            )
-        }
-        // return new vscode.DebugAdapterInlineImplementation(
-        //     new TspDebugSession(this._acm.InstrDetails, this._acm.doReconnect)
-        // )
+async function get_connection(): Promise<Connection | undefined> {
+    let connection = await getActiveConnection()
+
+    if (!connection) {
+        connection = await pickConnection()
+    }
+    if (!connection) {
+        return undefined
     }
 
-    async debugger_pre_check(): Promise<string> {
-        const dbg_file = vscode.window.activeTextEditor?.document.uri.fsPath
-        const file_extn = dbg_file?.split(".").pop()
+    await connection.connectAndExit()
 
-        if (file_extn !== "tsp")
-            return Promise.reject(new Error(".tsp file type required"))
-
-        DebugHelper.debuggeeFilePath =
-            vscode.window.activeTextEditor?.document.uri.fsPath
-
-        let kicTerminals: vscode.Terminal[] = []
-        const baseExt = vscode.extensions.getExtension("tektronix.tsp-toolkit")
-        if (baseExt !== undefined) {
-            const importedApi = baseExt.exports as TspToolkitApi
-
-            kicTerminals = importedApi.fetchKicTerminals()
-
-            Log.trace(`Found terminals: ${JSON.stringify(kicTerminals)}`, {
-                file: "activateTspDebug.ts",
-                func: "InlineDebugAdapterFactory.debugger_pre_check()",
-            })
-
-            /**
-             * Provide option to user to select from existing connecton(s) or
-             * be able to inistiate a new connection if none exist and
-             * continue with debugging
-             */
-
-            if (kicTerminals.length === 0) {
-                const options: vscode.InputBoxOptions = {
-                    prompt: "No instrument found, do you want to connect?",
-                    value: "Yes",
-                }
-                const res = await vscode.window.showInputBox(options)
-                if (res?.toUpperCase() == "YES") {
-                    let doConnect = true
-                    await this._acm.connDetailsForFirstInstr().then(
-                        () => {
-                            //on success
-                        },
-                        () => {
-                            //on failure
-                            // void vscode.window.showInformationMessage(
-                            //     "Connection unsuccessful. Cannot launch debug"
-                            // )
-                            doConnect = false
-                        },
-                    )
-                    if (!doConnect)
-                        return Promise.reject(
-                            new Error(
-                                "Connection unsuccessful. Cannot launch debug",
-                            ),
-                        )
-                } else {
-                    return Promise.reject(new Error("Invalid selection"))
-                }
-            } else if (kicTerminals.length == 1) {
-                this._acm.doReconnect = true
-                let kic_exit = false
-
-                try {
-                    const details = await importedApi.fetchConnDetails(
-                        kicTerminals[0]?.processId,
-                    )
-                    kicTerminals[0]?.sendText(".exit\n")
-                    await new Promise<void>((res) =>
-                        vscode.window.onDidCloseTerminal((t) => {
-                            if (t === kicTerminals[0]) {
-                                res()
-                            }
-                        }),
-                    )
-
-                    this._acm.InstrDetails = details
-                    kic_exit = true
-                } catch (rej) {
-                    void vscode.window.showInformationMessage(rej as string)
-                }
-
-                importedApi.fetchConnDetails(kicTerminals[0].processId).then(
-                    async (res: ConnectionDetails | undefined) => {
-                        if (res) {
-                            kicTerminals[0].sendText(".exit\n")
-                            await new Promise<void>((res) =>
-                                vscode.window.onDidCloseTerminal((t) => {
-                                    if (t === kicTerminals[0]) {
-                                        res()
-                                    }
-                                }),
-                            )
-                            this._acm.InstrDetails = res
-                            kic_exit = true
-                        }
-                    },
-                    (rej: unknown) => {
-                        void vscode.window.showInformationMessage(rej as string)
-                    },
-                )
-
-                if (!kic_exit) return Promise.reject(new Error("error_flow"))
-            } else if (kicTerminals.length > 1) {
-                const options: vscode.InputBoxOptions = {
-                    prompt: "Multiple instruments are connected!,\nPress enter to see all the active connections and select one from that",
-                    value: "Ok",
-                }
-                const kicDict: { [name: string]: vscode.Terminal } = {}
-
-                kicTerminals.forEach((t) => {
-                    const k: string =
-                        t.name +
-                        ":" +
-                        (
-                            (t.creationOptions as vscode.TerminalOptions)
-                                ?.shellArgs as string[]
-                        )[1]
-                    kicDict[k] = t
-                })
-                if ((await vscode.window.showInputBox(options)) != undefined) {
-                    const selectedTerm = await vscode.window.showQuickPick(
-                        Object.keys(kicDict),
-                    )
-                    if (selectedTerm != undefined) {
-                        this._acm.doReconnect = true
-                        let kic_exit = false
-
-                        try {
-                            const details = await importedApi.fetchConnDetails(
-                                kicDict[selectedTerm]?.processId,
-                            )
-                            kicDict[selectedTerm]?.sendText(".exit\n")
-                            await new Promise<void>((res) =>
-                                vscode.window.onDidCloseTerminal((t) => {
-                                    if (t === kicDict[selectedTerm]) {
-                                        res()
-                                    }
-                                }),
-                            )
-
-                            this._acm.InstrDetails = details
-                            kic_exit = true
-                        } catch (rej) {
-                            void vscode.window.showInformationMessage(
-                                rej as string,
-                            )
-                        }
-
-                        if (!kic_exit)
-                            return Promise.reject(new Error("error_flow"))
-                    } else return Promise.reject(new Error("Invalid selection"))
-                } else return Promise.reject(new Error("Invalid selection"))
-            }
-            return Promise.resolve("non-error_flow")
-        } else {
-            return Promise.reject(
-                new Error(
-                    "tektronix.tsp-toolkit extension is required to start debugger.",
-                ),
-            )
-        }
-    }
+    return connection
 }
