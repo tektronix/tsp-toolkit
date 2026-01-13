@@ -413,15 +413,29 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.refresh()",
         }
 
-        Log.info("Refreshing Discovered list", LOGLOC)
-        await this.updateStatus()
-        await discovery_cb()
+        await vscode.window.withProgress(
+            {
+                cancellable: false,
+                location: { viewId: "InstrumentsExplorer" },
+            },
+            async () => {
+                Log.info("Refreshing Discovered list", LOGLOC)
+                await this.updateStatus()
+                await discovery_cb()
+                await new Promise<void>((resolve) => {
+                    this.doWithConfigWatcherOff(() => {
+                        this.updateSavedAll(this._instruments).then(
+                            () => {
+                                resolve()
+                            },
+                            () => {},
+                        )
+                    })
+                })
 
-        this.doWithConfigWatcherOff(() => {
-            this.updateSavedAll(this._instruments).catch(() => {})
-        })
-
-        this.instruments_discovered = false
+                this.instruments_discovered = false
+            },
+        )
     }
 
     async saveInstrument(instr: Instrument): Promise<void> {
