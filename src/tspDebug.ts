@@ -21,9 +21,9 @@ import {
     RuntimeVariable,
     VariableAttributes,
 } from "./debugResourceManager"
-import { ConnectionDetails, DebugHelper } from "./resourceManager"
+import { DebugHelper } from "./resourceManager"
 import { Log } from "./logging"
-import { TspToolkitApi } from "./utility"
+import { Connection } from "./connection"
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -72,14 +72,11 @@ export class TspDebugSession extends LoggingDebugSession {
         "locals" | "globals" | "upvalues" | RuntimeVariable
     >(1003)
     public sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-    private _connDetails: ConnectionDetails | undefined
     private _doReconnect = false
+    private _connection: Connection | undefined
     private _disconnectDonePromise: Promise<void> | undefined
 
-    public constructor(
-        connDetails: ConnectionDetails | undefined,
-        doReconnect: boolean,
-    ) {
+    public constructor(connection: Connection) {
         super()
 
         // this debugger uses one-based lines
@@ -87,16 +84,15 @@ export class TspDebugSession extends LoggingDebugSession {
         //this.setDebuggerColumnsStartAt1(false)
 
         if (
-            connDetails == undefined ||
+            connection == undefined ||
             DebugHelper.debuggeeFilePath == undefined
         )
             return
 
-        //this._kicProcMgr = kicProcessMgr
+        this._connection = connection
         this._debuggeeFilePath = DebugHelper.debuggeeFilePath
-        this._connDetails = connDetails
-        this._doReconnect = doReconnect
-        this._tspRuntime = new TspRuntime(this._connDetails)
+        this._doReconnect = true
+        this._tspRuntime = new TspRuntime(connection)
         this._disconnectDonePromise = new Promise((res) => {
             this.on("disconnectDone", res)
         })
@@ -144,7 +140,7 @@ export class TspDebugSession extends LoggingDebugSession {
         this._tspRuntime.on("restartConnection", () => {
             this._disconnectDonePromise
                 ?.then(() => {
-                    this.doRestartConnection()
+                    void this.doRestartConnection()
                 })
                 .catch((err) => {
                     Log.error(`${new String(err).toString()}`, {
@@ -666,20 +662,9 @@ export class TspDebugSession extends LoggingDebugSession {
         this.sendResponse(response)
     }
 
-    private doRestartConnection() {
+    private async doRestartConnection() {
         if (this._doReconnect) {
-            const baseExt = vscode.extensions.getExtension(
-                "tektronix.tsp-toolkit",
-            )
-            if (baseExt !== undefined) {
-                const importedApi = baseExt.exports as TspToolkitApi
-
-                if (this._connDetails) {
-                    importedApi
-                        .restartConnAfterDbg(this._connDetails)
-                        .catch(() => {})
-                }
-            }
+            await this._connection?.connect()
         }
         void vscode.window.showInformationMessage(
             "Global variables and functions of the script will remain in instrument memory. Power cycle the instrument to clear memory.",
