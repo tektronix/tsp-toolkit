@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - \[Beta] Add ability to save script output to a file
 - \[Beta] Add ability to save buffer contents to a file
 - \[Beta] Add ability to start and stop saving commands and output to a file
+- Instrument login support for debugger
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
