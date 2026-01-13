@@ -28,6 +28,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
 - (**tsp-toolkit-kic-cli**) Reduce number of messages send to instrument when closing debugger
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
+- (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
+- (**tsp-toolkit-kic-cli**) Fixed issue with writing a zero-sized TSP script to an instrument
 
 ## [1.4.0]
 
