@@ -162,6 +162,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._addr
     }
 
+    set addr(addr: string) {
+        this._addr = addr
+        this.label = addr
+    }
+
     get status(): ConnectionStatus | undefined {
         if (this.terminal && this._terminal?.exitStatus === undefined) {
             this.status = ConnectionStatus.Connected

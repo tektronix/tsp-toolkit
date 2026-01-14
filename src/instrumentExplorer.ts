@@ -7,6 +7,7 @@ import { InstrumentProvider } from "./instrumentProvider"
 import { Log, SourceLocation } from "./logging"
 import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
+import { ConnectionHelper } from "./resourceManager"
 
 const DISCOVERY_TIMEOUT = 5
 
@@ -88,8 +89,16 @@ export class InstrumentsExplorer implements vscode.Disposable {
             },
         )
 
+        const changeIPAddr = vscode.commands.registerCommand(
+            "InstrumentsExplorer.updateIPAddr",
+            async (e: Connection) => {
+                await this.updateIPAddr(e)
+            },
+        )
+
         context.subscriptions.push(saveInstrument)
         context.subscriptions.push(removeInstrument)
+        context.subscriptions.push(changeIPAddr)
 
         this.InstrumentsDiscoveryViewer.message =
             "Checking saved instrument connections..."
@@ -159,8 +168,8 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
                 this.intervalID = setInterval(() => {
                     this.treeDataProvider?.getContent().then(
-                        () => {},
-                        () => {},
+                        () => { },
+                        () => { },
                     )
                 }, 1000)
             }
@@ -184,7 +193,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
             })
             item.name = name
             this.treeDataProvider?.doWithConfigWatcherOff(() => {
-                this.treeDataProvider?.updateSaved(item).catch(() => {})
+                this.treeDataProvider?.updateSaved(item).catch(() => { })
             })
         } else {
             Log.warn("Item not defined", {
@@ -192,6 +201,58 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 func: "InstrumentsExplorer.rename()",
             })
         }
+    }
+
+    public async updateIPAddr(item: Connection) {
+        const newIP = await vscode.window.showInputBox({
+            placeHolder: "Enter new IP address or VISA resource string",
+            prompt: "Enter a valid IPv4 address or VISA resource string",
+        })
+
+        if (!newIP || newIP.trim().length === 0) {
+            vscode.window.showErrorMessage("IP address update cancelled or empty")
+            Log.warn("IP address update cancelled or empty", {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.changeIP()",
+            })
+            return
+        }
+
+        if (!item || !item.parent) {
+            vscode.window.showErrorMessage("Connection not defined")
+            Log.warn("Connection not defined", {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.changeIP()",
+            })
+            return
+        }
+
+        const trimmedIP = newIP.trim()
+        const validationError = ConnectionHelper.instrConnectionStringValidator(trimmedIP)
+        if (validationError) {
+            vscode.window.showErrorMessage("Invalid IP address or VISA resource string")
+            Log.warn(`Invalid IP address: ${validationError}`, {
+                file: "instruments.ts",
+                func: "InstrumentsExplorer.changeIP()",
+            })
+            return
+        }
+
+        Log.trace(`Changing IP from ${item.addr} to ${trimmedIP}`, {
+            file: "instruments.ts",
+            func: "InstrumentsExplorer.changeIP()",
+        })
+        const oldIP = item.addr
+        item.addr = trimmedIP
+        this.treeDataProvider?.addOrUpdateInstrument(item.parent)
+        this.treeDataProvider?.doWithConfigWatcherOff(() => {
+            this.treeDataProvider?.updateSaved(item.parent!).catch(() => { })
+        })
+        Log.info(`IP address updated from ${oldIP} to ${trimmedIP} for ${item.parent.name}`, {
+            file: "instruments.ts",
+            func: "InstrumentsExplorer.changeIP()",
+        })
+        vscode.window.showInformationMessage(`IP address updated to ${trimmedIP}`)
     }
 
     public async saveWhileConnect(instrument: Instrument) {

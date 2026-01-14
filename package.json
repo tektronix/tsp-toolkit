@@ -206,6 +206,11 @@
                 "icon": "$(edit)"
             },
             {
+                "command": "InstrumentsExplorer.updateIPAddr",
+                "title": "Update IP Address",
+                "icon": "$(edit)"
+            },
+            {
                 "command": "InstrumentsExplorer.reset",
                 "title": "Reset",
                 "icon": "$(discard)"
@@ -443,6 +448,11 @@
                 {
                     "command": "InstrumentsExplorer.rename",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
+                    "group": "inline"
+                },
+                {
+                    "command": "InstrumentsExplorer.updateIPAddr",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },
                 {
