@@ -18,7 +18,6 @@ import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
-import { CommunicationManager } from "./communicationmanager"
 import { isMacOS } from "./utility"
 
 let _instrExplorer: InstrumentsExplorer
@@ -186,6 +185,9 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                 } else {
                     const conn = await pickConnection()
+                    if (!conn) {
+                        return
+                    }
                     const output = await vscode.window.showSaveDialog({
                         title: "Select Output File",
                     })
@@ -335,9 +337,7 @@ export function activate(context: vscode.ExtensionContext) {
         LOGLOC,
     )
 
-    // Create an object of Communication Manager
-    const _activeConnectionManager = new CommunicationManager()
-    activateTspDebug(context, _activeConnectionManager)
+    activateTspDebug(context)
 
     const selectScriptGenData = new selectScriptGenDataProvider()
     const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
@@ -474,33 +474,46 @@ export async function pickConnection(): Promise<Connection | undefined> {
                     if (validationResult) {
                         throw new Error(validationResult)
                     }
-
-                    if (
-                        options.some(
-                            (option) => option.label === selectedItem.label,
-                        )
-                    ) {
-                        resolve(await createTerminal(selectedItem.label))
-                    } else {
-                        const Ip = selectedItem.label
-                        if (Ip === undefined) {
-                            return
-                        }
-                        resolve(await createTerminal(Ip))
-                    }
+                    const connection = await createTerminal(selectedItem.label)
+                    resolve(connection)
                 } catch (error) {
                     vscode.window.showErrorMessage(
                         `Error: ${(error as Error).message}`,
                     )
+                    resolve(undefined)
                 } finally {
                     quickPick.busy = false
-                    quickPick.hide()
+                    quickPick.dispose()
                 }
             })
 
             quickPick.show()
         })
     }
+}
+
+export function getActiveConnection(): Promise<Connection | undefined> {
+    const term = vscode.window.activeTerminal
+    if (
+        (term?.creationOptions as vscode.TerminalOptions)?.shellPath ===
+        EXECUTABLE
+    ) {
+        let connection: Connection | undefined = undefined
+        for (const i of InstrumentProvider.instance.instruments) {
+            connection = i.connections.find(
+                (c) => c.terminal?.processId === term?.processId,
+            )
+            if (connection) {
+                break
+            }
+        }
+
+        if (connection) {
+            return Promise.resolve(connection)
+        }
+    }
+
+    return Promise.resolve(undefined)
 }
 
 //function startTerminateAllConn() {

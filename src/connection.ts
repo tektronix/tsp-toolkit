@@ -154,6 +154,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._type
     }
 
+    get keyring(): string | null | undefined {
+        return this._keyring
+    }
+
     get addr(): string {
         return this._addr
     }
@@ -1050,6 +1054,22 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         this.showTerminal()
         this._terminal?.sendText(`.script "${filepath}"`)
+    }
+
+    async connectAndExit() {
+        if (!this._terminal) {
+            await this.connect()
+        }
+        this.showTerminal()
+        this._terminal?.sendText(".exit")
+        await new Promise<void>((resolve) => {
+            const checkTerminal = setInterval(() => {
+                if (this._terminal === undefined) {
+                    clearInterval(checkTerminal)
+                    resolve()
+                }
+            }, 100) // Check every 100ms
+        })
     }
 
     async getNodes(filepath: string) {
