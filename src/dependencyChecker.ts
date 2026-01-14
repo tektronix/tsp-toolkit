@@ -1,9 +1,10 @@
-import * as vscode from "vscode"
+import { promisify } from "util"
 import { platform } from "node:os"
-import { Log, SourceLocation } from "./logging"
 import fs from "node:fs"
 import { execFile } from "child_process"
-import { promisify } from "util"
+import * as vscode from "vscode"
+import { Log, SourceLocation } from "./logging"
+
 
 //const execAsync = promisify(exec)
 const execFileAsync = promisify(execFile)
@@ -36,8 +37,8 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         // Check registry for Visual C++ Redistributable installations
         // VS Code is x64 only, so we only need to check x64 runtime
         const registryPaths = [
-            'HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64',
-            'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64'
+            "HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X46",
+            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X46"
         ]        
 
         for (const path of registryPaths) {
@@ -48,7 +49,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
                     ["query", path, "/v", "Installed"],
                     { timeout: 3000 }
                 )
-                if (stdout.includes('0x1')) {
+                if (stdout.includes("0x1")) {
                     return true
                 }
             } catch {
@@ -58,7 +59,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
 
         return false
     } catch (error) {
-        Log.error(`Error checking Visual C++ Redistributable: ${error}`, {
+        Log.error(`Error checking Visual C++ Redistributable: ${String(error)}`, {
             ...LOGLOC,
             func: "checkVisualCppRedistributable()",
         })
@@ -84,7 +85,7 @@ export async function checkBonjourService(): Promise<boolean> {
                 ["query", "Bonjour Service"],
                 { timeout: 3000 }
             )
-            if (stdout.includes('STATE') || stdout.includes('RUNNING') || stdout.includes('STOPPED')) {
+            if (stdout.includes("STATE") || stdout.includes("RUNNING") || stdout.includes("STOPPED")) {
                 return true
             }
         } catch {
@@ -93,8 +94,8 @@ export async function checkBonjourService(): Promise<boolean> {
 
         // Check registry for Bonjour installation
         const registryPaths = [
-            'HKLM\\SOFTWARE\\Apple Inc.\\Bonjour',
-            'HKLM\\SOFTWARE\\WOW6432Node\\Apple Inc.\\Bonjour'
+            "HKLM\\SOFTWARE\\Apple Inc.\\Bonjour11",
+            "HKLM\\SOFTWARE\\WOW6432Node\\Apple Inc.\\Bonjour"
         ]
         
         for (const path of registryPaths) {
@@ -113,7 +114,7 @@ export async function checkBonjourService(): Promise<boolean> {
 
         return false
     } catch (error) {
-        Log.error(`Error checking Bonjour service: ${error}`, {
+        Log.error(`Error checking Bonjour service: ${String(error)}`, {
             ...LOGLOC,
             func: "checkBonjourService()",
         })
@@ -136,11 +137,9 @@ export async function checkVisaInstallation(): Promise<boolean> {
 
         //  1. REQUIRED: Check for VISA runtime DLLs
 
-        const systemRoot = process.env.SystemRoot ?? "C:\\Windows"
-
         const dllPaths = [
-            'C:\\Windows\\System32\\visa64.dll',
-            'C:\\Windows\\SysWOW64\\visa32.dll'
+            "C:\\Windows\\System32\\visa64.dll",
+            "C:\\Windows\\SysWOW64\\visa32.dll"
         ]
 
         for (const dllPath of dllPaths) {
@@ -199,15 +198,13 @@ export async function checkVisaInstallation(): Promise<boolean> {
         }
 
         return true
-
-        } catch (error) {
-        Log.error(`Error checking VISA installation: ${error}`, {
+    } catch (error) {
+        Log.error(`Error checking VISA installation: ${String(error)}`, {
             ...LOGLOC,
             func: "checkVisaInstallation()",
         })
         return false
     }
-        
 }
 
 /**
@@ -268,7 +265,7 @@ export async function checkAvahiInstalled(): Promise<boolean> {
         
         return false
     } catch (error) {
-        Log.error(`Error checking Avahi installation: ${error}`, {
+        Log.error(`Error checking Avahi installation: ${String(error)}`, {
             ...LOGLOC,
             func: "checkAvahiInstalled()",
         })
@@ -293,7 +290,7 @@ export async function checkAvahiRunning(): Promise<boolean> {
                 ["is-active", "avahi-daemon"],
                 { timeout: 3000 }
             )
-            if (stdout.trim() === 'active') {
+            if (stdout.trim() === "active") {
                 return true
             }
         } catch {
@@ -312,7 +309,7 @@ export async function checkAvahiRunning(): Promise<boolean> {
             return false
         }
     } catch (error) {
-        Log.error(`Error checking Avahi running state: ${error}`, {
+        Log.error(`Error checking Avahi running state: ${String(error)}`, {
             ...LOGLOC,
             func: "checkAvahiRunning()",
         })
@@ -354,11 +351,11 @@ export async function checkGlibcVersion(): Promise<boolean> {
 
         // Try each command in sequence
         for (const [cmd, args] of commands) {
-        try {
-            const { stdout } = await execFileAsync(cmd, args, { timeout: 3000 })
-            if (isVersionSufficient(stdout)) {
-                return true
-            }
+            try {
+                const { stdout } = await execFileAsync(cmd, args, { timeout: 3000 })
+                if (isVersionSufficient(stdout)) {
+                    return true
+                }
             } catch {
                 // Continue to next command
                 continue
@@ -367,7 +364,7 @@ export async function checkGlibcVersion(): Promise<boolean> {
         
         return false
     } catch (error) {
-        Log.error(`Error checking GLIBC version: ${error}`, {
+        Log.error(`Error checking GLIBC version: ${String(error)}`, {
             ...LOGLOC,
             func: "checkGlibcVersion()",
         })
@@ -384,23 +381,23 @@ async function showDependencyDetailsMenu(missing: MissingDependency[]): Promise<
         const items = missing.map(dep => ({
             label: `$(warning) ${dep.name}`,
             description: dep.description,
-            detail: `Click to download or learn more`,
+            detail: "Click to download or learn more",
             dep: dep
         }))
 
         // Add a "Done" option to exit the menu
         const doneItem = {
-            label: '$(check) Done',
-            description: 'Close this menu',
-            detail: '',
+            label: "$(check) Done",
+            description: "Close this menu",
+            detail: "",
             dep: null as MissingDependency | null
         }
 
         const allItems = [...items, doneItem]
 
         const chosen = await vscode.window.showQuickPick(allItems, {
-            placeHolder: `${missing.length} missing ${missing.length === 1 ? 'dependency' : 'dependencies'} - Select one to view options`,
-            title: 'Missing Dependencies',
+            placeHolder: `${missing.length} missing ${missing.length === 1 ? "dependency" : "dependencies"} - Select one to view options`,
+            title: "Missing Dependencies",
             ignoreFocusOut: true
         })
 
@@ -410,11 +407,11 @@ async function showDependencyDetailsMenu(missing: MissingDependency[]): Promise<
         }
 
         // Show actions for the selected dependency
-        const actions: string[] = ['$(cloud-download) Download']
+        const actions: string[] = ["$(cloud-download) Download"]
         if (chosen.dep.learnMoreUrl) {
-            actions.push('$(info) Learn More')
+            actions.push("$(info) Learn More")
         }
-        actions.push('$(arrow-left) Back to List')
+        actions.push("$(arrow-left) Back to List")
 
         const action = await vscode.window.showQuickPick(actions, {
             placeHolder: `${chosen.dep.name} - ${chosen.dep.description}`,
@@ -422,17 +419,17 @@ async function showDependencyDetailsMenu(missing: MissingDependency[]): Promise<
             ignoreFocusOut: true
         })
 
-        if (action?.includes('Download')) {
+        if (action?.includes("Download")) {
             await vscode.env.openExternal(vscode.Uri.parse(chosen.dep.downloadUrl))
             // Show confirmation and continue
             await vscode.window.showInformationMessage(`Opening ${chosen.dep.name} download page in your browser...`)
             continue
-        } else if (action?.includes('Learn More') && chosen.dep.learnMoreUrl) {
+        } else if (action?.includes("Learn More") && chosen.dep.learnMoreUrl) {
             await vscode.env.openExternal(vscode.Uri.parse(chosen.dep.learnMoreUrl))
             // Show confirmation and continue
             await vscode.window.showInformationMessage(`Opening ${chosen.dep.name} information page in your browser...`)
             continue
-        } else if (!action || action.includes('Back')) {
+        } else if (!action || action.includes("Back")) {
             // User wants to go back to the list, continue the loop
             continue
         } else {
@@ -452,16 +449,16 @@ async function showMissingDependenciesNotification(missing: MissingDependency[])
 
     while (true) {
         // Build the message
-        let message = missing.length === 1
-            ? `${missing[0].name} is required but not detected on your system.`
-            : `${missing.length} required dependencies are missing:\n`
-
-        if (missing.length > 1) {
-            message += missing.map(dep => `• ${dep.name}`).join('\n')
-            message += '\n'
+        let message = ""
+        
+        if (missing.length === 1) {
+            message = `${missing[0].name} is required but not detected on your system.`
+        } else {
+            message = `${missing.length} required dependencies are missing:\n\n`
+            message += missing.map(dep => `• ${dep.name}`).join("\n")
         }
 
-        message += '\n\nSome features may not work correctly without these dependencies.'
+        message += "\n\nSome features may not work correctly without these dependencies."
 
         // Create action buttons based on number of dependencies
         const actions: string[] = []
@@ -478,17 +475,17 @@ async function showMissingDependenciesNotification(missing: MissingDependency[])
 
         // For multiple dependencies, show Browse All instead of individual downloads
         if (missing.length > 1) {
-            actions.push('Browse All')
+            actions.push("Browse All")
         }
 
-        actions.push('Dismiss')
+        actions.push("Dismiss")
 
         const selection = await vscode.window.showWarningMessage(message, ...actions)
 
-        if (selection === 'Dismiss' || !selection) {
+        if (selection === "Dismiss" || !selection) {
             // User dismissed the notification
             break
-        } else if (selection === 'Browse All') {
+        } else if (selection === "Browse All") {
             // Show a persistent menu to browse all missing dependencies
             await showDependencyDetailsMenu(missing)
             // After menu closes, loop back to show notification again
@@ -522,10 +519,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!hasVCRedist) {
             Log.warn("Visual C++ Redistributable not detected", logloc)
             missingDependencies.push({
-                name: 'Visual C++ Redistributable',
-                description: 'Required for native modules and performance',
-                downloadUrl: 'https://aka.ms/vs/17/release/vc_redist.x64.exe',
-                learnMoreUrl: 'https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist'
+                name: "Visual C++ Redistributable",
+                description: "Required for native modules and performance",
+                downloadUrl: "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+                learnMoreUrl: "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist"
             })
         } else {
             Log.debug("Visual C++ Redistributable detected", logloc)
@@ -536,10 +533,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!hasBonjour) {
             Log.warn("Bonjour service not detected", logloc)
             missingDependencies.push({
-                name: 'Bonjour',
-                description: 'Required for mDNS device discovery',
-                downloadUrl: 'https://support.apple.com/kb/DL999',
-                learnMoreUrl: 'https://developer.apple.com/bonjour/'
+                name: "Bonjour",
+                description: "Required for mDNS device discovery",
+                downloadUrl: "https://support.apple.com/kb/DL999",
+                learnMoreUrl: "https://developer.apple.com/bonjour/"
             })
         } else {
             Log.debug("Bonjour service detected", logloc)
@@ -550,10 +547,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!hasVisa) {
             Log.warn("VISA installation not detected", logloc)
             missingDependencies.push({
-                name: 'VISA',
-                description: 'Required for instrument communication via VISA protocol',
-                downloadUrl: 'https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html',
-                learnMoreUrl: 'https://www.ivifoundation.org/specifications/default.aspx'
+                name: "VISA",
+                description: "Required for instrument communication via VISA protocol",
+                downloadUrl: "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx"
             })
         } else {
             Log.debug("VISA installation detected", logloc)
@@ -578,10 +575,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!avahiInstalled) {
             Log.warn("Avahi daemon not installed", logloc)
             missingDependencies.push({
-                name: 'Avahi',
-                description: 'Required for mDNS device discovery on Linux',
-                downloadUrl: 'https://avahi.org/download/',
-                learnMoreUrl: 'https://avahi.org/'
+                name: "Avahi",
+                description: "Required for mDNS device discovery on Linux",
+                downloadUrl: "https://avahi.org/download/",
+                learnMoreUrl: "https://avahi.org/"
             })
         } else {
             Log.debug("Avahi daemon installed", logloc)
@@ -591,10 +588,10 @@ export async function checkSystemDependencies(): Promise<void> {
             if (!avahiRunning) {
                 Log.warn("Avahi daemon is not running", logloc)
                 missingDependencies.push({
-                    name: 'Avahi Service',
-                    description: 'Avahi is installed but not running. Please start the avahi-daemon service.',
-                    downloadUrl: 'https://avahi.org/faq/',
-                    learnMoreUrl: 'https://avahi.org/wiki/RunningAvahi'
+                    name: "Avahi Service",
+                    description: "Avahi is installed but not running. Please start the avahi-daemon service.",
+                    downloadUrl: "https://avahi.org/faq/",
+                    learnMoreUrl: "https://avahi.org/wiki/RunningAvahi"
                 })
             } else {
                 Log.debug("Avahi daemon is running", logloc)
@@ -606,10 +603,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!hasGlibc239) {
             Log.warn("GLIBC version is less than 2.39", logloc)
             missingDependencies.push({
-                name: 'GLIBC >= 2.39',
-                description: 'Required for compatibility with modern features. Your system has an older version.',
-                downloadUrl: 'https://www.gnu.org/software/libc/',
-                learnMoreUrl: 'https://www.gnu.org/software/libc/libc.html'
+                name: "GLIBC >= 2.39",
+                description: "Required for compatibility with modern features. Your system has an older version.",
+                downloadUrl: "https://www.gnu.org/software/libc/",
+                learnMoreUrl: "https://www.gnu.org/software/libc/libc.html"
             })
         } else {
             Log.debug("GLIBC version is 2.39 or higher", logloc)
@@ -620,10 +617,10 @@ export async function checkSystemDependencies(): Promise<void> {
         if (!hasVisaLinux) {
             Log.warn("VISA installation not detected on Linux", logloc)
             missingDependencies.push({
-                name: 'VISA',
-                description: 'Required for instrument communication via VISA protocol',
-                downloadUrl: 'https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html',
-                learnMoreUrl: 'https://www.ivifoundation.org/specifications/default.aspx'
+                name: "VISA",
+                description: "Required for instrument communication via VISA protocol",
+                downloadUrl: "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx"
             })
         } else {
             Log.debug("VISA installation detected on Linux", logloc)
