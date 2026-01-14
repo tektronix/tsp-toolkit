@@ -19,6 +19,7 @@ import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
 import { isMacOS } from "./utility"
+import { checkSystemDependencies } from "./dependencyChecker"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -117,6 +118,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Updating extension settings", LOGLOC)
     updateExtensionSettings()
+
+    // Check for system dependencies
+    Log.debug("Checking system dependencies", LOGLOC)
+    void checkSystemDependencies()
 
     Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
