@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import { COMMAND_SETS } from "@tektronix/keithley_instrument_libraries"
+import { Connection } from "./connection"
 
 export const CONNECTION_RE =
     /(?:([A-Za-z0-9_\-+.]*)@)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
@@ -144,6 +145,7 @@ export interface ConnectionDetails {
     name: string
     addr: string
     type: IoType
+    keyring?: string | null | undefined
 }
 
 //Hosts multiple functions to help with creating connection with the instrument
@@ -209,4 +211,5 @@ export class DebugHelper {
      * same file is used till end of that debug session
      */
     public static debuggeeFilePath: string | undefined
+    public static connection: Connection | undefined
 }
