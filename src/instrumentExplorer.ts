@@ -34,14 +34,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
         Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = InstrumentProvider.instance
         Log.trace("Refreshing TDP", LOGLOC)
-        treeDataProvider
-            .refresh(async () => await this.startDiscovery())
-            .catch((e) => {
-                Log.error(
-                    `Problem starting Instrument List data provider: ${e}`,
-                    LOGLOC,
-                )
-            })
 
         this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
             Instrument | Connection | InactiveInstrumentList
