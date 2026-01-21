@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -83,6 +83,14 @@
                         },
                         "when": "isLinux",
                         "completionEvents": []
+                    },
+                    {
+                        "id": "power-line-frequency-setting",
+                        "title": "Set your power-line frequency",
+                        "description": "Make sure to set your local power-line frequency (`tsp.lineFrequency`) in your extension settings.\nThis ensures the calculations within the I-V Characterization Script Generation feature are correct when using NPLC for measurments.",
+                        "completionEvents": ["onSettingChanged:tsp.lineFrequency"],
+                        "media": {"image": "./resources/walkthrough/LineFrequencySetting.png", "altText": "Modify tsp.lineFrequency setting to with 50 or 60 Hz"}
+
                     },
                     {
                         "id": "open-tsp-folder",
@@ -198,6 +206,11 @@
                 "icon": "$(edit)"
             },
             {
+                "command": "InstrumentsExplorer.updateIPAddr",
+                "title": "Update IP Address",
+                "icon": "$(edit)"
+            },
+            {
                 "command": "InstrumentsExplorer.reset",
                 "title": "Reset",
                 "icon": "$(discard)"
@@ -242,8 +255,28 @@
                 }
             },
             {
+                "command": "tsp.saveTspOutputStart",
+                "title": "[Beta] Save commands and output to file",
+                "icon":  "$(git-stash)"
+            },
+            {
+                "command": "tsp.saveTspOutputEnd",
+                "title": "[Beta] Stop saving commands and output to file",
+                "icon":  "$(stop-circle)"
+            },
+            {
+                "command": "tsp.saveBuffersToFile",
+                "title": "[Beta] Save buffers to a file",
+                "icon":  "$(layout-panel-dock)"
+            },
+            {
+                "command": "tsp.saveScriptOutput",
+                "title": "[Beta] Save TSP Script Output",
+                "icon":  "$(file-code)"
+            },
+            {
                 "command": "tspdebug.debugContent",
-                "title": "Debug TSP File",
+                "title": "Debug TSP Script",
                 "category": "TSP",
                 "icon": "$(debug-alt)"
             },
@@ -418,6 +451,11 @@
                     "group": "inline"
                 },
                 {
+                    "command": "InstrumentsExplorer.updateIPAddr",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/ && !(viewItem =~ /.*Connected.*/)",
+                    "group": "inline"
+                },
+                {
                     "command": "InstrumentsExplorer.reset",
                     "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && (viewItem =~ /CONN.*Connected.*/ || viewItem =~ /CONN.*Active.*/ )",
                     "group": "inline"
@@ -430,6 +468,21 @@
                 {
                     "command": "InstrumentsExplorer.showTerm",
                     "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Connected.*/",
+                    "group": "inline"
+                },
+                {
+                    "command": "tsp.saveTspOutputStart",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/ && !(viewItem =~ /Instr.*Saving.*/)",
+                    "group": "inline"
+                },
+                {
+                    "command": "tsp.saveTspOutputEnd",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/ && viewItem =~ /Instr.*Saving.*/",
+                    "group": "inline"
+                },
+                {
+                    "command": "tsp.saveBuffersToFile",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
                     "group": "inline"
                 },
                 {
@@ -467,12 +520,17 @@
                 {
                     "command": "tsp.sendFile",
                     "when": "resourceExtname == .tsp",
-                    "group": "navigation"
+                    "group": "navigation@1"
                 },
                 {
                     "command": "tspdebug.debugContent",
                     "when": "resourceExtname == .tsp",
-                    "group": "navigation@1"
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "tsp.saveScriptOutput",
+                    "when": "resourceExtname == .tsp",
+                    "group": "navigation@3"
                 }
             ]
         },
@@ -615,12 +673,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.1-10",
-        "@tektronix/kic-cli-linux-x64": "0.21.1-10",
-        "@tektronix/kic-cli-win32-x64": "0.21.1-10",
-        "@tektronix/script-gen-darwin-arm64": "0.1.0-51",
-        "@tektronix/script-gen-linux-x64": "0.1.0-51",
-        "@tektronix/script-gen-win32-x64": "0.1.0-51"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.2-4",
+        "@tektronix/kic-cli-linux-x64": "0.21.2-4",
+        "@tektronix/kic-cli-win32-x64": "0.21.2-4",
+        "@tektronix/script-gen-darwin-arm64": "0.1.1-0",
+        "@tektronix/script-gen-linux-x64": "0.1.1-0",
+        "@tektronix/script-gen-win32-x64": "0.1.1-0"
     },
     "extensionDependencies": [
         "sumneko.lua"

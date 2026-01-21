@@ -108,6 +108,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
 
     readonly onChanged: vscode.Event<void> = this._onChanged.event
     private _saved: boolean = false
+    private _savingOutput: boolean = false
 
     static from(info: InstrInfo) {
         const n = new Instrument(
@@ -179,6 +180,30 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         return this._connections
     }
 
+    get savingTspOutput(): boolean {
+        return this._savingOutput
+    }
+
+    set savingTspOutput(enable: boolean) {
+        if (this.contextValue?.match(/Saving/)) {
+            if (!enable) {
+                this.contextValue = this.contextValue?.replace(/Saving/, "")
+                this._onChanged.fire()
+                console.log(
+                    `contextValue contains 'Saving', removing: ${this.contextValue}`,
+                )
+            }
+        } else {
+            if (enable) {
+                this.contextValue += "Saving"
+                this._onChanged.fire()
+                console.log(
+                    `contextValue doesn't contain 'Saving', adding: ${this.contextValue}`,
+                )
+            }
+        }
+    }
+
     async sendScript(filepath: string) {
         const connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
@@ -187,6 +212,120 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             return
         }
         await connection.sendScript(filepath)
+    }
+    async startSaveTspOutput() {
+        this.savingTspOutput = true
+        let connection = this._connections.find(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (!connection) {
+            const label: string | undefined = await vscode.window.showQuickPick(
+                this._connections.map((c) => c.label?.toString() ?? ""),
+                { canPickMany: false, title: "Which connection?" },
+            )
+
+            if (!label) {
+                return
+            }
+
+            connection = this._connections.find(
+                (x) => (x.label?.toString() ?? "") === label,
+            )
+
+            if (!connection) {
+                vscode.window.showErrorMessage(
+                    "Unable to find selected connection",
+                )
+                return
+            }
+        }
+        const output = await vscode.window.showSaveDialog({
+            title: "Select Output File",
+        })
+        if (!output) {
+            this.savingTspOutput = false
+            return
+        }
+
+        await connection.startTspOutputSaving(output.fsPath)
+    }
+
+    stopSaveTspOutput() {
+        this.savingTspOutput = false
+        const connection = this._connections.find(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (!connection) {
+            return
+        }
+        connection.stopTspOutputSaving()
+    }
+
+    async saveBufferContents() {
+        let connection = this._connections.find(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (!connection) {
+            const label: string | undefined = await vscode.window.showQuickPick(
+                this._connections.map((c) => c.label?.toString() ?? ""),
+                { canPickMany: false, title: "Which connection?" },
+            )
+
+            if (!label) {
+                return
+            }
+
+            connection = this._connections.find(
+                (x) => (x.label?.toString() ?? "") === label,
+            )
+
+            if (!connection) {
+                vscode.window.showErrorMessage(
+                    "Unable to find selected connection",
+                )
+                return
+            }
+        }
+        const buffers = (
+            await vscode.window.showInputBox({
+                title: "Buffer Variable Names",
+                prompt: "Enter the buffer variable names separated by a comma (',')",
+                placeHolder: "buf1,buf2,buf2,...",
+            })
+        )
+            ?.split(",")
+            .map((s) => s.trim())
+        const delimiter = await vscode.window.showInputBox({
+            title: "Delimiter",
+            prompt: "Enter the string you want to separate each data field",
+            placeHolder: ",",
+        })
+        const fields = await vscode.window.showQuickPick(
+            [
+                "timestamps",
+                "readings",
+                "measurefunctions",
+                "measureranges",
+                "sourcefunctions",
+                "sourceoutputstates",
+                "sourceranges",
+                "sourcevalues",
+                "statuses",
+            ],
+            { canPickMany: true, title: "Fields to print" },
+        )
+        const output = await vscode.window.showSaveDialog({
+            title: "Select Output File",
+        })
+        if (!output || !buffers || !delimiter || !fields) {
+            return
+        }
+        await connection.saveBufferContents(
+            buffers,
+            fields,
+            delimiter,
+            output.fsPath,
+        )
     }
 
     async upgrade(): Promise<void> {
@@ -272,18 +411,25 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
      * @param connection A new connection interface to add to this instrument
      */
     addConnection(connection: Connection): boolean {
-        const i = this._connections.findIndex(
-            (v) => v.addr === connection.addr && v.type === connection.type,
+        // Find if a connection of the same type already exists (regardless of address)
+        const sameTypeIdx = this._connections.findIndex(
+            (v) => v.type === connection.type
         )
-        if (i > -1) {
-            if (
-                connection.status !== undefined &&
-                this._connections[i].status !== connection.status
-            ) {
-                this._connections[i].status = connection.status
-                //this._onChanged.fire()
+        if (sameTypeIdx > -1) {
+            // If the address is the same, just update status if needed
+            if (this._connections[sameTypeIdx].addr === connection.addr) {
+                if (
+                    connection.status !== undefined &&
+                    this._connections[sameTypeIdx].status !== connection.status
+                ) {
+                    this._connections[sameTypeIdx].status = connection.status
+                }
+                return false
+            } else {
+                // Address changed: remove the old connection
+                this._connections[sameTypeIdx].dispose()
+                this._connections.splice(sameTypeIdx, 1)
             }
-            return false
         }
         connection.onChangedStatus(() => {
             this.updateStatus()
