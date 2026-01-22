@@ -1,12 +1,11 @@
 import { promisify } from "util"
 import { platform } from "node:os"
 import fs from "node:fs"
+import path from "node:path"
 import { execFile } from "child_process"
 import * as vscode from "vscode"
 import { Log, SourceLocation } from "./logging"
 
-
-//const execAsync = promisify(exec)
 const execFileAsync = promisify(execFile)
 
 const LOGLOC: SourceLocation = {
@@ -37,13 +36,12 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         // Check registry for Visual C++ Redistributable installations
         // VS Code is x64 only, so we only need to check x64 runtime
         const registryPaths = [
-            "HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X46",
-            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X46"
+            "HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64",
+            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64"
         ]        
 
         for (const path of registryPaths) {
             try {
-                //const { stdout } = await execAsync(`reg query "${path}" /v Installed`, { timeout: 5000 })
                 const { stdout } = await execFileAsync(
                     "reg",
                     ["query", path, "/v", "Installed"],
@@ -68,63 +66,62 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
 }
 
 /**
- * Check if Bonjour service is installed on Windows
- * @returns Promise<boolean> - true if installed, false otherwise
+ * Check if Bonjour is installed and running on Windows
+ * Detection uses a two-step approach:
+ * 1. Primary check: Query Windows service "mDNSResponder" - most reliable
+ * 2. Fallback check: Verify key Bonjour files exist on disk
+ * 
+ * @returns Promise with object containing installed and running state
  */
-export async function checkBonjourService(): Promise<boolean> {
+export async function checkBonjourService(): Promise<{ installed: boolean; running: boolean }> {
     if (!isWindows) {
-        return true // skip for non-Windows platforms
+        // Non-Windows: assume Bonjour is not required
+        return { installed: true, running: true }
     }
 
     try {
-        // Check if Bonjour service exists
-        try {
-            //const { stdout } = await execAsync('sc query "Bonjour Service"', { timeout: 5000 })
-            const { stdout } = await execFileAsync(
-                "sc",
-                ["query", "Bonjour Service"],
-                { timeout: 3000 }
-            )
-            if (stdout.includes("STATE") || stdout.includes("RUNNING") || stdout.includes("STOPPED")) {
-                return true
-            }
-        } catch {
-            // Service not found, continue to registry check
-        }
+        // --- 1️. Primary check: Windows service ---
+        const { stdout } = await execFileAsync("sc", ["query", "mDNSResponder"], { timeout: 3000 })
 
-        // Check registry for Bonjour installation
-        const registryPaths = [
-            "HKLM\\SOFTWARE\\Apple Inc.\\Bonjour11",
-            "HKLM\\SOFTWARE\\WOW6432Node\\Apple Inc.\\Bonjour"
-        ]
-        
-        for (const path of registryPaths) {
-            try {
-                //await execAsync(`reg query "${path}"`, { timeout: 5000 })
-                await execFileAsync(
-                    "reg",
-                    ["query", path],
-                    { timeout: 3000 }
-                )
-                return true
-            } catch {
-                // Continue checking other paths
-            }
-        }
+        const installed = stdout.includes("STATE") && (stdout.includes("RUNNING") || stdout.includes("STOPPED"))
+        const running = stdout.includes("RUNNING")
 
-        return false
-    } catch (error) {
-        Log.error(`Error checking Bonjour service: ${String(error)}`, {
-            ...LOGLOC,
-            func: "checkBonjourService()",
-        })
-        return false
+        if (installed) {
+            return { installed, running }
+        }
+    } catch {
+        // Service not found → fallback to file check
     }
+
+    // --- 2️. Fallback check: key Bonjour files ---
+    const possiblePaths = [
+        "C:\\Program Files\\Bonjour\\mDNSResponder.exe",
+        "C:\\Program Files\\Bonjour\\mdnsNSP.dll",
+        path.join(process.env.WINDIR || "C:\\Windows", "System32", "mdnsNSP.dll"),
+    ]
+
+    // If ANY of the key files exist, consider Bonjour installed
+    const filesExist = possiblePaths.some((filePath) => fs.existsSync(filePath))
+
+    if (filesExist) {
+        // Service not running, but files present → may be partially installed
+        return { installed: true, running: false }
+    }
+
+    // Neither service nor files found
+    return { installed: false, running: false }
 }
 
 /**
  * Check if VISA is installed on Windows
- * @returns Promise<boolean> - true if installed, false otherwise
+ * VISA detection follows a three-step process:
+ * 1. Check for VISA runtime DLL (C:\Windows\System32\visa64.dll) - REQUIRED
+ * 2. Check for IVI Shared VISA mode (multi-vendor framework)
+ * 3. Fallback to single-vendor VISA detection (NI, Keysight, R&S)
+ * 
+ * @returns Promise<boolean> - true if VISA is properly installed, false otherwise
+ * @note VISA is optional. Users can use LAN instruments without it.
+ * @note Only x64 DLL is checked since VS Code is x64-only
  */
 export async function checkVisaInstallation(): Promise<boolean> {
     if (!isWindows) {
@@ -132,101 +129,336 @@ export async function checkVisaInstallation(): Promise<boolean> {
     }
 
     try {
-        let dllFound = false
-        let registryFound = false
+        // -------------------------------------------------
+        // 1. REQUIRED: VISA loader DLL must exist
+        // -------------------------------------------------
+        const visaDllPath = "C:\\Windows\\System32\\visa64.dll"
 
-        //  1. REQUIRED: Check for VISA runtime DLLs
-
-        const dllPaths = [
-            "C:\\Windows\\System32\\visa64.dll",
-            "C:\\Windows\\SysWOW64\\visa32.dll"
-        ]
-
-        for (const dllPath of dllPaths) {
-            if (fs.existsSync(dllPath)) {
-                dllFound = true
-                break
-            }
-        }
-
-        if (!dllFound) {
-            // Without a VISA runtime DLL, VISA is not installed
+        if (!fs.existsSync(visaDllPath)) {
+            Log.debug("VISA not installed: visa64.dll not found", {
+                ...LOGLOC,
+                func: "checkVisaInstallation()"
+            })
             return false
         }
-        
-        //  2. OPTIONAL: Vendor registry keys         
 
-        const registryPaths = [
-            // NI-VISA
-            "HKLM\\SOFTWARE\\National Instruments\\NI-VISA",
-            "HKLM\\SOFTWARE\\WOW6432Node\\National Instruments\\NI-VISA",
+        Log.debug("VISA DLL found", {
+            ...LOGLOC,
+            func: "checkVisaInstallation()"
+        })
 
-            // Rohde & Schwarz VISA
-            "HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA",
-            "HKLM\\SOFTWARE\\WOW6432Node\\Rohde-Schwarz\\VISA",
+        // -------------------------------------------------
+        // 2. Check for IVI Shared VISA (multi-vendor mode)
+        // -------------------------------------------------
+        const iviVisaKey = "HKLM\\SOFTWARE\\IVI\\VISA"
 
-            // Keysight / Agilent VISA (optional, uncomment if needed)
-            // "HKLM\\SOFTWARE\\Keysight\\IO Libraries Suite",
-            // "HKLM\\SOFTWARE\\WOW6432Node\\Keysight\\IO Libraries Suite",
-            // "HKLM\\SOFTWARE\\Agilent\\IO Libraries Suite",
-            // "HKLM\\SOFTWARE\\WOW6432Node\\Agilent\\IO Libraries Suite"
-        ]
-
-        for (const regPath of registryPaths) {
-            try {
-                //await execAsync(`reg query "${regPath}"`, { timeout: 5000 })
-                await execFileAsync(
-                    "reg",
-                    ["query", regPath],
-                    { timeout: 3000 }
-                )
-                registryFound = true
-                break
-            } catch {
-                // ignore and continue checking other paths
+        if (await registryKeyExists(iviVisaKey)) {
+            const hasVendor = await hasEnabledIviVisaVendor(iviVisaKey)
+            if (hasVendor) {
+                Log.debug("VISA installed in shared mode (IVI VISA with enabled vendor)", {
+                    ...LOGLOC,
+                    func: "checkVisaInstallation()"
+                })
+                return true
             }
         }
 
-        if (!registryFound) {
-            Log.warn(
-                "VISA runtime DLL found but no vendor registry keys detected",
-                {
-                    ...LOGLOC,
-                    func: "checkVisaInstallation()"
-                }
-            )
+        // -------------------------------------------------
+        // 3. Fallback: single-vendor VISA detection
+        // -------------------------------------------------
+        const hasSingleVendor = await hasSingleVendorVisa()
+        if (hasSingleVendor) {
+            Log.debug("VISA installed in single-vendor mode", {
+                ...LOGLOC,
+                func: "checkVisaInstallation()"
+            })
+            return true
         }
 
-        return true
+        Log.warn("VISA DLL found but no vendor configuration detected", {
+            ...LOGLOC,
+            func: "checkVisaInstallation()"
+        })
+        return false
     } catch (error) {
         Log.error(`Error checking VISA installation: ${String(error)}`, {
             ...LOGLOC,
-            func: "checkVisaInstallation()",
+            func: "checkVisaInstallation()"
         })
         return false
     }
 }
 
 /**
+ * Utility: Check if a registry key exists on Windows
+ * @param key - Registry path (e.g., "HKLM\\SOFTWARE\\Path\\To\\Key")
+ * @returns Promise<boolean> - true if registry key exists, false otherwise
+ * @note Uses 'reg query' command with 3-second timeout
+ */
+async function registryKeyExists(key: string): Promise<boolean> {
+    try {
+        await execFileAsync("reg", ["query", key], { timeout: 3000 })
+        return true
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Check if IVI Shared VISA mode is available with at least one enabled vendor
+ * IVI VISA is a framework that allows multiple vendors (NI, Keysight, R&S) to share
+ * a common VISA implementation. Each vendor can be enabled/disabled individually.
+ * 
+ * Detection logic:
+ * 1. Query IVI VISA registry key to list all registered vendors
+ * 2. For each vendor, check if it's enabled (Enabled=0x1)
+ * 3. Verify the vendor's DLL path exists on the system
+ * 4. Return true if at least one enabled vendor with valid DLL is found
+ * 
+ * @param iviVisaKey - IVI VISA registry path (typically HKLM\SOFTWARE\IVI\VISA)
+ * @returns Promise<boolean> - true if enabled vendor found with valid DLL, false otherwise
+ */
+async function hasEnabledIviVisaVendor(iviVisaKey: string): Promise<boolean> {
+    try {
+        const { stdout } = await execFileAsync(
+            "reg",
+            ["query", iviVisaKey],
+            { timeout: 3000 }
+        )
+
+        const vendorKeys = stdout
+            .split(/\r?\n/)
+            .filter(line => line.startsWith("HKEY"))
+
+        for (const vendorKey of vendorKeys) {
+            if (!(await isVendorEnabled(vendorKey))) {
+                continue
+            }
+
+            const vendorPath = await getVendorPath(vendorKey)
+            if (vendorPath && fs.existsSync(vendorPath)) {
+                return true
+            }
+        }
+    } catch {
+        /* ignore */
+    }
+
+    return false
+}
+
+/**
+ * Check if a specific VISA vendor is enabled in IVI Shared VISA mode
+ * Enabled vendors have Enabled=0x1 (REG_DWORD) in their registry key
+ * 
+ * @param vendorKey - Registry path to vendor key (e.g., "HKLM\\SOFTWARE\\IVI\\VISA\\NI")
+ * @returns Promise<boolean> - true if vendor is enabled, false otherwise
+ */
+async function isVendorEnabled(vendorKey: string): Promise<boolean> {
+    try {
+        const { stdout } = await execFileAsync(
+            "reg",
+            ["query", vendorKey, "/v", "Enabled"],
+            { timeout: 3000 }
+        )
+        return stdout.includes("REG_DWORD") && stdout.includes("0x1")
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Get the installation path of a VISA vendor from its registry key
+ * Vendors store their DLL path in a "Path" registry value (REG_SZ)
+ * This is used to verify that the vendor's DLL actually exists on disk
+ * 
+ * @param vendorKey - Registry path to vendor key
+ * @returns Promise<string | null> - Vendor DLL path if found, null otherwise
+ */
+async function getVendorPath(vendorKey: string): Promise<string | null> {
+    try {
+        const { stdout } = await execFileAsync(
+            "reg",
+            ["query", vendorKey, "/v", "Path"],
+            { timeout: 3000 }
+        )
+
+        const match = stdout.match(/Path\s+REG_SZ\s+(.*)/i)
+        return match ? match[1].trim() : null
+    } catch {
+        return null
+    }
+}
+/**
+ * Check if single-vendor VISA is installed
+ * Single-vendor mode means VISA is installed by one vendor independently,
+ * without using the IVI Shared VISA framework.
+ * 
+ * Supported single-vendor installations:
+ * 1. National Instruments (NI-VISA) - Most common case
+ *    - Registry: HKLM\SOFTWARE\National Instruments\NI-VISA
+ *    - DLL: C:\Program Files\National Instruments\VISA\nivisa.dll
+ * 
+ * 2. Keysight / Agilent (IO Libraries Suite)
+ *    - Registry: HKLM\SOFTWARE\Keysight\IO Libraries Suite or Agilent variant
+ * 
+ * 3. Rohde & Schwarz (VISA)
+ *    - Registry: HKLM\SOFTWARE\Rohde-Schwarz\VISA
+ * 
+ * Note: NI-VISA DLL is explicitly checked because NI is the most common
+ * single-vendor installation that doesn't always register in IVI registry.
+ * 
+ * @returns Promise<boolean> - true if any single-vendor VISA found, false otherwise
+ */
+async function hasSingleVendorVisa(): Promise<boolean> {
+    // --- NI-VISA ---
+    // The most common single-vendor case
+    // The only vendor that frequently installs without IVI Shared VISA
+    // So NI DLL is explicitly checked in addition to registry
+    if (
+        await registryKeyExists("HKLM\\SOFTWARE\\National Instruments\\NI-VISA") ||
+        fs.existsSync("C:\\Program Files\\National Instruments\\VISA\\nivisa.dll")
+    ) {
+        return true
+    }
+
+    // --- Keysight / Agilent ---
+    if (
+        await registryKeyExists("HKLM\\SOFTWARE\\Keysight\\IO Libraries Suite") ||
+        await registryKeyExists("HKLM\\SOFTWARE\\Agilent\\IO Libraries Suite")
+    ) {
+        return true
+    }
+
+    // --- Rohde & Schwarz ---
+    if (
+        await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA")
+    ) {
+        return true
+    }
+
+    return false
+}
+
+/**
  * Check if VISA is installed on Linux
- * @returns Promise<boolean> - true if installed, false otherwise
+ * VISA detection uses a two-step approach:
+ * 1. Preferred: Query ldconfig (system linker cache) for VISA libraries - fast and reliable
+ * 2. Fallback: Manually scan standard system and vendor library directories
+ * 
+ * Supports both shared VISA installations (system paths) and vendor-specific installs (/opt prefix)
+ * 
+ * @returns Promise<boolean> - true if VISA library found, false otherwise
+ * @note VISA is optional. Users can use LAN instruments without it.
  */
 export async function checkVisaInstallationLinux(): Promise<boolean> {
     if (!isLinux) {
         return true // skip for non-Linux platforms
     }
 
+    // Define regex patterns to match VISA library files:
+    // Pattern 1: Standard libvisa.so (possibly with version suffixes like libvisa.so.7)
+    // Pattern 2: Variant VISA libraries (e.g., libniVisa, libAgVisa.so, libRsVisa.so, case-insensitive)
+    const visaLibPatterns = [
+        /^libvisa\.so(\.\d+)*$/,
+        /^lib.*visa.*\.so(\.\d+)*$/i
+    ]
+    
+    // -------------------------------------------------
+    // 1. Preferred: ldconfig (system linker cache)
+    // -------------------------------------------------
     try {
-        // Run ldconfig directly (no shell)
-        const { stdout } = await execFileAsync("ldconfig", ["-p"], { timeout: 5000 })
+        const { stdout } = await execFileAsync("ldconfig", ["-p"], {
+            timeout: 5000
+        })
 
-        // Check for any libvisa.so entry
-        return stdout
-            .toLowerCase()
-            .includes("libvisa.so")
+        const lines = stdout.split(/\r?\n/)
+        for (const line of lines) {
+            const libName = line.split(/\s+/)[0]
+            if (!libName) continue
+
+            for (const pattern of visaLibPatterns) {
+                if (pattern.test(libName)) {
+                    return true
+                }
+            }
+        }
     } catch {
-        return false
+        // ldconfig unavailable → fallback to directory scan
+        Log.debug("ldconfig unavailable, falling back to directory scan", {
+            ...LOGLOC,
+            func: "checkVisaInstallationLinux()"
+        })
     }
+    
+    // -------------------------------------------------
+    // 2. Fallback: standard system library paths
+    // -------------------------------------------------
+    const systemLibDirs = [
+        "/lib",
+        "/lib64",
+        "/usr/lib",
+        "/usr/lib64",
+        "/usr/local/lib",
+        "/usr/local/lib64"
+    ]
+
+    // -------------------------------------------------
+    // 3. Fallback: known vendor install prefixes
+    // -------------------------------------------------
+    const vendorLibDirs = [
+        "/opt/ni-visa/lib",
+        "/opt/national-instruments/visa/lib",
+        "/opt/keysight/iolibs/lib",
+        "/opt/rohde-schwarz/lib",
+        "/usr/share/ni-visa/lib"
+    ]
+
+    const allDirs = [...systemLibDirs, ...vendorLibDirs]
+
+    for (const dir of allDirs) {
+        try {
+            if (!fs.existsSync(dir)) continue
+
+            const files = fs.readdirSync(dir)
+            for (const file of files) {
+                for (const pattern of visaLibPatterns) {
+                    if (pattern.test(file)) {
+                        return true
+                    }
+                }
+            }
+        } catch {
+            // Ignore permission errors and continue
+        }
+    }
+
+    // -------------------------------------------------
+    // 4. Fallback: check LD_LIBRARY_PATH directories
+    // -------------------------------------------------
+    // Users may have custom VISA installations in directories specified via LD_LIBRARY_PATH
+    const ldLibraryPath = process.env.LD_LIBRARY_PATH
+    if (ldLibraryPath) {
+        const customDirs = ldLibraryPath.split(":")
+        for (const dir of customDirs) {
+            try {
+                if (!dir || !fs.existsSync(dir)) continue
+
+                const files = fs.readdirSync(dir)
+                for (const file of files) {
+                    for (const pattern of visaLibPatterns) {
+                        if (pattern.test(file)) {
+                            return true
+                        }
+                    }
+                }
+            } catch {
+                // Ignore permission errors and continue
+            }
+        }
+    }
+
+    return false
 }
 
 interface MissingDependency {
@@ -284,7 +516,6 @@ export async function checkAvahiRunning(): Promise<boolean> {
     try {
         // systemd-based systems
         try {
-            //const { stdout } = await execAsync('systemctl is-active avahi-daemon', { timeout: 3000 })
             const { stdout } = await execFileAsync(
                 "systemctl",
                 ["is-active", "avahi-daemon"],
@@ -298,7 +529,6 @@ export async function checkAvahiRunning(): Promise<boolean> {
         }
         // non-systemd fallback
         try {
-            //await execAsync('pgrep avahi-daemon', { timeout: 3000 })
             await execFileAsync(
                 "pgrep",
                 ["avahi-daemon"],
@@ -454,11 +684,15 @@ async function showMissingDependenciesNotification(missing: MissingDependency[])
         if (missing.length === 1) {
             message = `${missing[0].name} is required but not detected on your system.`
         } else {
-            message = `${missing.length} required dependencies are missing:\n\n`
-            message += missing.map(dep => `• ${dep.name}`).join("\n")
+            // Create a numbered list
+            const depList = missing
+                .map((dep, index) => `${index + 1}. ${dep.name}`) // 1. Name, 2. Name, ...
+                .join("\n")
+            message = `${missing.length} required dependencies are missing: [ ${depList} ].`            
         }
 
-        message += "\n\nSome features may not work correctly without these dependencies."
+        const exclamation = "\u2757";
+        message += `\u00A0\u00A0${exclamation} Some features may not work correctly without these dependencies.`
 
         // Create action buttons based on number of dependencies
         const actions: string[] = []
@@ -522,35 +756,48 @@ export async function checkSystemDependencies(): Promise<void> {
                 name: "Visual C++ Redistributable",
                 description: "Required for native modules and performance",
                 downloadUrl: "https://aka.ms/vs/17/release/vc_redist.x64.exe",
-                learnMoreUrl: "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist"
+                learnMoreUrl: "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
             })
         } else {
             Log.debug("Visual C++ Redistributable detected", logloc)
         }
 
         // Check Bonjour service
-        const hasBonjour = await checkBonjourService()
-        if (!hasBonjour) {
-            Log.warn("Bonjour service not detected", logloc)
+        const bonjour = await checkBonjourService()
+        if (!bonjour.installed) {
+            Log.warn("Bonjour is not installed", logloc)
             missingDependencies.push({
                 name: "Bonjour",
                 description: "Required for mDNS device discovery",
                 downloadUrl: "https://support.apple.com/kb/DL999",
-                learnMoreUrl: "https://developer.apple.com/bonjour/"
+                learnMoreUrl: "https://developer.apple.com/bonjour/",
             })
         } else {
-            Log.debug("Bonjour service detected", logloc)
+            Log.debug("Bonjour is installed", logloc)
+            
+            // Check if Bonjour service is running
+            if (!bonjour.running) {
+                Log.warn("Bonjour is installed but not running", logloc)
+                missingDependencies.push({
+                    name: "Bonjour Service",
+                    description: "Bonjour is installed but not running. Please start the Bonjour Service.",
+                    downloadUrl: "https://support.apple.com/kb/DL999",
+                    learnMoreUrl: "https://developer.apple.com/bonjour/",
+                })
+            } else {
+                Log.debug("Bonjour service is running", logloc)
+            }
         }
 
-        // Check VISA installation
+        // Check VISA installation (optional)
         const hasVisa = await checkVisaInstallation()
         if (!hasVisa) {
-            Log.warn("VISA installation not detected", logloc)
+            Log.debug("VISA not installed (optional - required only for VISA protocol support)", logloc)
             missingDependencies.push({
-                name: "VISA",
-                description: "Required for instrument communication via VISA protocol",
+                name: "VISA(Optional)",
+                description: "Optional - Required only for VISA protocol instrument communication",
                 downloadUrl: "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
-                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx"
+                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx",
             })
         } else {
             Log.debug("VISA installation detected", logloc)
@@ -578,7 +825,7 @@ export async function checkSystemDependencies(): Promise<void> {
                 name: "Avahi",
                 description: "Required for mDNS device discovery on Linux",
                 downloadUrl: "https://avahi.org/download/",
-                learnMoreUrl: "https://avahi.org/"
+                learnMoreUrl: "https://avahi.org/",
             })
         } else {
             Log.debug("Avahi daemon installed", logloc)
@@ -591,7 +838,7 @@ export async function checkSystemDependencies(): Promise<void> {
                     name: "Avahi Service",
                     description: "Avahi is installed but not running. Please start the avahi-daemon service.",
                     downloadUrl: "https://avahi.org/faq/",
-                    learnMoreUrl: "https://avahi.org/wiki/RunningAvahi"
+                    learnMoreUrl: "https://avahi.org/wiki/RunningAvahi",
                 })
             } else {
                 Log.debug("Avahi daemon is running", logloc)
@@ -606,21 +853,21 @@ export async function checkSystemDependencies(): Promise<void> {
                 name: "GLIBC >= 2.39",
                 description: "Required for compatibility with modern features. Your system has an older version.",
                 downloadUrl: "https://www.gnu.org/software/libc/",
-                learnMoreUrl: "https://www.gnu.org/software/libc/libc.html"
+                learnMoreUrl: "https://www.gnu.org/software/libc/libc.html",
             })
         } else {
             Log.debug("GLIBC version is 2.39 or higher", logloc)
         }
 
-        // Check VISA installation
+        // Check VISA installation (optional)
         const hasVisaLinux = await checkVisaInstallationLinux()
         if (!hasVisaLinux) {
-            Log.warn("VISA installation not detected on Linux", logloc)
+            Log.debug("VISA not installed (optional - required only for VISA protocol support)", logloc)
             missingDependencies.push({
-                name: "VISA",
-                description: "Required for instrument communication via VISA protocol",
+                name: "VISA(Optional)",
+                description: "Optional - Required only for VISA protocol instrument communication",
                 downloadUrl: "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
-                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx"
+                learnMoreUrl: "https://www.ivifoundation.org/specifications/default.aspx",
             })
         } else {
             Log.debug("VISA installation detected on Linux", logloc)
