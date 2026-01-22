@@ -18,9 +18,9 @@ import {
     VariableAttributes,
     Watchpoint,
 } from "./debugResourceManager"
-import { ConnectionDetails } from "./resourceManager"
 import { OutputParser } from "./outputParser"
 import { Log } from "./logging"
+import { Connection } from "./connection"
 
 //type of breakpoint hit
 enum BreakType {
@@ -50,12 +50,14 @@ export class TspRuntime extends EventEmitter {
         this.on("stackConversionComplete", res)
     })
 
-    constructor(connDetails: ConnectionDetails) {
+    constructor(connection: Connection) {
         super()
-        this._debugChidProc = cp.spawn(DEBUG_EXECUTABLE, [
-            "connect",
-            connDetails.addr,
-        ])
+
+        const args = ["connect", connection.addr]
+        if (connection.keyring) {
+            args.push("--keyring", String(connection.keyring))
+        }
+        this._debugChidProc = cp.spawn(DEBUG_EXECUTABLE, args)
 
         this._debugChidProc.on("close", () => {
             this.sendEvent("restartConnection")
