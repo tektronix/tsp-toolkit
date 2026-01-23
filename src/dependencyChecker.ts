@@ -132,7 +132,7 @@ export async function checkVisaInstallation(): Promise<boolean> {
         // -------------------------------------------------
         // 1. REQUIRED: VISA loader DLL must exist
         // -------------------------------------------------
-        const visaDllPath = "C:\\Windows\\System32\\visa64suri.dll"
+        const visaDllPath = "C:\\Windows\\System32\\visa64.dll"
 
         if (!fs.existsSync(visaDllPath)) {
             Log.debug("VISA not installed: visa64.dll not found", {
