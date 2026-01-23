@@ -132,7 +132,7 @@ export async function checkVisaInstallation(): Promise<boolean> {
         // -------------------------------------------------
         // 1. REQUIRED: VISA loader DLL must exist
         // -------------------------------------------------
-        const visaDllPath = "C:\\Windows\\System32\\visa64.dll"
+        const visaDllPath = "C:\\Windows\\System32\\visa64suri.dll"
 
         if (!fs.existsSync(visaDllPath)) {
             Log.debug("VISA not installed: visa64.dll not found", {
@@ -790,8 +790,9 @@ export async function checkSystemDependencies(): Promise<void> {
         }
 
         // Check VISA installation (optional)
+        const ignoreMissingVisa = vscode.workspace.getConfiguration("tsp").get<boolean>("ignoreMissingVisa", false)
         const hasVisa = await checkVisaInstallation()
-        if (!hasVisa) {
+        if (!hasVisa && !ignoreMissingVisa) {
             Log.debug("VISA not installed (optional - required only for VISA protocol support)", logloc)
             missingDependencies.push({
                 name: "VISA(Optional)",
@@ -860,8 +861,9 @@ export async function checkSystemDependencies(): Promise<void> {
         }
 
         // Check VISA installation (optional)
+        const ignoreMissingVisa = vscode.workspace.getConfiguration("tsp").get<boolean>("ignoreMissingVisa", false)
         const hasVisaLinux = await checkVisaInstallationLinux()
-        if (!hasVisaLinux) {
+        if (!hasVisaLinux && !ignoreMissingVisa) {
             Log.debug("VISA not installed (optional - required only for VISA protocol support)", logloc)
             missingDependencies.push({
                 name: "VISA(Optional)",
