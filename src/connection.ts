@@ -32,6 +32,16 @@ export enum ConnectionStatus {
     Connected,
 }
 
+export type LoginStatus =
+    | {
+          type: "Protected"
+          username: boolean
+          password: boolean
+          keyring?: string
+      }
+    | { type: "NotPrompted" }
+    | { type: "InUse" }
+
 export function connectionStatusIcon(
     status: ConnectionStatus | undefined,
 ): vscode.ThemeIcon {
@@ -199,11 +209,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    async checkLogin(timeout_ms?: number): Promise<{
-        username: boolean
-        password: boolean
-        keyring?: string
-    } | null> {
+    async checkLogin(timeout_ms?: number): Promise<LoginStatus> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.checkLogin()",
@@ -245,11 +251,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 }
             }, timeout_ms)
         }
-        const requirements = await new Promise<{
-            username: boolean
-            password: boolean
-            keyring?: string
-        } | null>((resolve) => {
+        const requirements = await new Promise<LoginStatus>((resolve) => {
             let data = ""
             this._background_process?.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
@@ -257,20 +259,24 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             this._background_process?.stdout?.on("data", (chunk) => {
                 data += chunk
             })
-            this._background_process?.on("close", (code) => {
-                const ret: {
-                    username: boolean
-                    password: boolean
-                    keyring?: string
-                } = {
-                    username: false,
-                    password: false,
-                    keyring: undefined,
+            this._background_process?.on("exit", (code) => {
+                if (code === 0) {
+                    resolve({ type: "NotPrompted" })
+                    return
                 }
-                if (code != 0) {
-                    if (data.length === 0) {
-                        resolve(null)
-                        return
+                if (code === 1) {
+                    resolve({ type: "InUse" })
+                    return
+                }
+                if (code === 2 || code === 3) {
+                    const ret: {
+                        username: boolean
+                        password: boolean
+                        keyring?: string
+                    } = {
+                        username: false,
+                        password: false,
+                        keyring: undefined,
                     }
                     const d = data.toString()
                     const [, details] = d.split(": ")
@@ -286,8 +292,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
                     }
+                    resolve({
+                        type: "Protected",
+                        username: ret.username,
+                        password: ret.password,
+                        keyring: ret.keyring,
+                    })
+                    return
                 }
-                resolve(ret)
             })
         })
 
@@ -671,8 +683,19 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     }
 
                     const login_required = await this.checkLogin()
-
-                    if (login_required !== null) {
+                    if (login_required.type === "NotPrompted") {
+                        Log.debug("No login required", LOGLOC)
+                    } else if (login_required.type === "InUse") {
+                        vscode.window.showErrorMessage(
+                            `instrument ${this._addr} already in use make sure you logout at other locations before connecting.`,
+                        )
+                        Log.error(
+                            "Connection failed: instrument already in use.",
+                            LOGLOC,
+                        )
+                        this.status = orig_status
+                        return false
+                    } else if (login_required.type === "Protected") {
                         for (let i = 1; i <= 3; i++) {
                             //TODO: Prompt for the required information (if any)
                             if (i > 1 && login_required.keyring) {
