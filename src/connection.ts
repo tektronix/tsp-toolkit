@@ -264,11 +264,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     resolve({ type: "NotPrompted" })
                     return
                 }
-                if (code === 1) {
+                if (code === 2) {
                     resolve({ type: "InUse" })
                     return
                 }
-                if (code === 2 || code === 3) {
+                if (code === 3 || code === 4) {
                     const ret: {
                         username: boolean
                         password: boolean
@@ -300,6 +300,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     })
                     return
                 }
+                resolve({ type: "NotPrompted" })
+                return
             })
         })
 
