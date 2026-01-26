@@ -206,8 +206,8 @@
                 "icon": "$(edit)"
             },
             {
-                "command": "InstrumentsExplorer.updateIPAddr",
-                "title": "Update IP Address",
+                "command": "InstrumentsExplorer.updateInstrumentAddr",
+                "title": "Update Instrument Address",
                 "icon": "$(edit)"
             },
             {
@@ -451,7 +451,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.updateIPAddr",
+                    "command": "InstrumentsExplorer.updateInstrumentAddr",
                     "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },

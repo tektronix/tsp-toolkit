@@ -90,9 +90,9 @@ export class InstrumentsExplorer implements vscode.Disposable {
         )
 
         const changeIPAddr = vscode.commands.registerCommand(
-            "InstrumentsExplorer.updateIPAddr",
+            "InstrumentsExplorer.updateInstrumentAddr",
             async (e: Connection) => {
-                await this.updateIPAddr(e)
+                await this.updateInstrumentAddr(e)
             },
         )
 
@@ -203,16 +203,13 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
     }
 
-    public async updateIPAddr(item: Connection) {
+    public async updateInstrumentAddr(item: Connection) {
         const newIP = await vscode.window.showInputBox({
             placeHolder: "Enter new IP address or VISA resource string",
             prompt: "Enter a valid IPv4 address or VISA resource string",
         })
 
         if (!newIP || newIP.trim().length === 0) {
-            vscode.window.showErrorMessage(
-                "IP address update cancelled or empty",
-            )
             Log.warn("IP address update cancelled or empty", {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
