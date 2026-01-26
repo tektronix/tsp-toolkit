@@ -1,5 +1,11 @@
 import * as vscode from "vscode"
-import { idn_to_string, IIDNInfo, InstrInfo } from "./resourceManager"
+import {
+    ConnectionHelper,
+    idn_to_string,
+    IIDNInfo,
+    InstrInfo,
+    IoType,
+} from "./resourceManager"
 import {
     Connection,
     ConnectionStatus,
@@ -204,14 +210,14 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         }
     }
 
-    async sendScript(filepath: string) {
+    sendScript(filepath: string) {
         const connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
         )
         if (!connection) {
             return
         }
-        await connection.sendScript(filepath)
+        connection.sendScript(filepath)
     }
     async startSaveTspOutput() {
         this.savingTspOutput = true
@@ -221,7 +227,11 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (!connection) {
             const label: string | undefined = await vscode.window.showQuickPick(
                 this._connections.map((c) => c.label?.toString() ?? ""),
-                { canPickMany: false, title: "Which connection?" },
+                {
+                    canPickMany: false,
+                    title: "Which connection?",
+                    ignoreFocusOut: true,
+                },
             )
 
             if (!label) {
@@ -268,7 +278,11 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (!connection) {
             const label: string | undefined = await vscode.window.showQuickPick(
                 this._connections.map((c) => c.label?.toString() ?? ""),
-                { canPickMany: false, title: "Which connection?" },
+                {
+                    canPickMany: false,
+                    title: "Which connection?",
+                    ignoreFocusOut: true,
+                },
             )
 
             if (!label) {
@@ -312,7 +326,11 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 "sourcevalues",
                 "statuses",
             ],
-            { canPickMany: true, title: "Fields to print" },
+            {
+                canPickMany: true,
+                title: "Fields to print",
+                ignoreFocusOut: true,
+            },
         )
         const output = await vscode.window.showSaveDialog({
             title: "Select Output File",
@@ -413,7 +431,9 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
     addConnection(connection: Connection): boolean {
         // Find if a connection of the same type already exists (regardless of address)
         const sameTypeIdx = this._connections.findIndex(
-            (v) => v.type === connection.type
+            (v) =>
+                (v.type === IoType.Lan && v.type === connection.type) ||
+                ConnectionHelper.AreSameVisaType(v.addr, connection.addr),
         )
         if (sameTypeIdx > -1) {
             // If the address is the same, just update status if needed
