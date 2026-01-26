@@ -305,15 +305,21 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 title: "Buffer Variable Names",
                 prompt: "Enter the buffer variable names separated by a comma (',')",
                 placeHolder: "buf1,buf2,buf2,...",
+                ignoreFocusOut: true,
             })
         )
             ?.split(",")
             .map((s) => s.trim())
-        const delimiter = await vscode.window.showInputBox({
-            title: "Delimiter",
-            prompt: "Enter the string you want to separate each data field",
-            placeHolder: ",",
-        })
+        if (!buffers) {
+            return
+        }
+        const delimiter =
+            (await vscode.window.showInputBox({
+                title: "Delimiter",
+                prompt: "Enter the string you want to separate each data field (default: `,`)",
+                placeHolder: ",",
+                ignoreFocusOut: true,
+            })) ?? ","
         const fields = await vscode.window.showQuickPick(
             [
                 "timestamps",
@@ -332,6 +338,9 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 ignoreFocusOut: true,
             },
         )
+        if (!fields || fields.length === 0) {
+            return
+        }
         const output = await vscode.window.showSaveDialog({
             title: "Select Output File",
         })
