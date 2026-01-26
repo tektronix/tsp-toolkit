@@ -654,13 +654,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         if (this._background_process) {
                             this._background_process?.kill("SIGTERM")
                         }
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                     })
-                    //Dump output queue if enabled
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return false
                     }
+                    //Dump output queue if enabled
                     let dump_path = undefined
                     if (
                         vscode.workspace
@@ -680,7 +680,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     })
 
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return false
                     }
 
@@ -760,7 +760,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         message: "Getting instrument information",
                     })
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return false
                     }
 
@@ -770,7 +770,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         vscode.window.showErrorMessage(
                             `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
                         )
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return false
                     }
 
@@ -804,7 +804,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
                     //Connect terminal
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                         return false
                     }
 
