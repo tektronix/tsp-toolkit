@@ -718,14 +718,14 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             vscode.window.showErrorMessage(String(err_msg))
         }
     }
-    async sendToAllActiveTerminals(filepath: string) {
-        const promises: Promise<void>[] = []
-        for (const i of this._instruments) {
-            promises.push(i.sendScript(filepath))
-        }
+    // async sendToAllActiveTerminals(filepath: string) {
+    //     const promises: Promise<void>[] = []
+    //     for (const i of this._instruments) {
+    //         promises.push(i.sendScript(filepath))
+    //     }
 
-        await Promise.allSettled(promises)
-    }
+    //     await Promise.allSettled(promises)
+    // }
 
     private async saveInstrumentToList(instr: Instrument) {
         try {
