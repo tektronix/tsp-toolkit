@@ -210,14 +210,14 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         }
     }
 
-    async sendScript(filepath: string) {
+    sendScript(filepath: string) {
         const connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
         )
         if (!connection) {
             return
         }
-        await connection.sendScript(filepath)
+        connection.sendScript(filepath)
     }
     async startSaveTspOutput() {
         this.savingTspOutput = true
