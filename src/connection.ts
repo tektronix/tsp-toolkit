@@ -689,7 +689,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         Log.debug("No login required", LOGLOC)
                     } else if (login_required.type === "InUse") {
                         vscode.window.showErrorMessage(
-                            `instrument ${this._addr} already in use. Make sure you logout at other locations before connecting.`,
+                            `Instrument at ${this._addr} already in use. Make sure you logout at other locations before connecting.`,
                         )
                         Log.error(
                             "Connection failed: instrument already in use.",
