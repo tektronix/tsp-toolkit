@@ -1,7 +1,6 @@
 import { promisify } from "util"
 import { platform } from "node:os"
 import fs from "node:fs"
-import path from "node:path"
 import { execFile } from "child_process"
 import * as vscode from "vscode"
 import { Log, SourceLocation } from "./logging"
@@ -63,53 +62,6 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         })
         return false
     }
-}
-
-/**
- * Check if Bonjour is installed and running on Windows
- * Detection uses a two-step approach:
- * 1. Primary check: Query Windows service "mDNSResponder" - most reliable
- * 2. Fallback check: Verify key Bonjour files exist on disk
- * 
- * @returns Promise with object containing installed and running state
- */
-export async function checkBonjourService(): Promise<{ installed: boolean; running: boolean }> {
-    if (!isWindows) {
-        // Non-Windows: assume Bonjour is not required
-        return { installed: true, running: true }
-    }
-
-    try {
-        // --- 1️. Primary check: Windows service ---
-        const { stdout } = await execFileAsync("sc", ["query", "mDNSResponder"], { timeout: 3000 })
-
-        const installed = stdout.includes("STATE") && (stdout.includes("RUNNING") || stdout.includes("STOPPED"))
-        const running = stdout.includes("RUNNING")
-
-        if (installed) {
-            return { installed, running }
-        }
-    } catch {
-        // Service not found → fallback to file check
-    }
-
-    // --- 2️. Fallback check: key Bonjour files ---
-    const possiblePaths = [
-        "C:\\Program Files\\Bonjour\\mDNSResponder.exe",
-        "C:\\Program Files\\Bonjour\\mdnsNSP.dll",
-        path.join(process.env.WINDIR || "C:\\Windows", "System32", "mdnsNSP.dll"),
-    ]
-
-    // If ANY of the key files exist, consider Bonjour installed
-    const filesExist = possiblePaths.some((filePath) => fs.existsSync(filePath))
-
-    if (filesExist) {
-        // Service not running, but files present → may be partially installed
-        return { installed: true, running: false }
-    }
-
-    // Neither service nor files found
-    return { installed: false, running: false }
 }
 
 /**
@@ -331,8 +283,12 @@ async function hasSingleVendorVisa(): Promise<boolean> {
     }
 
     // --- Rohde & Schwarz ---
+    // Unlike NI or Keysight, R&S does not consistently create a top-level …\VISA key.
+    // R&S VISA is installed system-wide, but its main vendor key is not under HKLM\SOFTWARE\Rohde-Schwarz\VISA on many systems.
+    // HKCU\Software\Rohde-Schwarz\RsVisa may exist for user-specific settings, but not for system-wide detection.
     if (
-        await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA")
+        await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA") ||
+        await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\RsVisa")
     ) {
         return true
     }
@@ -466,85 +422,6 @@ interface MissingDependency {
     description: string
     downloadUrl: string
     learnMoreUrl?: string
-}
-
-/**
- * Check if Avahi daemon is installed on Linux
- * @returns Promise<boolean> - true if installed, false otherwise
- */
-export async function checkAvahiInstalled(): Promise<boolean> {
-    if (!isLinux) {
-        return true // skip for non-Linux platforms
-    }
-
-    try {
-        const checks: Array<[string, string[]]> = [
-            ["dpkg", ["-s", "avahi-daemon"]],   // Debian / Ubuntu
-            ["rpm", ["-q", "avahi", "avahi-daemon"]],   // RHEL / Fedora
-            ["pacman", ["-Q", "avahi"]],    // Arch
-            ["apk", ["info", "avahi"]], // Alpine
-            ["avahi-daemon", ["--version"]] // Direct command check
-        ]
-
-        for (const [cmd, args] of checks) {
-            try {
-                await execFileAsync(cmd, args, { timeout: 3000 })
-                return true
-            } catch {
-                // try next
-            }
-        }
-        
-        return false
-    } catch (error) {
-        Log.error(`Error checking Avahi installation: ${String(error)}`, {
-            ...LOGLOC,
-            func: "checkAvahiInstalled()",
-        })
-        return false
-    }
-}
-
-/**
- * Check if Avahi daemon is running on Linux
- */
-export async function checkAvahiRunning(): Promise<boolean> {
-    if (!isLinux) {
-        return true
-    }
-
-    try {
-        // systemd-based systems
-        try {
-            const { stdout } = await execFileAsync(
-                "systemctl",
-                ["is-active", "avahi-daemon"],
-                { timeout: 3000 }
-            )
-            if (stdout.trim() === "active") {
-                return true
-            }
-        } catch {
-            // fallback
-        }
-        // non-systemd fallback
-        try {
-            await execFileAsync(
-                "pgrep",
-                ["avahi-daemon"],
-                { timeout: 3000 }
-            )
-            return true
-        } catch {
-            return false
-        }
-    } catch (error) {
-        Log.error(`Error checking Avahi running state: ${String(error)}`, {
-            ...LOGLOC,
-            func: "checkAvahiRunning()",
-        })
-        return false
-    }
 }
 
 /**
@@ -762,33 +639,6 @@ export async function checkSystemDependencies(): Promise<void> {
             Log.debug("Visual C++ Redistributable detected", logloc)
         }
 
-        // Check Bonjour service
-        const bonjour = await checkBonjourService()
-        if (!bonjour.installed) {
-            Log.warn("Bonjour is not installed", logloc)
-            missingDependencies.push({
-                name: "Bonjour",
-                description: "Required for mDNS device discovery",
-                downloadUrl: "https://support.apple.com/kb/DL999",
-                learnMoreUrl: "https://developer.apple.com/bonjour/",
-            })
-        } else {
-            Log.debug("Bonjour is installed", logloc)
-            
-            // Check if Bonjour service is running
-            if (!bonjour.running) {
-                Log.warn("Bonjour is installed but not running", logloc)
-                missingDependencies.push({
-                    name: "Bonjour Service",
-                    description: "Bonjour is installed but not running. Please start the Bonjour Service.",
-                    downloadUrl: "https://support.apple.com/kb/DL999",
-                    learnMoreUrl: "https://developer.apple.com/bonjour/",
-                })
-            } else {
-                Log.debug("Bonjour service is running", logloc)
-            }
-        }
-
         // Check VISA installation (optional)
         const ignoreMissingVisa = vscode.workspace.getConfiguration("tsp").get<boolean>("ignoreMissingVisa", false)
         const hasVisa = await checkVisaInstallation()
@@ -818,34 +668,6 @@ export async function checkSystemDependencies(): Promise<void> {
     } else if (isLinux) {
         Log.debug("Checking Linux dependencies", logloc)
         
-        // Check if Avahi daemon is installed
-        const avahiInstalled = await checkAvahiInstalled()
-        if (!avahiInstalled) {
-            Log.warn("Avahi daemon not installed", logloc)
-            missingDependencies.push({
-                name: "Avahi",
-                description: "Required for mDNS device discovery on Linux",
-                downloadUrl: "https://avahi.org/download/",
-                learnMoreUrl: "https://avahi.org/",
-            })
-        } else {
-            Log.debug("Avahi daemon installed", logloc)
-            
-            // Check if Avahi daemon is running
-            const avahiRunning = await checkAvahiRunning()
-            if (!avahiRunning) {
-                Log.warn("Avahi daemon is not running", logloc)
-                missingDependencies.push({
-                    name: "Avahi Service",
-                    description: "Avahi is installed but not running. Please start the avahi-daemon service.",
-                    downloadUrl: "https://avahi.org/faq/",
-                    learnMoreUrl: "https://avahi.org/wiki/RunningAvahi",
-                })
-            } else {
-                Log.debug("Avahi daemon is running", logloc)
-            }
-        }
-
         // Check GLIBC version
         const hasGlibc239 = await checkGlibcVersion()
         if (!hasGlibc239) {
