@@ -81,6 +81,8 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 - **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
+- **\[Beta] Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
+- **\[Beta] Save Commands and Output to File**: Save any proceeding commands and their output to a file
 
 ### Terminal Usage
 
@@ -107,6 +109,7 @@ To execute your TSP scripts on connected instruments, you can perform one of the
 
 1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
 2. Click the Run icon in the editor title bar when a TSP file is open
+3. \[Beta] Save the output of a script to a file by clicking on the "\[Beta] Save TSP Script Output" option under the run/debug icon drop down at the top of the editor
 
 ### Automated TSP Script Generation
 
