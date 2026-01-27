@@ -187,6 +187,29 @@ export class ConnectionHelper {
             val,
         )
     }
+
+    public static AreSameVisaType(a: string, b: string): boolean {
+        const getCaptures = (x: string) => {
+            const { board, protocol, addr, ix, kind } =
+                /^(?<board>(?<protocol>TCPIP|USB|GPIB|ASRL|FIREWIRE|GPIB-VXI|PXI|VXI)\d*)::(?<addr>.+)::(?<ix>.+)::(?<kind>INSTR|SOCKET)/?.exec(
+                    x,
+                )?.groups || {
+                    board: null,
+                    protocol: null,
+                    addr: null,
+                    ix: null,
+                    kind: null,
+                }
+            return { board, protocol, addr, ix, kind }
+        }
+        const a_matches = getCaptures(a)
+        const b_matches = getCaptures(b)
+        return (
+            a_matches.protocol === b_matches.protocol &&
+            a_matches.ix === b_matches.ix &&
+            a_matches.kind === b_matches.kind
+        )
+    }
     public static instrConnectionStringValidator = (val: string) => {
         let conn_str = val
         if (val.split("@").length > 1) {

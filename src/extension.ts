@@ -29,6 +29,11 @@ let _instrExplorer: InstrumentsExplorer
  * @param command_text command text that needs to send to terminal
  * @returns None
  */
+/**
+ * Creates or retrieves a connection to an instrument and initiates the terminal connection.
+ * @param connection - Either a connection string (e.g., 'tsPop@127.0.0.1') or an existing Connection object
+ * @returns Promise resolving to the Connection object, or undefined if connection fails
+ */
 export async function createTerminal(
     connection: Connection | string,
 ): Promise<Connection | undefined> {
@@ -36,9 +41,10 @@ export async function createTerminal(
         file: "extension.ts",
         func: "createTerminal()",
     }
+
+    let conn: Connection
     let name = ""
-    //'example@5e6:2461@2' OR 'example@127.0.0.1'
-    // Always create a Connection.
+
     if (typeof connection === "string") {
         const connection_details =
             ConnectionHelper.parseConnectionString(connection)
@@ -48,37 +54,34 @@ export async function createTerminal(
                 new Error("Unable to parse connection string"),
             )
         }
+
         Log.debug(
             `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
             LOGLOC,
         )
+
         const existing =
             InstrumentProvider.instance.getConnection(connection_details)
 
-        if (existing) {
-            connection = existing
-        } else {
-            connection = new Connection(
-                connection_details.type,
-                connection_details.addr,
-            )
-        }
+        conn =
+            existing ??
+            new Connection(connection_details.type, connection_details.addr)
         name = connection_details.name
+    } else {
+        conn = connection
     }
 
-    if (connection.type === IoType.Visa && isMacOS) {
-        vscode.window.showErrorMessage(
-            "VISA connection is not supported on macOS.",
-        )
-        Log.error("Connection failed: VISA is not supported on macOS.", LOGLOC)
-        return
+    if (conn.type === IoType.Visa && isMacOS) {
+        const errorMsg = "VISA connection is not supported on macOS."
+        vscode.window.showErrorMessage(errorMsg)
+        Log.error(`Connection failed: ${errorMsg}`, LOGLOC)
+        return Promise.resolve(undefined)
     }
-    const conn: Connection = connection
 
-    await conn.connect(name)
-
-    //LAN
-    return Promise.resolve(conn)
+    if (await conn.connect(name)) {
+        return conn
+    }
+    return Promise.resolve(undefined)
 }
 
 function registerCommands(
@@ -230,14 +233,14 @@ export function activate(context: vscode.ExtensionContext) {
                 await e.upgrade()
             },
         },
-        {
-            name: "tsp.sendFileToAllInstr",
-            cb: async (e: vscode.Uri) => {
-                await InstrumentProvider.instance.sendToAllActiveTerminals(
-                    e.fsPath,
-                )
-            },
-        },
+        // {
+        //     name: "tsp.sendFileToAllInstr",
+        //     cb: async (e: vscode.Uri) => {
+        //         await InstrumentProvider.instance.sendToAllActiveTerminals(
+        //             e.fsPath,
+        //         )
+        //     },
+        // },
         {
             name: "tsp.sendFile",
             cb: async (e: vscode.Uri) => {
@@ -257,11 +260,11 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     if (connection) {
-                        await connection.sendScript(e.fsPath)
+                        connection.sendScript(e.fsPath)
                     }
                 } else {
                     const conn = await pickConnection()
-                    await conn?.sendScript(e.fsPath)
+                    conn?.sendScript(e.fsPath)
                 }
             },
         },
@@ -291,13 +294,13 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     if (connection) {
-                        await connection.getNodes(
+                        connection.getNodes(
                             vscode.workspace.workspaceFolders[0].uri.fsPath,
                         )
                     }
                 } else {
                     const conn = await pickConnection()
-                    await conn?.getNodes(
+                    conn?.getNodes(
                         vscode.workspace.workspaceFolders[0].uri.fsPath,
                     )
                 }
@@ -475,7 +478,11 @@ export async function pickConnection(): Promise<Connection | undefined> {
                         throw new Error(validationResult)
                     }
                     const connection = await createTerminal(selectedItem.label)
-                    resolve(connection)
+                    if (connection) {
+                        resolve(connection)
+                    } else {
+                        resolve(undefined)
+                    }
                 } catch (error) {
                     vscode.window.showErrorMessage(
                         `Error: ${(error as Error).message}`,
