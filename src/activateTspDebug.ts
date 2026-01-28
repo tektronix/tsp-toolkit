@@ -48,6 +48,7 @@ export function activateTspDebug(
                     Log.error("No connection available for debugging", LOGLOC)
                     return
                 }
+                await conn.exitConnection()
 
                 // Set up debug helper
                 DebugHelper.debuggeeFilePath = targetResource.fsPath
@@ -184,16 +185,5 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
 }
 
 async function get_connection(): Promise<Connection | undefined> {
-    let connection = await getActiveConnection()
-
-    if (!connection) {
-        connection = await pickConnection()
-    }
-    if (!connection) {
-        return undefined
-    }
-
-    await connection.connectAndExit()
-
-    return connection
+    return (await getActiveConnection()) || (await pickConnection())
 }
