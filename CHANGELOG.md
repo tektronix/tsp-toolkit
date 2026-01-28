@@ -31,6 +31,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
 - (**tsp-toolkit-kic-cli**) Fixed issue with writing a zero-sized TSP script to an instrument
 
+### Changed
+- (**tsp-toolkit-kic-cli**) When discovering VISA instruments, enumerate from VISA multiple times
+
 ## [1.4.0]
 
 ### Fixed
