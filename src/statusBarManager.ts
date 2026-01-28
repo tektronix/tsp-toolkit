@@ -26,23 +26,23 @@ export class StatusBarManager {
      * @param type The type of message: 'info', 'warning', 'error', 'progress'
      * @param timeout Optional timeout in milliseconds (default: 5000 for info/warning, 8000 for error, 0 for progress)
      */
-    showMessage(message: string, type: 'info' | 'warning' | 'error' | 'progress' = 'info', timeout?: number): void {
+    showMessage(message: string, type: "info" | "warning" | "error" | "progress" = "info", timeout?: number): void {
         let icon = "$(info)";
         let defaultTimeout = 5000;
         switch (type) {
-            case 'warning':
+            case "warning":
                 icon = "$(warning)";
                 defaultTimeout = 5000;
                 break;
-            case 'error':
+            case "error":
                 icon = "$(error)";
                 defaultTimeout = 8000;
                 break;
-            case 'progress':
+            case "progress":
                 icon = "$(sync~spin)";
                 defaultTimeout = 0;
                 break;
-            case 'info':
+            case "info":
             default:
                 icon = "$(info)";
                 defaultTimeout = 5000;
