@@ -43,7 +43,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 
 ## Demo Video
 
-<a href="https://www.youtube.com/watch?v=Srq5LtOH5UA"><img width="560" height="315" src="./resources/DemoVideoThumbnail.png" altText="TSP Toolkit Demo Video"></img></a>
+<a href="https://www.youtube.com/watch?v=Srq5LtOH5UA"><img width="560" height="315" src="https://github.com/tektronix/tsp-toolkit/blob/main/resources/DemoVideoThumbnail.png?raw=true" altText="TSP Toolkit Demo Video"></img></a>
 
 
 ## TSP View Container
@@ -238,7 +238,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
     - Clone or download the ZIP file of the repository using the "Code" button
-    ![Clone or download from GitHub using the "Code" button](./images/ExampleRepoDownload.png)
+    ![Clone or download from GitHub using the "Code" button][pic-example-repo-download]
 
 ### Supported Locales
 
@@ -322,3 +322,4 @@ for more information.
 <!--Pics-->
 [pic-send-script-to-terminal]: https://github.com/tektronix/tsp-toolkit/blob/main/images/SendScriptToTerminal.png?raw=true
 [pic-open-folder]: https://github.com/tektronix/tsp-toolkit/blob/main/images/OpenFolder.png?raw=true
+[pic-example-repo-download]: https://github.com/tektronix/tsp-toolkit/blob/main/images/ExampleRepoDownload.png?raw=true

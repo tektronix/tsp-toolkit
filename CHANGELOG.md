@@ -19,7 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.1]
 
 ### Added
-- \[Beta] Add Data Export Feature
+- \[Beta] Data Export Feature
     - \[Beta] Add ability to save script output to a file
     - \[Beta] Add ability to save buffer contents to a file
     - \[Beta] Add ability to start and stop saving commands and output to a file
