@@ -462,10 +462,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
     reloadTreeData() {
         // Sort the connections by name
-        this._instruments.sort((a, b) => a.name.localeCompare(b.name))
+        // Sorting removed because it caused saved instruments to jump around in the list
+        // this._instruments.sort((a, b) => a.name.localeCompare(b.name))
         // Sort the connections by status
         // (we want to show higher values first, so invert the result)
-        this._instruments.sort((a, b) => -(a.status - b.status))
+        // this._instruments.sort((a, b) => -(a.status - b.status))
         this._onDidChangeTreeData.fire(undefined)
     }
 
