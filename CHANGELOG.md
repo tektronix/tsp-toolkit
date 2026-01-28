@@ -19,9 +19,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.1]
 
 ### Added
-- \[Beta] Add ability to save script output to a file
-- \[Beta] Add ability to save buffer contents to a file
-- \[Beta] Add ability to start and stop saving commands and output to a file
+- \[Beta] Data Export Feature
+    - \[Beta] Add ability to save script output to a file
+    - \[Beta] Add ability to save buffer contents to a file
+    - \[Beta] Add ability to start and stop saving commands and output to a file
 - Instrument login support for debugger
 
 ### Fixed
@@ -30,6 +31,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
 - (**tsp-toolkit-kic-cli**) Fixed issue with writing a zero-sized TSP script to an instrument
+
+### Changed
+- (**tsp-toolkit-kic-cli**) When discovering VISA instruments, enumerate from VISA multiple times
 
 ## [1.4.0]
 
