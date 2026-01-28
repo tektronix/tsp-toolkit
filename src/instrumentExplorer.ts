@@ -8,6 +8,7 @@ import { Log, SourceLocation } from "./logging"
 import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
+import { StatusBarManager } from "./statusBarManager"
 
 const DISCOVERY_TIMEOUT = 5
 
@@ -33,14 +34,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
         Log.trace("Instantiating TDP", LOGLOC)
         const treeDataProvider = InstrumentProvider.instance
         Log.trace("Refreshing TDP", LOGLOC)
-        treeDataProvider
-            .refresh(async () => await this.startDiscovery())
-            .catch((e) => {
-                Log.error(
-                    `Problem starting Instrument List data provider: ${e}`,
-                    LOGLOC,
-                )
-            })
 
         this.InstrumentsDiscoveryViewer = vscode.window.createTreeView<
             Instrument | Connection | InactiveInstrumentList
@@ -50,18 +43,17 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            this.InstrumentsDiscoveryViewer.message =
-                "Checking saved instrument connections..."
+            StatusBarManager.instance.showMessage("Checking saved instrument connections...", "progress")
             this.treeDataProvider
                 ?.refresh(async () => {
                     await this.startDiscovery()
                 })
                 .then(
                     () => {
-                        this.InstrumentsDiscoveryViewer.message = undefined
+                        StatusBarManager.instance.hide()
                     },
                     (e) => {
-                        this.InstrumentsDiscoveryViewer.message = undefined
+                        StatusBarManager.instance.hide()
                         Log.error(`Unable to refresh instrument explorer: ${e}`)
                     },
                 )
@@ -100,17 +92,16 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(removeInstrument)
         context.subscriptions.push(changeIPAddr)
 
-        this.InstrumentsDiscoveryViewer.message =
-            "Checking saved instrument connections..."
+        StatusBarManager.instance.showMessage("Checking saved instrument connections...", "progress")
 
         this.treeDataProvider
             ?.refresh(async () => await this.startDiscovery())
             .then(
                 () => {
-                    this.InstrumentsDiscoveryViewer.message = undefined
+                    StatusBarManager.instance.hide()
                 },
                 (e: Error) => {
-                    this.InstrumentsDiscoveryViewer.message = undefined
+                    StatusBarManager.instance.hide()
                     Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
                 },
             )
@@ -126,8 +117,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
         return new Promise<void>((resolve) => {
             if (!this._discoveryInProgress) {
-                this.InstrumentsDiscoveryViewer.message =
-                    "Discovering new instrument connections..."
+                StatusBarManager.instance.showMessage("Discovering new instrument connections...", "progress")
 
                 this._discoveryInProgress = true
                 const discover = child.spawn(
@@ -156,7 +146,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
                     if (code) {
                         Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
                     }
-                    this.InstrumentsDiscoveryViewer.message = ""
+                    StatusBarManager.instance.hide()
                     clearInterval(this.intervalID)
                     this._discoveryInProgress = false
                     resolve()
@@ -210,7 +200,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         })
 
         if (!newIP || newIP.trim().length === 0) {
-            vscode.window.showErrorMessage("IP address update cancelled or empty")
+            StatusBarManager.instance.showMessage("IP address update cancelled or empty", "error")
             Log.warn("IP address update cancelled or empty", {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -219,7 +209,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
 
         if (!item || !item.parent) {
-            vscode.window.showErrorMessage("Connection not defined")
+            StatusBarManager.instance.showMessage("Connection not defined", "error")
             Log.warn("Connection not defined", {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -230,7 +220,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         const trimmedIP = newIP.trim()
         const validationError = ConnectionHelper.instrConnectionStringValidator(trimmedIP)
         if (validationError) {
-            vscode.window.showErrorMessage("Invalid IP address or VISA resource string")
+            StatusBarManager.instance.showMessage("Invalid IP address or VISA resource string", "error")
             Log.warn(`Invalid IP address: ${validationError}`, {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -252,7 +242,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
             file: "instruments.ts",
             func: "InstrumentsExplorer.changeIP()",
         })
-        vscode.window.showInformationMessage(`IP address updated to ${trimmedIP}`)
+        StatusBarManager.instance.showMessage(`IP address updated to ${trimmedIP}`, "info")
     }
 
     public async saveWhileConnect(instrument: Instrument) {
