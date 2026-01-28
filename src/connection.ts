@@ -32,6 +32,16 @@ export enum ConnectionStatus {
     Connected,
 }
 
+export type LoginStatus =
+    | {
+          type: "Protected"
+          username: boolean
+          password: boolean
+          keyring?: string
+      }
+    | { type: "NotPrompted" }
+    | { type: "InUse" }
+
 export function connectionStatusIcon(
     status: ConnectionStatus | undefined,
 ): vscode.ThemeIcon {
@@ -199,11 +209,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    async checkLogin(timeout_ms?: number): Promise<{
-        username: boolean
-        password: boolean
-        keyring?: string
-    } | null> {
+    async checkLogin(timeout_ms?: number): Promise<LoginStatus> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.checkLogin()",
@@ -245,11 +251,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 }
             }, timeout_ms)
         }
-        const requirements = await new Promise<{
-            username: boolean
-            password: boolean
-            keyring?: string
-        } | null>((resolve) => {
+        const requirements = await new Promise<LoginStatus>((resolve) => {
             let data = ""
             this._background_process?.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
@@ -257,20 +259,24 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             this._background_process?.stdout?.on("data", (chunk) => {
                 data += chunk
             })
-            this._background_process?.on("close", (code) => {
-                const ret: {
-                    username: boolean
-                    password: boolean
-                    keyring?: string
-                } = {
-                    username: false,
-                    password: false,
-                    keyring: undefined,
+            this._background_process?.on("exit", (code) => {
+                if (code === 0) {
+                    resolve({ type: "NotPrompted" })
+                    return
                 }
-                if (code != 0) {
-                    if (data.length === 0) {
-                        resolve(null)
-                        return
+                if (code === 2) {
+                    resolve({ type: "InUse" })
+                    return
+                }
+                if (code === 3 || code === 4) {
+                    const ret: {
+                        username: boolean
+                        password: boolean
+                        keyring?: string
+                    } = {
+                        username: false,
+                        password: false,
+                        keyring: undefined,
                     }
                     const d = data.toString()
                     const [, details] = d.split(": ")
@@ -286,8 +292,16 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     if (d.search(/USERNAME/g) !== -1) {
                         ret.username = true
                     }
+                    resolve({
+                        type: "Protected",
+                        username: ret.username,
+                        password: ret.password,
+                        keyring: ret.keyring,
+                    })
+                    return
                 }
-                resolve(ret)
+                resolve({ type: "NotPrompted" })
+                return
             })
         })
 
@@ -328,13 +342,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return credentials
         }
 
-        if (reqs.username) {
-            credentials.username = await vscode.window.showInputBox({
-                title: "Enter Username",
-                placeHolder: "username",
-                prompt: "Enter the username for the instrument to which you are trying to connect.",
-            })
-        }
+        // if (reqs.username) {
+        //     credentials.username = await vscode.window.showInputBox({
+        //         title: "Enter Username",
+        //         placeHolder: "username",
+        //         prompt: "Enter the username for the instrument to which you are trying to connect.",
+        //         ignoreFocusOut: true,
+        //     })
+        // }
 
         if (reqs.password) {
             credentials.password = await vscode.window.showInputBox({
@@ -342,6 +357,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 placeHolder: "password",
                 password: true,
                 prompt: "Enter the password for the instrument to which you are trying to connect.",
+                ignoreFocusOut: true,
             })
         }
 
@@ -618,13 +634,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return dump_path
     }
 
-    async connect(name?: string) {
+    async connect(name?: string): Promise<boolean> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
         this.status = ConnectionStatus.Connected
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
-            await vscode.window.withProgress(
+            const result = await vscode.window.withProgress(
                 {
                     cancellable: true,
                     location: vscode.ProgressLocation.Notification,
@@ -638,13 +654,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         if (this._background_process) {
                             this._background_process?.kill("SIGTERM")
                         }
-                        this.status = ConnectionStatus.Active
+                        this.status = orig_status
                     })
-                    //Dump output queue if enabled
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
-                        return new Promise((resolve) => resolve(false))
+                        this.status = orig_status
+                        return false
                     }
+                    //Dump output queue if enabled
                     let dump_path = undefined
                     if (
                         vscode.workspace
@@ -664,13 +680,24 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     })
 
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
-                        return new Promise((resolve) => resolve(false))
+                        this.status = orig_status
+                        return false
                     }
 
                     const login_required = await this.checkLogin()
-
-                    if (login_required !== null) {
+                    if (login_required.type === "NotPrompted") {
+                        Log.debug("No login required", LOGLOC)
+                    } else if (login_required.type === "InUse") {
+                        vscode.window.showErrorMessage(
+                            `Instrument at ${this._addr} already in use. Make sure you logout at other locations before connecting.`,
+                        )
+                        Log.error(
+                            "Connection failed: instrument already in use.",
+                            LOGLOC,
+                        )
+                        this.status = orig_status
+                        return false
+                    } else if (login_required.type === "Protected") {
                         for (let i = 1; i <= 3; i++) {
                             //TODO: Prompt for the required information (if any)
                             if (i > 1 && login_required.keyring) {
@@ -684,9 +711,37 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                                 await this.promptDetails(login_required)
 
                             this._keyring = await this.login(login_details)
-                            if (this._keyring !== undefined) {
-                                // null indicates login was not necessary, though we shouldn't get null
+
+                            if (this._keyring) {
                                 break
+                            }
+                            if (
+                                (this._keyring === undefined ||
+                                    this._keyring === null) &&
+                                i < 3
+                            ) {
+                                vscode.window.showWarningMessage(
+                                    `Credentials incorrect for instrument at ${this._addr}, please try again.`,
+                                )
+                                Log.error(
+                                    "Credentials are incorrect, please try again.",
+                                    LOGLOC,
+                                )
+                            }
+                            if (
+                                (this._keyring === undefined ||
+                                    this._keyring === null) &&
+                                i == 3
+                            ) {
+                                vscode.window.showErrorMessage(
+                                    `Unable to connect to instrument at ${this._addr}, please check your credentials and try again.`,
+                                )
+                                Log.error(
+                                    "Connection failed: unable to reach requested instrument, user exceeded login attempts.",
+                                    LOGLOC,
+                                )
+                                this.status = orig_status
+                                return false
                             }
                         }
                     } else {
@@ -698,15 +753,15 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             LOGLOC,
                         )
                         this.status = orig_status
-                        return new Promise((resolve) => resolve(false))
+                        return false
                     }
                     //Get instrument info
                     progress.report({
                         message: "Getting instrument information",
                     })
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
-                        return new Promise((resolve) => resolve(false))
+                        this.status = orig_status
+                        return false
                     }
 
                     const info = await this.ping()
@@ -715,8 +770,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         vscode.window.showErrorMessage(
                             `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
                         )
-                        this.status = ConnectionStatus.Active
-                        return new Promise((resolve) => resolve(false))
+                        this.status = orig_status
+                        return false
                     }
 
                     if (!this._parent) {
@@ -749,8 +804,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
                     //Connect terminal
                     if (cancel.isCancellationRequested) {
-                        this.status = ConnectionStatus.Active
-                        return new Promise((resolve) => resolve(false))
+                        this.status = orig_status
+                        return false
                     }
 
                     const terminal_args = [
@@ -837,10 +892,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     progress.report({
                         message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
                     })
+
+                    return true
                 },
             )
+            return result ?? false
         } else {
             this.showTerminal()
+            return true
         }
     }
 
@@ -1048,39 +1107,34 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         )
     }
 
-    async sendScript(filepath: string) {
-        if (!this._terminal) {
-            await this.connect()
+    sendScript(filepath: string) {
+        if (this._terminal) {
+            this.showTerminal()
+            this._terminal?.sendText(`.script "${filepath}"`)
         }
-        this.showTerminal()
-        this._terminal?.sendText(`.script "${filepath}"`)
     }
 
-    async connectAndExit() {
-        if (!this._terminal) {
-            await this.connect()
+    async exitConnection() {
+        if (this._terminal) {
+            this._terminal?.sendText(".exit")
+            await new Promise<void>((resolve) => {
+                const checkTerminal = setInterval(() => {
+                    if (this._terminal === undefined) {
+                        clearInterval(checkTerminal)
+                        resolve()
+                    }
+                }, 100) // Check every 100ms
+            })
         }
-        this.showTerminal()
-        this._terminal?.sendText(".exit")
-        await new Promise<void>((resolve) => {
-            const checkTerminal = setInterval(() => {
-                if (this._terminal === undefined) {
-                    clearInterval(checkTerminal)
-                    resolve()
-                }
-            }, 100) // Check every 100ms
-        })
     }
 
-    async getNodes(filepath: string) {
-        if (!this._terminal) {
-            await this.connect()
+    getNodes(filepath: string) {
+        if (this._terminal) {
+            this.showTerminal()
+            this._terminal?.sendText(
+                `.nodes "${join(filepath, ".vscode/settings.json")}"`,
+            )
         }
-
-        this.showTerminal()
-        this._terminal?.sendText(
-            `.nodes "${join(filepath, ".vscode/settings.json")}"`,
-        )
     }
 
     /**
