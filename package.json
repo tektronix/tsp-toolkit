@@ -206,8 +206,8 @@
                 "icon": "$(edit)"
             },
             {
-                "command": "InstrumentsExplorer.updateIPAddr",
-                "title": "Update IP Address",
+                "command": "InstrumentsExplorer.updateInstrumentAddr",
+                "title": "Update Instrument Address",
                 "icon": "$(edit)"
             },
             {
@@ -451,7 +451,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.updateIPAddr",
+                    "command": "InstrumentsExplorer.updateInstrumentAddr",
                     "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && viewItem =~ /CONN.*Active.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },
@@ -673,12 +673,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.2-4",
-        "@tektronix/kic-cli-linux-x64": "0.21.2-4",
-        "@tektronix/kic-cli-win32-x64": "0.21.2-4",
-        "@tektronix/script-gen-darwin-arm64": "0.1.1-0",
-        "@tektronix/script-gen-linux-x64": "0.1.1-0",
-        "@tektronix/script-gen-win32-x64": "0.1.1-0"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.2",
+        "@tektronix/kic-cli-linux-x64": "0.21.2",
+        "@tektronix/kic-cli-win32-x64": "0.21.2",
+        "@tektronix/script-gen-darwin-arm64": "0.1.1",
+        "@tektronix/script-gen-linux-x64": "0.1.1",
+        "@tektronix/script-gen-win32-x64": "0.1.1"
     },
     "extensionDependencies": [
         "sumneko.lua"
