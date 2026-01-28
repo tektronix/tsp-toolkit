@@ -17,6 +17,10 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
 * **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection.
 * **Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
 * **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups.
+* **\[Beta] Data Export**
+    - **\[Beta]** Save script output to a file
+    - **\[Beta]** Save buffer contents to a file
+    - **\[Beta]** Start and stop saving commands and output to a file
 
 ## Quick Start
 
@@ -109,7 +113,7 @@ To execute your TSP scripts on connected instruments, you can perform one of the
 
 1. Right-click a TSP file in the explorer or editor and select "Send Script to Terminal"
 2. Click the Run icon in the editor title bar when a TSP file is open
-3. \[Beta] Save the output of a script to a file by clicking on the "\[Beta] Save TSP Script Output" option under the run/debug icon drop down at the top of the editor
+3. **\[Beta]** Save the output of a script to a file by clicking on the "\[Beta] Save TSP Script Output" option under the run/debug icon drop down at the top of the editor
 
 ### Automated TSP Script Generation
 
@@ -233,6 +237,8 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
+    - Clone or download the ZIP file of the repository using the "Code" button
+    ![Clone or download from GitHub using the "Code" button](./images/ExampleRepoDownload.png)
 
 ### Supported Locales
 
