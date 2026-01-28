@@ -19,7 +19,13 @@ import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
 import { isMacOS } from "./utility"
-import { checkSystemDependencies } from "./dependencyChecker"
+import {
+    checkSystemDependencies,
+    checkVisaInstallation,
+    checkVisaInstallationLinux,
+    isLinux,
+    isWindows,
+} from "./dependencyChecker"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -67,12 +73,46 @@ export async function createTerminal(
         name = connection_details.name
     }
 
-    if (connection.type === IoType.Visa && isMacOS) {
-        vscode.window.showErrorMessage(
-            "VISA connection is not supported on macOS.",
-        )
-        Log.error("Connection failed: VISA is not supported on macOS.", LOGLOC)
-        return
+    // Check VISA availability if connecting via VISA protocol
+    if (connection.type === IoType.Visa) {
+        const ignoreMissingVisa = vscode.workspace
+            .getConfiguration("tsp")
+            .get<boolean>("ignoreMissingVisa", false)
+
+        if (!ignoreMissingVisa) {
+            let hasVisa = false
+            if (isWindows) {
+                hasVisa = await checkVisaInstallation()
+            } else if (isLinux) {
+                hasVisa = await checkVisaInstallationLinux()
+            } else {
+                // macOS or other platforms - assume VISA not available
+                hasVisa = false
+            }
+
+            if (!hasVisa) {
+                Log.error(
+                    "VISA not installed but required for this connection",
+                    LOGLOC,
+                )
+                await vscode.window
+                    .showErrorMessage(
+                        "VISA is not installed on your system. Please install VISA to use this connection method, or use raw sockets to connect instead.",
+                        "Download VISA",
+                        "Close",
+                    )
+                    .then((selection) => {
+                        if (selection === "Download VISA") {
+                            vscode.env.openExternal(
+                                vscode.Uri.parse(
+                                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                                ),
+                            )
+                        }
+                    })
+                return
+            }
+        }
     }
     const conn: Connection = connection
 

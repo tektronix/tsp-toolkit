@@ -9,7 +9,6 @@ import { LOG_DIR } from "./utility"
 import { Log } from "./logging"
 import { Instrument } from "./instrument"
 import { InstrumentProvider } from "./instrumentProvider"
-import { checkVisaInstallation, checkVisaInstallationLinux, isLinux, isWindows } from "./dependencyChecker"
 
 /**
  * The possible statuses of a connection interface/protocol
@@ -623,38 +622,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
         this.status = ConnectionStatus.Connected
-        
-        // Check VISA availability if connecting via VISA protocol
-        if (this._type === IoType.Visa) {
-            const ignoreMissingVisa = vscode.workspace.getConfiguration("tsp").get<boolean>("ignoreMissingVisa", false)
-            
-            if (!ignoreMissingVisa) {
-                let hasVisa = false
-                if (isWindows) {
-                    hasVisa = await checkVisaInstallation()
-                } else if (isLinux) {
-                    hasVisa = await checkVisaInstallationLinux()
-                } else {
-                    // macOS or other platforms - assume VISA not available
-                    hasVisa = false
-                }
-                
-                if (!hasVisa) {
-                    Log.error("VISA not installed but required for this connection", LOGLOC)
-                    this.status = orig_status
-                    await vscode.window.showErrorMessage(
-                        "VISA is not installed on your system. Please install VISA to use this connection method, or switch to LAN/USB protocol.",
-                        "Download VISA",
-                        "Close"
-                    ).then((selection) => {
-                        if (selection === "Download VISA") {
-                            vscode.env.openExternal(vscode.Uri.parse("https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html"))
-                        }
-                    })
-                    return
-                }
-            }
-        }
         
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
