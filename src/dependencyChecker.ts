@@ -36,7 +36,6 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         // VS Code is x64 only, so we only need to check x64 runtime
         const registryPaths = [
             "HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64",
-            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\X64",
         ]
 
         for (const path of registryPaths) {

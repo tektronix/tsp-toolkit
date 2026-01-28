@@ -18,6 +18,7 @@ import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { isMacOS } from "./utility"
 import {
     checkSystemDependencies,
     checkVisaInstallation,
@@ -72,6 +73,13 @@ export async function createTerminal(
         name = connection_details.name
     }
 
+    if (connection.type === IoType.Visa && isMacOS) {
+        vscode.window.showErrorMessage(
+            "VISA connection is not supported on macOS.",
+        )
+        Log.error("Connection failed: VISA is not supported on macOS.", LOGLOC)
+        return
+    }
     // Check VISA availability if connecting via VISA protocol
     if (connection.type === IoType.Visa) {
         const ignoreMissingVisa = vscode.workspace
