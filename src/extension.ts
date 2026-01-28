@@ -18,7 +18,6 @@ import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
-import { isMacOS } from "./utility"
 import {
     checkSystemDependencies,
     checkVisaInstallation,
