@@ -16,14 +16,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.4.2]
+
+### Added
+- \[Beta] Added activation dependency check for Linux and Windows
+
 ## [1.4.1]
 
 ### Added
-- \[Beta] Add ability to save script output to a file
-- \[Beta] Add ability to save buffer contents to a file
-- \[Beta] Add ability to start and stop saving commands and output to a file
+- \[Beta] Data Export Feature
+    - \[Beta] Add ability to save script output to a file
+    - \[Beta] Add ability to save buffer contents to a file
+    - \[Beta] Add ability to start and stop saving commands and output to a file
 - Instrument login support for debugger
-- \[Beta] Added activation dependency check for Linux and Windows
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
@@ -31,6 +36,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
 - (**tsp-toolkit-kic-cli**) Fixed issue with writing a zero-sized TSP script to an instrument
+
+### Changed
+- (**tsp-toolkit-kic-cli**) When discovering VISA instruments, enumerate from VISA multiple times
 
 ## [1.4.0]
 
@@ -436,7 +444,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
 [1.4.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.0
 [1.3.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.1
