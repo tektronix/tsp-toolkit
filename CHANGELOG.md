@@ -19,7 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.2]
 
 ### Added
-- \[Beta] Added activation dependency check for Linux and Windows
+- Added activation dependency check for Linux and Windows
 
 ## [1.4.1]
 
