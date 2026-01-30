@@ -638,6 +638,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
         this.status = ConnectionStatus.Connected
+        
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
             const result = await vscode.window.withProgress(

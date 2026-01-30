@@ -359,6 +359,12 @@
                         "60 Hz"
                     ],
                     "description": "The power-line frequency of the outlet your instruments are plugged into."
+                },
+                "tsp.ignoreMissingVisa": {
+                    "type": "boolean",
+                    "default": false,
+                    "scope": "application",
+                    "description": "Ignore the VISA installation check notification. VISA is optional and only required for VISA protocol instrument communication."
                 }
             }
         },

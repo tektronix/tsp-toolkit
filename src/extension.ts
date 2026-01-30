@@ -19,6 +19,13 @@ import { activateTspDebug } from "./activateTspDebug"
 import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
 import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
 import { isMacOS } from "./utility"
+import {
+    checkSystemDependencies,
+    checkVisaInstallation,
+    checkVisaInstallationLinux,
+    isLinux,
+    isWindows,
+} from "./dependencyChecker"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -77,7 +84,49 @@ export async function createTerminal(
         Log.error(`Connection failed: ${errorMsg}`, LOGLOC)
         return Promise.resolve(undefined)
     }
+    
+    // Check VISA availability if connecting via VISA protocol
+    if (conn.type === IoType.Visa) {
+        const ignoreMissingVisa = vscode.workspace
+            .getConfiguration("tsp")
+            .get<boolean>("ignoreMissingVisa", false)
 
+        if (!ignoreMissingVisa) {
+            let hasVisa = false
+            if (isWindows) {
+                hasVisa = await checkVisaInstallation()
+            } else if (isLinux) {
+                hasVisa = await checkVisaInstallationLinux()
+            } else {
+                // macOS or other platforms - assume VISA not available
+                hasVisa = false
+            }
+
+            if (!hasVisa) {
+                Log.error(
+                    "VISA not installed but required for this connection",
+                    LOGLOC,
+                )
+                await vscode.window
+                    .showErrorMessage(
+                        "VISA is not installed on your system. Please install VISA to use this connection method, or use raw sockets to connect instead.",
+                        "Download VISA",
+                        "Close",
+                    )
+                    .then((selection) => {
+                        if (selection === "Download VISA") {
+                            vscode.env.openExternal(
+                                vscode.Uri.parse(
+                                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                                ),
+                            )
+                        }
+                    })
+                return
+            }
+        }
+    }
+    
     if (await conn.connect(name)) {
         return conn
     }
@@ -120,6 +169,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Updating extension settings", LOGLOC)
     updateExtensionSettings()
+
+    // Check for system dependencies
+    Log.debug("Checking system dependencies", LOGLOC)
+    void checkSystemDependencies()
 
     Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
