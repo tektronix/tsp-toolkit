@@ -162,9 +162,12 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 }
                 // Update the address if it changed for this connection
                 const matchingConnection = instrument.connections.find(
-                    (c) => c.type === r.io_type
+                    (c) => c.type === r.io_type,
                 )
-                if (matchingConnection && r.instr_address !== matchingConnection.addr) {
+                if (
+                    matchingConnection &&
+                    r.instr_address !== matchingConnection.addr
+                ) {
                     r.instr_address = matchingConnection.addr
                 }
             }
@@ -560,29 +563,41 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         )
                     } else {
                         // Parse discovered instruments
-                        const discoveredInstrInfos = InstrumentProvider.parseDiscoveredInstruments(
-                            jsonRPCResponse,
-                        )
+                        const discoveredInstrInfos =
+                            InstrumentProvider.parseDiscoveredInstruments(
+                                jsonRPCResponse,
+                            )
 
                         // Compare with existing instruments to detect IP address changes
                         for (const discovered of discoveredInstrInfos) {
                             const existing = this._instruments.find(
-                                (i) => i.info.serial_number === discovered.serial_number
+                                (i) =>
+                                    i.info.serial_number ===
+                                    discovered.serial_number,
                             )
-                            
+
                             if (existing) {
-                                const existingAddr = existing.connections[0]?.addr
+                                const existingAddr =
+                                    existing.connections[0]?.addr
                                 const discoveredAddr = discovered.instr_address
-                                
-                                if (existingAddr && existingAddr !== discoveredAddr) {
+
+                                if (
+                                    existingAddr &&
+                                    existingAddr !== discoveredAddr
+                                ) {
                                     // Update the saved instruments configuration if this instrument was saved
                                     if (existing.saved) {
-                                        this.updateSaved(existing).catch((err) => {
-                                            Log.error(`Failed to update saved instrument: ${err}`, {
-                                                file: "instruments.ts",
-                                                func: "InstrumentProvider.getContent()",
-                                            })
-                                        })
+                                        this.updateSaved(existing).catch(
+                                            (err) => {
+                                                Log.error(
+                                                    `Failed to update saved instrument: ${err}`,
+                                                    {
+                                                        file: "instruments.ts",
+                                                        func: "InstrumentProvider.getContent()",
+                                                    },
+                                                )
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -625,7 +640,8 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
      * to extract the discovered instrument details
      */
     private static parseDiscoveredInstruments(
-        jsonRPCResponse: JSONRPCResponse): InstrInfo[] {
+        jsonRPCResponse: JSONRPCResponse,
+    ): InstrInfo[] {
         const discovery_list: InstrInfo[] = []
         const res: unknown = jsonRPCResponse.result
         if (typeof res === "string") {
@@ -733,14 +749,14 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             vscode.window.showErrorMessage(String(err_msg))
         }
     }
-    async sendToAllActiveTerminals(filepath: string) {
-        const promises: Promise<void>[] = []
-        for (const i of this._instruments) {
-            promises.push(i.sendScript(filepath))
-        }
+    // async sendToAllActiveTerminals(filepath: string) {
+    //     const promises: Promise<void>[] = []
+    //     for (const i of this._instruments) {
+    //         promises.push(i.sendScript(filepath))
+    //     }
 
-        await Promise.allSettled(promises)
-    }
+    //     await Promise.allSettled(promises)
+    // }
 
     private async saveInstrumentToList(instr: Instrument) {
         try {
