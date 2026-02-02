@@ -8,7 +8,7 @@ import { Log, SourceLocation } from "./logging"
 import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
-import { StatusBarManager } from "./statusBarManager"
+import { StatusBarManager, StatusType } from "./statusBarManager"
 
 const DISCOVERY_TIMEOUT = 5
 
@@ -43,7 +43,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            StatusBarManager.instance.showMessage("Checking saved instrument connections...", "progress")
+            StatusBarManager.instance.showMessage("Checking saved instrument connections...", StatusType.Progress)
             this.treeDataProvider
                 ?.refresh(async () => {
                     await this.startDiscovery()
@@ -92,7 +92,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(removeInstrument)
         context.subscriptions.push(changeIPAddr)
 
-        StatusBarManager.instance.showMessage("Checking saved instrument connections...", "progress")
+        StatusBarManager.instance.showMessage("Checking saved instrument connections...", StatusType.Progress)
 
         this.treeDataProvider
             ?.refresh(async () => await this.startDiscovery())
@@ -117,7 +117,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
         return new Promise<void>((resolve) => {
             if (!this._discoveryInProgress) {
-                StatusBarManager.instance.showMessage("Discovering new instrument connections...", "progress")
+                StatusBarManager.instance.showMessage("Discovering new instrument connections...", StatusType.Progress)
 
                 this._discoveryInProgress = true
                 const discover = child.spawn(
@@ -200,7 +200,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
         })
 
         if (!newIP || newIP.trim().length === 0) {
-            StatusBarManager.instance.showMessage("IP address update cancelled or empty", "error")
             Log.warn("IP address update cancelled or empty", {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -209,7 +208,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         }
 
         if (!item || !item.parent) {
-            StatusBarManager.instance.showMessage("Connection not defined", "error")
+            vscode.window.showErrorMessage("Connection not defined")
             Log.warn("Connection not defined", {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -220,7 +219,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
         const trimmedIP = newIP.trim()
         const validationError = ConnectionHelper.instrConnectionStringValidator(trimmedIP)
         if (validationError) {
-            StatusBarManager.instance.showMessage("Invalid IP address or VISA resource string", "error")
+            vscode.window.showErrorMessage("Invalid IP address or VISA resource string")
             Log.warn(`Invalid IP address: ${validationError}`, {
                 file: "instruments.ts",
                 func: "InstrumentsExplorer.changeIP()",
@@ -242,7 +241,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
             file: "instruments.ts",
             func: "InstrumentsExplorer.changeIP()",
         })
-        StatusBarManager.instance.showMessage(`IP address updated to ${trimmedIP}`, "info")
+        StatusBarManager.instance.showMessage(`IP address updated to ${trimmedIP}`, StatusType.Info)
     }
 
     public async saveWhileConnect(instrument: Instrument) {
