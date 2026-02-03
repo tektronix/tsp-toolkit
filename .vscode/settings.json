@@ -25,7 +25,8 @@
         "IIDN",
         "LOGLOC",
         "rclick",
-        "TCPIP"
+        "TCPIP",
+        "treeview"
     ],
     "Lua.workspace.ignoreDir": [],
     "Lua.diagnostics.libraryFiles": "Disable",
