@@ -210,8 +210,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     c.status === ConnectionStatus.Connected ||
                     c.status === ConnectionStatus.Inactive,
             )
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .sort((a, b) => -(a.status - b.status))
             .map((x) => {
                 return {
                     label: `${x.name}@${x.addr}`,
