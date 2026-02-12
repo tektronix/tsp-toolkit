@@ -21,6 +21,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Added activation dependency check for Linux and Windows
 
+### Fixed
+- (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
+
 ## [1.4.1]
 
 ### Added
