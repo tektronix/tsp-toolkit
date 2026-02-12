@@ -19,7 +19,7 @@ implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
 
     constructor() {
         this._savedConfigs = new SavedScriptGenManager().loadSavedConfigs() // load saved configurations from settings.json to populate I-V Characterization node
-        this.ivCharNode = new SelectScriptGenInstance( //intialize the I-V Characterization node
+        this.ivCharNode = new SelectScriptGenInstance( //initialize the I-V Characterization node
             "I-V Characterization",
             vscode.TreeItemCollapsibleState.Expanded,
             "SavedIVCharTreeItem",
