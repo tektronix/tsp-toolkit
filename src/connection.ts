@@ -829,6 +829,22 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         terminal_args.push("--keyring", this._keyring)
                     }
 
+                    if (
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("reset") === true
+                    ) {
+                        terminal_args.push("--reset", "true")
+                    }
+
+                    if (
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("clearErrorQueue") === true
+                    ) {
+                        terminal_args.push("--clear-error-queue", "true")
+                    }
+
                     Log.debug("Starting VSCode Terminal", LOGLOC)
                     this._terminal = vscode.window.createTerminal({
                         name: this._parent.name,
