@@ -306,7 +306,19 @@
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
-                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "description": "Collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "scope": "application"
+                },
+                "tsp.reset": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Reset instrument on connection.",
+                    "scope": "application"
+                },
+                "tsp.clearErrorQueue": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Clear error queue on connection.",
                     "scope": "application"
                 },
                 "tsp.tspLinkSystemConfigurations": {
