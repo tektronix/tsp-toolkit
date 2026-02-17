@@ -471,6 +471,20 @@ export class ConfigWebView implements WebviewViewProvider {
             (system) => !system.name,
         )
         if (systemWithEmptyName) {
+            // Check if all node models are supported before asking for system name
+            const supportedModels = Object.keys(SUPPORTED_MODELS_DETAILS)
+            const nodes = systemWithEmptyName.nodes || []
+            const unsupportedNodes = nodes.filter(
+                (node) => !supportedModels.includes(node.mainframe)
+            )
+            if (unsupportedNodes.length > 0) {
+                vscode.window.showErrorMessage(
+                    `Cannot add new System. The following node model(s) are not supported: ${unsupportedNodes
+                        .map((n) => n.mainframe)
+                        .join(", ")}`
+                )
+                return
+            }
             const name = await this.getNewSystemName()
             if (name) {
                 systemWithEmptyName.name = name

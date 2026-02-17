@@ -7,8 +7,7 @@ import {
     ConnectionDetails,
     ConnectionHelper,
     IoType,
-    NO_OPEN_WORKSPACE_MESSAGE,
-    SUPPORTED_MODELS_DETAILS,
+    NO_OPEN_WORKSPACE_MESSAGE,    
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
@@ -332,21 +331,6 @@ export function activate(context: vscode.ExtensionContext) {
                     return
                 }
 
-                const checkAndProceed = (connection: Connection | undefined) => {
-                    if (!connection) return
-                    // Use the parent Instrument to get model info
-                    const model = connection.parent?.info?.model
-                    if (!model || !Object.keys(SUPPORTED_MODELS_DETAILS).includes(model)) {
-                        vscode.window.showErrorMessage(
-                            `The connected instrument model "${model ?? "Unknown"}" does not have language feature support.`
-                        )
-                        return
-                    }
-                    connection.getNodes(
-                        vscode.workspace.workspaceFolders![0].uri.fsPath,
-                    )
-                }
-
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
@@ -361,10 +345,16 @@ export function activate(context: vscode.ExtensionContext) {
                             break
                         }
                     }
-                    checkAndProceed(connection)
+                    if (connection) {
+                        connection.getNodes(
+                            vscode.workspace.workspaceFolders[0].uri.fsPath,
+                        )
+                    }                    
                 } else {
                     const conn = await pickConnection()
-                    checkAndProceed(conn)
+                    conn?.getNodes(
+                        vscode.workspace.workspaceFolders[0].uri.fsPath,
+                    )                    
                 }
             },
         },
