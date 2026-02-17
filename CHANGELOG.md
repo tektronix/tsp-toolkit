@@ -16,6 +16,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.4.2]
+
+### Added
+- Added activation dependency check for Linux and Windows
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
+
 ## [1.4.1]
 
 ### Added
@@ -27,6 +35,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+- Stop instruments from shifting in Instrument Explorer view.
 - (**tsp-toolkit-kic-cli**) Reduce number of messages send to instrument when closing debugger
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
@@ -439,7 +448,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
 [1.4.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.0
 [1.3.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.1
