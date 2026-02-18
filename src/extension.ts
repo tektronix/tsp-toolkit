@@ -7,7 +7,7 @@ import {
     ConnectionDetails,
     ConnectionHelper,
     IoType,
-    NO_OPEN_WORKSPACE_MESSAGE,    
+    NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
@@ -345,16 +345,17 @@ export function activate(context: vscode.ExtensionContext) {
                             break
                         }
                     }
+                    
                     if (connection) {
                         connection.getNodes(
                             vscode.workspace.workspaceFolders[0].uri.fsPath,
                         )
-                    }                    
+                    }
                 } else {
                     const conn = await pickConnection()
                     conn?.getNodes(
                         vscode.workspace.workspaceFolders[0].uri.fsPath,
-                    )                    
+                    )
                 }
             },
         },

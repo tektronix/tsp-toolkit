@@ -471,20 +471,61 @@ export class ConfigWebView implements WebviewViewProvider {
             (system) => !system.name,
         )
         if (systemWithEmptyName) {
-            // Check if all node models are supported before asking for system name
-            const supportedModels = Object.keys(SUPPORTED_MODELS_DETAILS)
-            const nodes = systemWithEmptyName.nodes || []
-            const unsupportedNodes = nodes.filter(
-                (node) => !supportedModels.includes(node.mainframe)
-            )
+            // Validate localNode
+            const localNodeModel = systemWithEmptyName.localNode;
+            if (!localNodeModel || !SUPPORTED_MODELS_DETAILS[localNodeModel]) {
+                vscode.window.showErrorMessage(
+                    `Cannot add new System. The local node model "${localNodeModel}" is not supported.`
+                );
+                await this.removeSystemWithEmptyName(existingSystems, systemWithEmptyName);
+                return;
+            }
+
+            // Validate all slot modules for localNode if slots and moduleOptions are present
+            const localNodeSlots = systemWithEmptyName.slots;
+            const localNodeModuleOptions = SUPPORTED_MODELS_DETAILS[localNodeModel].moduleOptions;
+            if (localNodeSlots && localNodeModuleOptions) {
+                const unsupportedLocalNodeModules = localNodeSlots.filter(
+                    (slot) => !localNodeModuleOptions.includes(slot.module)
+                );
+                if (unsupportedLocalNodeModules.length > 0) {
+                    vscode.window.showErrorMessage(
+                        `Cannot add new System. The following local node slot module(s) are not supported for model "${localNodeModel}": ${unsupportedLocalNodeModules
+                            .map((s) => s.module)
+                            .join(", ")}`
+                    );
+                    await this.removeSystemWithEmptyName(existingSystems, systemWithEmptyName);
+                    return;
+                }
+            }
+
+            // Validate each node's mainframe and, if present, its slot modules
+            const nodes = systemWithEmptyName.nodes || [];
+            const unsupportedNodes = nodes.filter((node) => {
+                // Check if mainframe is a supported model
+                if (!SUPPORTED_MODELS_DETAILS[node.mainframe]) {
+                    return true;
+                }
+                // Check all slot modules for this node if slots and moduleOptions are present
+                const slots = node.slots;
+                const moduleOptions = SUPPORTED_MODELS_DETAILS[node.mainframe].moduleOptions;
+                if (slots && moduleOptions) {
+                    return slots.some(
+                        (slot) => !moduleOptions.includes(slot.module)
+                    );
+                }
+                return false;
+            });
             if (unsupportedNodes.length > 0) {
                 vscode.window.showErrorMessage(
-                    `Cannot add new System. The following node model(s) are not supported: ${unsupportedNodes
+                    `Cannot add new System. The following node(s) are not supported: ${unsupportedNodes
                         .map((n) => n.mainframe)
                         .join(", ")}`
-                )
-                return
+                );
+                await this.removeSystemWithEmptyName(existingSystems, systemWithEmptyName);
+                return;
             }
+            
             const name = await this.getNewSystemName()
             if (name) {
                 systemWithEmptyName.name = name
@@ -498,20 +539,23 @@ export class ConfigWebView implements WebviewViewProvider {
                 this.render_new_system(systemWithEmptyName.name)
                 await this.activateSystem(systemWithEmptyName.name)
             } else {
+                await this.removeSystemWithEmptyName(existingSystems, systemWithEmptyName);
+            }            
+        }
+    }
+
+    private async removeSystemWithEmptyName(existingSystems: SystemInfo[], systemWithEmptyName: SystemInfo) {
                 const updatedSystems = existingSystems.filter(
                     (system) => system !== systemWithEmptyName,
-                )
+                );
                 await vscode.workspace
                     .getConfiguration("tsp")
                     .update(
                         "tspLinkSystemConfigurations",
                         updatedSystems,
                         false,
-                    )
+                    );
             }
-        }
-    }
-
     private async getNewSystemName() {
         const existingSystems: SystemInfo[] =
             vscode.workspace
