@@ -834,7 +834,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             .getConfiguration("tsp")
                             .get("reset") === true
                     ) {
-                        terminal_args.push("--reset", "true")
+                        terminal_args.push("--reset")
                     }
 
                     if (
@@ -842,7 +842,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             .getConfiguration("tsp")
                             .get("clearErrorQueue") === true
                     ) {
-                        terminal_args.push("--clear-error-queue", "true")
+                        terminal_args.push("--clear-error-queue")
                     }
 
                     Log.debug("Starting VSCode Terminal", LOGLOC)
