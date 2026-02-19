@@ -297,6 +297,21 @@ export function activate(context: vscode.ExtensionContext) {
         {
             name: "tsp.sendFile",
             cb: async (e: vscode.Uri) => {
+                // If no file URI is provided (e.g., from command palette), use active editor
+                if (!e) {
+                    const activeEditor = vscode.window.activeTextEditor
+                    if (
+                        activeEditor &&
+                        activeEditor.document.uri.fsPath.endsWith(".tsp")
+                    ) {
+                        e = activeEditor.document.uri
+                    } else {
+                        vscode.window.showErrorMessage(
+                            "No file selected. Please open a TSP file.",
+                        )
+                        return
+                    }
+                }
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)

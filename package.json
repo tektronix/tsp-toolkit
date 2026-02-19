@@ -291,6 +291,12 @@
                 "title": "Delete session",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.deleteAllScriptGenSessions",
+                "title": "Delete all sessions",
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
@@ -439,10 +445,6 @@
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "false"
-                },
-                {
-                    "command": "tsp.sendFile",
                     "when": "false"
                 },
                 {

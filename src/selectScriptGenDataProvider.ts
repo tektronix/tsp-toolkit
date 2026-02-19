@@ -71,6 +71,10 @@ implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
 
         this.refresh()
     }
+    deleteAllTreeItems(): void {
+        this._savedConfigs["I-V Characterization"] = []
+        this.refresh()
+    }
 
     setActiveStatus(name: string | undefined): void {
         this.activeScriptName = name
