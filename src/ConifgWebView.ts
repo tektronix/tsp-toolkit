@@ -488,47 +488,65 @@ export class ConfigWebView implements WebviewViewProvider {
             const localNodeSlots = systemWithEmptyName.slots
             const localNodeModuleOptions =
                 SUPPORTED_MODELS_DETAILS[localNodeModel].moduleOptions
+            const errorMessages: string[] = []
             if (localNodeSlots && localNodeModuleOptions) {
                 const unsupportedLocalNodeModules = localNodeSlots.filter(
                     (slot) => !localNodeModuleOptions.includes(slot.module),
                 )
                 if (unsupportedLocalNodeModules.length > 0) {
-                    vscode.window.showErrorMessage(
-                        `Cannot add new System. The following local node slot module(s) are not supported for model "${localNodeModel}": ${unsupportedLocalNodeModules
+                    errorMessages.push(
+                        `Local node model "${localNodeModel}" has unsupported module(s): ${unsupportedLocalNodeModules
                             .map((s) => s.module)
-                            .join(", ")}`,
+                            .join(", ")}.`,
                     )
-                    await this.removeSystemWithEmptyName(
-                        existingSystems,
-                        systemWithEmptyName,
-                    )
-                    return
                 }
             }
 
             // Validate each node's mainframe and, if present, its slot modules
             const nodes = systemWithEmptyName.nodes || []
-            const unsupportedNodes = nodes.filter((node) => {
-                // Check if mainframe is a supported model
+            const unsupportedNodeModels: string[] = []
+            const nodesWithUnsupportedModules: {
+                nodeId: string
+                mainframe: string
+                modules: string[]
+            }[] = []
+            for (const node of nodes) {
                 if (!SUPPORTED_MODELS_DETAILS[node.mainframe]) {
-                    return true
+                    unsupportedNodeModels.push(node.mainframe)
+                    continue
                 }
-                // Check all slot modules for this node if slots and moduleOptions are present
                 const slots = node.slots
                 const moduleOptions =
                     SUPPORTED_MODELS_DETAILS[node.mainframe].moduleOptions
                 if (slots && moduleOptions) {
-                    return slots.some(
-                        (slot) => !moduleOptions.includes(slot.module),
+                    const unsupportedModules = slots
+                        .filter((slot) => !moduleOptions.includes(slot.module))
+                        .map((slot) => slot.module)
+                    if (unsupportedModules.length > 0) {
+                        nodesWithUnsupportedModules.push({
+                            nodeId: node.nodeId,
+                            mainframe: node.mainframe,
+                            modules: unsupportedModules,
+                        })
+                    }
+                }
+            }
+            if (unsupportedNodeModels.length > 0) {
+                errorMessages.push(
+                    `Node(s) with unsupported model(s): ${unsupportedNodeModels.join(", ")}.`,
+                )
+            }
+            if (nodesWithUnsupportedModules.length > 0) {
+                for (const node of nodesWithUnsupportedModules) {
+                    errorMessages.push(
+                        `Node "${node.nodeId}" (${node.mainframe}) has unsupported module(s): ${node.modules.join(", ")}.`,
                     )
                 }
-                return false
-            })
-            if (unsupportedNodes.length > 0) {
+            }
+
+            if (errorMessages.length > 0) {
                 vscode.window.showErrorMessage(
-                    `Cannot add new System. The following node(s) are not supported: ${unsupportedNodes
-                        .map((n) => n.mainframe)
-                        .join(", ")}`,
+                    `Cannot add new System.\n${errorMessages.join("\n")}`,
                 )
                 await this.removeSystemWithEmptyName(
                     existingSystems,
