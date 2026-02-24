@@ -20,6 +20,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Added activation dependency check for Linux and Windows
+- Added supported model validation check before adding new system configuration
 
 ## [1.4.1]
 
