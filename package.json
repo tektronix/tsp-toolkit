@@ -306,7 +306,19 @@
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
-                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "description": "Collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "scope": "application"
+                },
+                "tsp.reset": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Reset instrument on connection.",
+                    "scope": "application"
+                },
+                "tsp.clearErrorQueue": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Clear error queue on connection.",
                     "scope": "application"
                 },
                 "tsp.tspLinkSystemConfigurations": {
@@ -679,12 +691,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.2",
-        "@tektronix/kic-cli-linux-x64": "0.21.2",
-        "@tektronix/kic-cli-win32-x64": "0.21.2",
-        "@tektronix/script-gen-darwin-arm64": "0.1.1",
-        "@tektronix/script-gen-linux-x64": "0.1.1",
-        "@tektronix/script-gen-win32-x64": "0.1.1"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.3-3",
+        "@tektronix/kic-cli-linux-x64": "0.21.3-3",
+        "@tektronix/kic-cli-win32-x64": "0.21.3-3",
+        "@tektronix/script-gen-darwin-arm64": "0.1.2-0",
+        "@tektronix/script-gen-linux-x64": "0.1.2-0",
+        "@tektronix/script-gen-win32-x64": "0.1.2-0"
     },
     "extensionDependencies": [
         "sumneko.lua"

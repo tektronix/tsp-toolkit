@@ -20,6 +20,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Added activation dependency check for Linux and Windows
+- Added configuration to control reset and clear error queue on connection
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
 - Added supported model validation check before adding new system configuration
 
 ## [1.4.1]
@@ -33,6 +37,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+- Stop instruments from shifting in Instrument Explorer view.
 - (**tsp-toolkit-kic-cli**) Reduce number of messages send to instrument when closing debugger
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
