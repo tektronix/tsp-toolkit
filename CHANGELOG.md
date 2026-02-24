@@ -22,6 +22,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added activation dependency check for Linux and Windows
 - Added configuration to control reset and clear error queue on connection
 - Added supported model validation check before adding new system configuration
+- Enable send script command in command plate
+- Added command to delete all scriptgen sessions
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
