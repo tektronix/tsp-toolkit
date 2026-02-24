@@ -345,7 +345,7 @@ export function activate(context: vscode.ExtensionContext) {
                             break
                         }
                     }
-
+                    
                     if (connection) {
                         connection.getNodes(
                             vscode.workspace.workspaceFolders[0].uri.fsPath,
