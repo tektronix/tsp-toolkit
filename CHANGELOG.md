@@ -22,11 +22,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added activation dependency check for Linux and Windows
 - Added configuration to control reset and clear error queue on connection
 - Added supported model validation check before adding new system configuration
-- Enable send script command in command plate
+- Enable send script command in command palette
 - Added command to delete all scriptgen sessions
+- (**tsp-toolkit-webhelp**) Added webhelp manuals for DMM7510
+- (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
+- (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
 
 ## [1.4.1]
 
