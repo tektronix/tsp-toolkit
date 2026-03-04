@@ -29,6 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
+- (**tsp-toolkit-kic-cli**) Logout is not happening for MP5000 when connection is disconnected
 - (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
 
 ## [1.4.1]
