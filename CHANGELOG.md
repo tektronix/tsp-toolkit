@@ -26,11 +26,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added command to delete all scriptgen sessions
 - (**tsp-toolkit-webhelp**) Added webhelp manuals for DMM7510
 - (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
+- (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory
 
 ### Fixed
 - (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
 - (**tsp-toolkit-kic-cli**) Logout is not happening for MP5000 when connection is disconnected
 - (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
+
+### Changed
+- (**tsp-toolkit-kic-cli**) Removed `kic_` prefix from loaded user scripts
 
 ## [1.4.1]
 
