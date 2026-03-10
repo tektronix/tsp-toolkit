@@ -70,7 +70,16 @@ export class ScriptGenWebViewMgr {
             },
         )
 
-        context.subscriptions.push(deleteScriptGenSessionCmd)
+        context.subscriptions.push(deleteScriptGenSessionCmd) 
+
+        const deleteAllScriptGenSessionsCmd = vscode.commands.registerCommand(
+            "tsp.deleteAllScriptGenSessions",
+            () => {
+                this.deleteAllScriptGenSession()
+            },
+        )
+
+        context.subscriptions.push(deleteAllScriptGenSessionsCmd)
 
         this.existingSystems =
             vscode.workspace
@@ -322,6 +331,15 @@ export class ScriptGenWebViewMgr {
     deleteScriptGenUI(name: string) {
         savedScriptGenManager.removeSession(name)
         this.selectScriptGenData?.deleteTreeItem(name)
+    }
+
+    deleteAllScriptGenSession() {
+        //close active panel if open
+        if (this.panel) {
+            this.panel.dispose()
+        }
+        savedScriptGenManager.removeAllSessions()
+        this.selectScriptGenData?.deleteAllTreeItems()
     }
 
     createWebviewPanel(title: string): vscode.WebviewPanel {

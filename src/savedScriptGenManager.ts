@@ -62,6 +62,16 @@ export class SavedScriptGenManager {
             .update("script_generation", existingConfigs, false)
     }
 
+    removeAllSessions(): void {
+        const existingConfigs: tspScriptGen = this.loadSavedConfigs()
+
+        existingConfigs["I-V Characterization"] = []
+
+        vscode.workspace
+            .getConfiguration("tsp")
+            .update("script_generation", existingConfigs, false)
+    }
+
     updateSession(name: string, updatedConfig: string) {
         const existingConfigs: tspScriptGen = this.loadSavedConfigs()
         existingConfigs["I-V Characterization"] =

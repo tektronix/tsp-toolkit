@@ -210,8 +210,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     c.status === ConnectionStatus.Connected ||
                     c.status === ConnectionStatus.Inactive,
             )
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .sort((a, b) => -(a.status - b.status))
             .map((x) => {
                 return {
                     label: `${x.name}@${x.addr}`,
@@ -423,15 +421,29 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.refresh()",
         }
 
-        Log.info("Refreshing Discovered list", LOGLOC)
-        await this.updateStatus()
-        await discovery_cb()
+        await vscode.window.withProgress(
+            {
+                cancellable: false,
+                location: { viewId: "InstrumentsExplorer" },
+            },
+            async () => {
+                Log.info("Refreshing Discovered list", LOGLOC)
+                await this.updateStatus()
+                await discovery_cb()
+                await new Promise<void>((resolve) => {
+                    this.doWithConfigWatcherOff(() => {
+                        this.updateSavedAll(this._instruments).then(
+                            () => {
+                                resolve()
+                            },
+                            () => {},
+                        )
+                    })
+                })
 
-        this.doWithConfigWatcherOff(() => {
-            this.updateSavedAll(this._instruments).catch(() => {})
-        })
-
-        this.instruments_discovered = false
+                this.instruments_discovered = false
+            },
+        )
     }
 
     async saveInstrument(instr: Instrument): Promise<void> {
@@ -451,10 +463,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
     reloadTreeData() {
         // Sort the connections by name
-        this._instruments.sort((a, b) => a.name.localeCompare(b.name))
+        // Sorting removed because it caused saved instruments to jump around in the list
+        // this._instruments.sort((a, b) => a.name.localeCompare(b.name))
         // Sort the connections by status
         // (we want to show higher values first, so invert the result)
-        this._instruments.sort((a, b) => -(a.status - b.status))
+        // this._instruments.sort((a, b) => -(a.status - b.status))
         this._onDidChangeTreeData.fire(undefined)
     }
 

@@ -307,6 +307,12 @@
                 "title": "Delete TriggerFlow Session",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.deleteAllScriptGenSessions",
+                "title": "Delete all sessions",
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
@@ -322,7 +328,19 @@
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
-                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "description": "Collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "scope": "application"
+                },
+                "tsp.reset": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Reset instrument on connection.",
+                    "scope": "application"
+                },
+                "tsp.clearErrorQueue": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Clear error queue on connection.",
                     "scope": "application"
                 },
                 "tsp.tspLinkSystemConfigurations": {
@@ -458,10 +476,6 @@
                 },
                 {
                     "command": "InstrumentsExplorer.remove",
-                    "when": "false"
-                },
-                {
-                    "command": "tsp.sendFile",
                     "when": "false"
                 },
                 {
@@ -714,8 +728,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.3",
-        "@tektronix/web-help-documents": "0.19.3",
+        "@tektronix/keithley_instrument_libraries": "0.19.4-1",
+        "@tektronix/web-help-documents": "0.19.4-1",
         "@types/cheerio": "0.22.35",
         "@vscode/codicons": "0.0.36",
         "@vscode/debugadapter": "^1.58.0",
@@ -728,15 +742,12 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.2",
-        "@tektronix/kic-cli-linux-x64": "0.21.2",
-        "@tektronix/kic-cli-win32-x64": "0.21.2",
-        "@tektronix/script-gen-darwin-arm64": "0.1.1",
-        "@tektronix/script-gen-linux-x64": "0.1.1",
-        "@tektronix/script-gen-win32-x64": "0.1.1",
-        "@tektronix/trigger-flow-darwin-arm64": "0.1.0-0",
-        "@tektronix/trigger-flow-linux-x64": "0.1.0-0",
-        "@tektronix/trigger-flow-win32-x64": "0.1.0-0"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.3-4",
+        "@tektronix/kic-cli-linux-x64": "0.21.3-4",
+        "@tektronix/kic-cli-win32-x64": "0.21.3-4",
+        "@tektronix/script-gen-darwin-arm64": "0.1.2-0",
+        "@tektronix/script-gen-linux-x64": "0.1.2-0",
+        "@tektronix/script-gen-win32-x64": "0.1.2-0"
     },
     "extensionDependencies": [
         "sumneko.lua"
