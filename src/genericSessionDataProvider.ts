@@ -125,7 +125,6 @@ implements vscode.TreeDataProvider<TreeItemType>
      */
     deleteTreeItem(): void {
         this.refresh()
-        this.refresh()
     }
 
     /**
@@ -217,6 +216,7 @@ implements vscode.TreeDataProvider<TreeItemType>
      */
     refresh(): void {
         this._onDidChangeTreeData.fire()
+        this._onDidChangeTreeData.fire() // for now fires is required to update the tree view correctly, need to investigate why!
     }
 
     /**
