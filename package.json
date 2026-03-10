@@ -291,12 +291,6 @@
                 "icon": "$(add)"
             },
             {
-                "command": "tsp.viewTriggerFlowUI",
-                "title": "New Trigger Flow Session",
-                "category": "TSP",
-                "icon": "$(add)"
-            },
-            {
                 "command": "tsp.deleteScriptGenSession",
                 "title": "Delete Script Generation Session",
                 "category": "TSP",
@@ -309,26 +303,20 @@
                 "icon": "$(add)"
             },
             {
+                "command": "tsp.deleteAllScriptGenSessions",
+                "title": "Delete all Script Generation sessions",
+                "category": "TSP",
+                "icon": "$(trash)"
+            },
+            {
                 "command": "tsp.deleteTriggerFlowSession",
                 "title": "Delete TriggerFlow Session",
                 "category": "TSP",
                 "icon": "$(trash)"
             },
             {
-                "command": "tsp.deleteAllScriptGenSessions",
-                "title": "Delete all sessions",
-                "category": "TSP",
-                "icon": "$(trash)"
-            },
-            {
-                "command": "tsp.deleteTriggerFlowSession",
-                "title": "Delete trigger flow session",
-                "category": "TSP",
-                "icon": "$(trash)"
-            },
-            {
                 "command": "tsp.deleteAllTriggerFlowSessions",
-                "title": "Delete all trigger flow sessions",
+                "title": "Delete all TriggerFlow sessions",
                 "category": "TSP",
                 "icon": "$(trash)"
             }
