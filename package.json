@@ -297,6 +297,10 @@
                 "title": "Delete all sessions",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.triggerFlow",
+                "title": "TSP Toolkit: Trigger Flow"
             }
         ],
         "configuration": {

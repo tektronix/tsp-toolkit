@@ -26,6 +26,7 @@ import {
     isLinux,
     isWindows,
 } from "./dependencyChecker"
+//import { TriggerFlowWebView } from "./TriggerFlowWebView"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -374,6 +375,18 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             },
         },
+        {
+            // name: "triggerflow.openGUI",
+            // cb: async () => {
+            //     await vscode.commands.executeCommand(
+            //         "workbench.view.extension.tsp-toolkit-container"
+            //     )                
+            // },
+            name: "tsp.triggerFlow",
+            cb: async () => {
+                await vscode.commands.executeCommand("tsp.viewTriggerFlowUI")
+            },
+        },
     ])
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
@@ -395,6 +408,18 @@ export function activate(context: vscode.ExtensionContext) {
     void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
 
     context.subscriptions.push(systemConfigViewDisposable)
+
+    // Log.debug("Setting up TriggerFlowWebView", LOGLOC)
+
+    // const triggerFlowWebViewProvider = new TriggerFlowWebView(context.extensionUri)
+
+    // const triggerFlowViewDisposable =
+    //     vscode.window.registerWebviewViewProvider(
+    //         TriggerFlowWebView.viewType,
+    //         triggerFlowWebViewProvider,
+    //     )
+
+    // context.subscriptions.push(triggerFlowViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",

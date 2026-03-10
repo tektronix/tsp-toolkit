@@ -24,7 +24,8 @@ enum CommandType {
 const savedScriptGenManager = new SavedScriptGenManager()
 export class ScriptGenWebViewMgr {
     private child: cp.ChildProcess | undefined
-    private panel!: vscode.WebviewPanel | undefined
+    private panel!: vscode.WebviewPanel | undefined // Script Gen UI panel
+    private triggerFlowPanel: vscode.WebviewPanel | undefined // Triggr Flow UI panel
     private existingSystems = []
     private treeview?: vscode.TreeView<SelectScriptGenInstance>
     private scriptName: string | undefined
@@ -59,7 +60,15 @@ export class ScriptGenWebViewMgr {
                 }
             },
         )
+
+        const viewTriggerFlowUICmd = vscode.commands.registerCommand(
+            "tsp.viewTriggerFlowUI",
+            async () => {
+                await this.openTriggerFlowPanel()
+            },
+        )
         context.subscriptions.push(viewScriptGenUICmd)
+        context.subscriptions.push(viewTriggerFlowUICmd)
 
         const deleteScriptGenSessionCmd = vscode.commands.registerCommand(
             "tsp.deleteScriptGenSession",
@@ -201,6 +210,30 @@ export class ScriptGenWebViewMgr {
                     this.selectScriptGenData.setActiveStatus(undefined)
                 }
             })
+        }
+    }
+
+    private async openTriggerFlowPanel() {
+        if (!this.triggerFlowPanel) {
+            this.triggerFlowPanel = this.createWebviewPanel("Trigger Flow")
+
+            try {
+                //await this.checkServerReady("http://localhost:4200", 10000)//http://127.0.0.1:27951
+                await this.loadTriggerFlowContent(this.triggerFlowPanel)
+            } catch (error) {
+                this.handleError(
+                    this.triggerFlowPanel,
+                    "Error loading Trigger Flow UI",
+                    error as Error,
+                )
+                return
+            }
+
+            this.triggerFlowPanel.onDidDispose(() => {
+                this.triggerFlowPanel = undefined
+            })
+        } else {
+            this.triggerFlowPanel.reveal(vscode.ViewColumn.One)
         }
     }
 
@@ -386,6 +419,38 @@ export class ScriptGenWebViewMgr {
             const err = error as Error
             throw new Error(`Failed to load webview content: ${err.message}`)
         }
+    }
+
+    private async loadTriggerFlowContent(panel: vscode.WebviewPanel): Promise<void> {
+        // try {
+        //     const fullWebServerUri = await vscode.env.asExternalUri(
+        //         vscode.Uri.parse("http://localhost:4200"),//http://127.0.0.1:27951                
+        //     )
+
+        //     const response = await fetch(fullWebServerUri.toString())
+        //     const html = await response.text()
+
+        //     panel.webview.html = html
+        // } catch (error) {
+        //     const err = error as Error
+        //     throw new Error(`Failed to load Trigger Flow UI: ${err.message}`)
+        // }
+        
+
+        panel.webview.html = `
+            <!DOCTYPE html>
+            <html>
+            <body style="margin:0;padding:0;overflow:hidden">
+                <iframe 
+                    src="http://localhost:4200"
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0"
+                    style="position:absolute;top:0;left:0;bottom:0;right:0;">
+                </iframe>
+            </body>
+            </html>
+        `        
     }
 
     handleError(

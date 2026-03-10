@@ -15,6 +15,7 @@ implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
     public _savedConfigs: tspScriptGen
     private treeview?: vscode.TreeView<SelectScriptGenInstance | openFolder>
     private ivCharNode: SelectScriptGenInstance
+    private triggerFlowNode: SelectScriptGenInstance
     public activeScriptName: string | undefined
 
     constructor() {
@@ -23,6 +24,15 @@ implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
             "I-V Characterization",
             vscode.TreeItemCollapsibleState.Expanded,
             "SavedIVCharTreeItem",
+        )
+        this.triggerFlowNode = new SelectScriptGenInstance(
+            "Trigger Flow",
+            vscode.TreeItemCollapsibleState.None,
+            "TriggerFlowTreeItem",
+            {
+                title: "Open Trigger Flow",
+                command: "tsp.viewTriggerFlowUI",
+            },
         )
     }
 
@@ -132,7 +142,7 @@ implements vscode.TreeDataProvider<SelectScriptGenInstance | openFolder>
                     ? vscode.TreeItemCollapsibleState.Expanded
                     : vscode.TreeItemCollapsibleState.None
             this.ivCharNode.collapsibleState = collapsibleState
-            return Promise.resolve([this.ivCharNode])
+            return Promise.resolve([this.ivCharNode, this.triggerFlowNode])
         }
     }
 
