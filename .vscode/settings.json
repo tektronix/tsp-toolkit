@@ -32,10 +32,10 @@
     "Lua.diagnostics.libraryFiles": "Disable",
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
-        "basic": "disable",
+        "basic": "enable",
         "bit": "disable",
         "bit32": "disable",
-        "builtin": "disable",
+        "builtin": "enable",
         "coroutine": "disable",
         "debug": "disable",
         "ffi": "disable",
@@ -48,12 +48,14 @@
         "package": "disable",
         "string": "disable",
         "string.buffer": "disable",
-        "table": "disable",
+        "table": "enable",
         "table.clear": "disable",
         "table.new": "disable",
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "c:\\Users\\esarver1\\.vscode\\extensions\\tektronix.tsp-toolkit-1.2.2-win32-x64\\node_modules\\@tektronix\\keithley_instrument_libraries\\keithley_instrument_libraries\\tsp-lua-5.0"
+        "c:\\Users\\rjha\\.vscode\\extensions\\tektronix.tsp-toolkit-1.4.2\\node_modules\\@tektronix\\keithley_instrument_libraries\\keithley_instrument_libraries\\tsp-lua-5.0",
+        "c:\\Users\\rjha\\.vscode\\extensions\\tektronix.tsp-toolkit-1.4.2\\node_modules\\@tektronix\\keithley_instrument_libraries\\keithley_instrument_libraries\\nodes_definitions"
     ],
+    "Lua.workspace.preloadFileSize": 2000,
 }
