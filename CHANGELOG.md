@@ -19,6 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.2]
 
 ### Added
+- \[Beta] Trigger Flow section in script generation view
 - Added activation dependency check for Linux and Windows
 - Added configuration to control reset and clear error queue on connection
 - Added supported model validation check before adding new system configuration

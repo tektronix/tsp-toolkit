@@ -16,8 +16,12 @@ import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
 import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
-import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
-import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { ScriptGenWebViewManager } from "./scriptGenWebViewManager"
+import { ScriptGenDataProvider } from "./scriptGenDataProvider"
+import { TriggerFlowDataProvider } from "./triggerFlowDataProvider"
+import { CombinedScriptGenDataProvider } from "./combinedScriptGenDataProvider"
+import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
+import { GenericSessionStorage } from "./genericSessionStorage"
 import { isMacOS } from "./utility"
 import {
     checkSystemDependencies,
@@ -84,7 +88,7 @@ export async function createTerminal(
         Log.error(`Connection failed: ${errorMsg}`, LOGLOC)
         return Promise.resolve(undefined)
     }
-    
+
     // Check VISA availability if connecting via VISA protocol
     if (conn.type === IoType.Visa) {
         const ignoreMissingVisa = vscode.workspace
@@ -126,7 +130,7 @@ export async function createTerminal(
             }
         }
     }
-    
+
     if (await conn.connect(name)) {
         return conn
     }
@@ -360,7 +364,7 @@ export function activate(context: vscode.ExtensionContext) {
                             break
                         }
                     }
-                    
+
                     if (connection) {
                         connection.getNodes(
                             vscode.workspace.workspaceFolders[0].uri.fsPath,
@@ -410,12 +414,31 @@ export function activate(context: vscode.ExtensionContext) {
 
     activateTspDebug(context)
 
-    const selectScriptGenData = new selectScriptGenDataProvider()
-    const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
-        treeDataProvider: selectScriptGenData,
+    // Script Generation and Trigger Flow setup with combined tree view
+    const scriptGenStorage = new GenericSessionStorage("I-V Characterization")
+    const scriptGenDataProvider = new ScriptGenDataProvider(scriptGenStorage)
+
+    const triggerFlowStorage = new GenericSessionStorage("Trigger Flow")
+    const triggerFlowDataProvider = new TriggerFlowDataProvider(
+        triggerFlowStorage,
+    )
+
+    // Create combined provider that shows both in one tree view
+    const combinedProvider = new CombinedScriptGenDataProvider(
+        scriptGenDataProvider,
+        triggerFlowDataProvider,
+    )
+
+    const treeView = vscode.window.createTreeView("ScriptGenView", {
+        treeDataProvider: combinedProvider,
     })
-    selectScriptGenData.setTreeView(scriptGenTreeView)
-    new ScriptGenWebViewMgr(context, selectScriptGenData)
+
+    scriptGenDataProvider.setTreeView(treeView)
+    triggerFlowDataProvider.setTreeView(treeView)
+
+    // Managers use their specific data providers
+    new ScriptGenWebViewManager(context, scriptGenDataProvider)
+    new TriggerFlowWebViewManager(context, triggerFlowDataProvider)
 
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
