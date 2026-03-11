@@ -79,7 +79,7 @@ export class ScriptGenWebViewMgr {
             },
         )
 
-        context.subscriptions.push(deleteScriptGenSessionCmd) 
+        context.subscriptions.push(deleteScriptGenSessionCmd)
 
         const deleteAllScriptGenSessionsCmd = vscode.commands.registerCommand(
             "tsp.deleteAllScriptGenSessions",
@@ -421,10 +421,12 @@ export class ScriptGenWebViewMgr {
         }
     }
 
-    private async loadTriggerFlowContent(panel: vscode.WebviewPanel): Promise<void> {
+    private async loadTriggerFlowContent(
+        panel: vscode.WebviewPanel,
+    ): Promise<void> {
         // try {
         //     const fullWebServerUri = await vscode.env.asExternalUri(
-        //         vscode.Uri.parse("http://localhost:4200"),//http://127.0.0.1:27951                
+        //         vscode.Uri.parse("http://localhost:4200"),//http://127.0.0.1:27951
         //     )
 
         //     const response = await fetch(fullWebServerUri.toString())
@@ -435,7 +437,8 @@ export class ScriptGenWebViewMgr {
         //     const err = error as Error
         //     throw new Error(`Failed to load Trigger Flow UI: ${err.message}`)
         // }
-        
+
+        await Promise.resolve()
 
         panel.webview.html = `
             <!DOCTYPE html>
@@ -450,7 +453,7 @@ export class ScriptGenWebViewMgr {
                 </iframe>
             </body>
             </html>
-        `        
+        `
     }
 
     handleError(
