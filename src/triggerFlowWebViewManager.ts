@@ -31,21 +31,21 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         const config: SessionConfig = {
             executablePath: SCRIPT_GEN_EXECUTABLE,
             serverPort: 27950, // Different port from script gen
-            panelTitle: "Trigger Flow Canvas",
+            panelTitle: "Trigger Flow",
             iconPaths: {
                 light: path.join(
                     __dirname,
                     "..",
                     "resources",
                     "light",
-                    "trigger-flow-pane-icon.svg",
+                    "script-gen-pane-icon.svg",
                 ),
                 dark: path.join(
                     __dirname,
                     "..",
                     "resources",
                     "dark",
-                    "trigger-flow-pane-icon.svg",
+                    "script-gen-pane-icon.svg",
                 ),
             },
             viewCommandId: "tsp.viewTriggerFlowUI",

@@ -37,6 +37,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - (**tsp-toolkit-kic-cli**) Removed `kic_` prefix from loaded user scripts
+- Rename "Script Generation" view to "Tools"
 
 ## [1.4.1]
 

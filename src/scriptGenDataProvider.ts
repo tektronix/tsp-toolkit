@@ -9,7 +9,7 @@ export class ScriptGenDataProvider extends GenericSessionDataProvider {
     constructor(storage: GenericSessionStorage) {
         super(
             storage,
-            "I-V Characterization",
+            "I-V Characterization Script Generation", // This will be the name shown in the tree view
             "SavedIVCharTreeItem",
             "SavedIVCharInstance",
             "ActiveSavedIVCharInstance",

@@ -630,8 +630,9 @@
                     "type": "webview"
                 },
                 {
-                    "id": "ScriptGenView",
-                    "name": "Script Generation"
+                    "id": "ToolsView",
+                    "name": "Tools",
+                    "icon": "resources/dark/script-gen-pane-icon.svg"
                 }
             ]
         },
