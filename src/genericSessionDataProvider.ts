@@ -72,6 +72,16 @@ implements vscode.TreeDataProvider<TreeItemType>
     private sessionTypeNode: SessionTypeTreeItem
     public activeSessionName: string | undefined
 
+    /**
+     * Constructor for GenericSessionDataProvider
+     *
+     * @param storage - Instance of GenericSessionStorage for managing session data
+     * @param sessionTypeLabel - Label for the session type that will be displayed in the tree view (e.g., "I-V Characterization")
+     * @param treeItemContextValue - Context value for session type tree item
+     * @param instanceContextValue - Context value for session instance tree items
+     * @param activeInstanceContextValue - Context value for active session instance tree items
+     * @param commandId - Command ID to execute when a session instance is clicked
+     */
     constructor(
         private readonly storage: GenericSessionStorage,
         private readonly sessionTypeLabel: string,

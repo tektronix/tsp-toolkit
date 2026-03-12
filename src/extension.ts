@@ -429,7 +429,7 @@ export function activate(context: vscode.ExtensionContext) {
         triggerFlowDataProvider,
     )
 
-    const treeView = vscode.window.createTreeView("ScriptGenView", {
+    const treeView = vscode.window.createTreeView("ToolsView", {
         treeDataProvider: combinedProvider,
     })
 
