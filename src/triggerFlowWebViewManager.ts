@@ -31,7 +31,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         const config: SessionConfig = {
             executablePath: TRIGGER_FLOW_EXECUTABLE,
             serverPort: 27951, // Different port from script gen
-            panelTitle: "Trigger Flow Canvas",
+            panelTitle: "Trigger Flow",
             iconPaths: {
                 light: path.join(
                     __dirname,
