@@ -1,7 +1,7 @@
 import * as path from "node:path"
 import * as vscode from "vscode"
 
-import { SCRIPT_GEN_EXECUTABLE } from "./kic-script-gen-cli"
+import { TRIGGER_FLOW_EXECUTABLE } from "./kic-script-trigger-flow-cli"
 import { BaseSessionManager, SessionConfig } from "./baseSessionManager"
 import {
     GenericSessionStorage,
@@ -29,8 +29,8 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         dataProvider?: TriggerFlowDataProvider,
     ) {
         const config: SessionConfig = {
-            executablePath: SCRIPT_GEN_EXECUTABLE,
-            serverPort: 27950, // Different port from script gen
+            executablePath: TRIGGER_FLOW_EXECUTABLE,
+            serverPort: 27951, // Different port from script gen
             panelTitle: "Trigger Flow",
             iconPaths: {
                 light: path.join(
@@ -153,7 +153,6 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         this.sessionName = input
 
         this.spawnChildProcess()
-        this.sendResetSignal()
         await this.openPanel()
         this.setActiveStatus(this.sessionName)
     }

@@ -452,45 +452,6 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     }
 
     /**
-     * Validate session name
-     */
-    protected validateSessionName(input: string | undefined): boolean {
-        if (!input) return false
-
-        const trimmed = input.trim()
-
-        if (!trimmed) {
-            vscode.window.showInformationMessage(
-                "Session name cannot be empty.",
-            )
-            return false
-        }
-
-        if (trimmed.length > 20) {
-            vscode.window.showInformationMessage(
-                "Session name must be 20 characters or less.",
-            )
-            return false
-        }
-
-        if (!/^[\w\- ]+$/.test(trimmed)) {
-            vscode.window.showInformationMessage(
-                "Session name can only contain letters, numbers, spaces, dashes, and underscores.",
-            )
-            return false
-        }
-
-        if (this.sessionExists(trimmed)) {
-            vscode.window.showInformationMessage(
-                "A session with this name already exists.",
-            )
-            return false
-        }
-
-        return true
-    }
-
-    /**
      * Check if system configurations exist
      */
     protected hasSystemConfigurations(): boolean {
