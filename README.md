@@ -232,6 +232,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 ### Learning Resources
 
 - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
+- [TSP Toolkit Quick Start Guide (PDF)][tsp-toolkit-quick-start-guide]
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
@@ -318,6 +319,7 @@ for more information.
 [tsp-toolkit-dev-process]: ./CONTRIBUTING.md#development-process
 [tsp-video-series]: https://www.youtube.com/@tektronix/search?query=TSP
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
+[tsp-toolkit-quick-start-guide]: https://www.tek.com/en/manual/tsp-toolkit-quick-start-guide
 
 <!--Pics-->
 [pic-send-script-to-terminal]: https://github.com/tektronix/tsp-toolkit/blob/main/images/SendScriptToTerminal.png?raw=true

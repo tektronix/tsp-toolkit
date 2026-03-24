@@ -9,7 +9,7 @@ export class TriggerFlowDataProvider extends GenericSessionDataProvider {
     constructor(storage: GenericSessionStorage) {
         super(
             storage,
-            "Trigger Flow",
+            "[Beta] Trigger Flow",
             "SavedTriggerFlowTreeItem",
             "SavedTriggerFlowInstance",
             "ActiveSavedTriggerFlowInstance",
