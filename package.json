@@ -298,7 +298,7 @@
             },
             {
                 "command": "tsp.viewTriggerFlowUI",
-                "title": "New TriggerFlow Session",
+                "title": "[Beta] New TriggerFlow Session",
                 "category": "TSP",
                 "icon": "$(add)"
             },
@@ -310,13 +310,13 @@
             },
             {
                 "command": "tsp.deleteTriggerFlowSession",
-                "title": "Delete TriggerFlow Session",
+                "title": "[Beta] Delete TriggerFlow Session",
                 "category": "TSP",
                 "icon": "$(trash)"
             },
             {
                 "command": "tsp.deleteAllTriggerFlowSessions",
-                "title": "Delete all TriggerFlow sessions",
+                "title": "[Beta] Delete all TriggerFlow sessions",
                 "category": "TSP",
                 "icon": "$(trash)"
             }

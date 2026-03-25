@@ -322,7 +322,8 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             })) ?? ","
         const fields = await vscode.window.showQuickPick(
             [
-                "timestamps",
+                "absolute_timestamps",
+                "relative_timestamps",
                 "readings",
                 "measurefunctions",
                 "measureranges",
