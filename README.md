@@ -240,6 +240,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Script Example Repository][tsp-script-examples]
     - Clone or download the ZIP file of the repository using the "Code" button
     ![Clone or download from GitHub using the "Code" button][pic-example-repo-download]
+- [Lua-5.0 Manual Reference][official-Lua-5.0-reference]
 
 ### Supported Locales
 
@@ -303,6 +304,7 @@ for more information.
 - There are occasional issues running scripts over VXI-11 on 2600 products that lead to mysterious TSP errors.
 
 <!--Refs-->
+[official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
 [app-note-script-gen]: https://www.tek.com/en/application-note/accelerate-automation-effortless-script-generation-with-tsp-toolkit
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
 [code]: https://code.visualstudio.com/
