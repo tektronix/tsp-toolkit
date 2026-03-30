@@ -16,9 +16,20 @@ import { Connection } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
 import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
-import { ScriptGenWebViewMgr } from "./scriptGenWebViewManager"
-import { selectScriptGenDataProvider } from "./selectScriptGenDataProvider"
+import { ScriptGenWebViewManager } from "./scriptGenWebViewManager"
+import { ScriptGenDataProvider } from "./scriptGenDataProvider"
+import { TriggerFlowDataProvider } from "./triggerFlowDataProvider"
+import { CombinedScriptGenDataProvider } from "./combinedScriptGenDataProvider"
+import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
+import { GenericSessionStorage } from "./genericSessionStorage"
 import { isMacOS } from "./utility"
+import {
+    checkSystemDependencies,
+    checkVisaInstallation,
+    checkVisaInstallationLinux,
+    isLinux,
+    isWindows,
+} from "./dependencyChecker"
 
 let _instrExplorer: InstrumentsExplorer
 
@@ -78,6 +89,48 @@ export async function createTerminal(
         return Promise.resolve(undefined)
     }
 
+    // Check VISA availability if connecting via VISA protocol
+    if (conn.type === IoType.Visa) {
+        const ignoreMissingVisa = vscode.workspace
+            .getConfiguration("tsp")
+            .get<boolean>("ignoreMissingVisa", false)
+
+        if (!ignoreMissingVisa) {
+            let hasVisa = false
+            if (isWindows) {
+                hasVisa = await checkVisaInstallation()
+            } else if (isLinux) {
+                hasVisa = await checkVisaInstallationLinux()
+            } else {
+                // macOS or other platforms - assume VISA not available
+                hasVisa = false
+            }
+
+            if (!hasVisa) {
+                Log.error(
+                    "VISA not installed but required for this connection",
+                    LOGLOC,
+                )
+                await vscode.window
+                    .showErrorMessage(
+                        "VISA is not installed on your system. Please install VISA to use this connection method, or use raw sockets to connect instead.",
+                        "Download VISA",
+                        "Close",
+                    )
+                    .then((selection) => {
+                        if (selection === "Download VISA") {
+                            vscode.env.openExternal(
+                                vscode.Uri.parse(
+                                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                                ),
+                            )
+                        }
+                    })
+                return
+            }
+        }
+    }
+
     if (await conn.connect(name)) {
         return conn
     }
@@ -120,6 +173,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Updating extension settings", LOGLOC)
     updateExtensionSettings()
+
+    // Check for system dependencies
+    Log.debug("Checking system dependencies", LOGLOC)
+    void checkSystemDependencies()
 
     Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
@@ -244,6 +301,21 @@ export function activate(context: vscode.ExtensionContext) {
         {
             name: "tsp.sendFile",
             cb: async (e: vscode.Uri) => {
+                // If no file URI is provided (e.g., from command palette), use active editor
+                if (!e) {
+                    const activeEditor = vscode.window.activeTextEditor
+                    if (
+                        activeEditor &&
+                        activeEditor.document.uri.fsPath.endsWith(".tsp")
+                    ) {
+                        e = activeEditor.document.uri
+                    } else {
+                        vscode.window.showErrorMessage(
+                            "No file selected. Please open a TSP file.",
+                        )
+                        return
+                    }
+                }
                 const term = vscode.window.activeTerminal
                 if (
                     (term?.creationOptions as vscode.TerminalOptions)
@@ -342,12 +414,31 @@ export function activate(context: vscode.ExtensionContext) {
 
     activateTspDebug(context)
 
-    const selectScriptGenData = new selectScriptGenDataProvider()
-    const scriptGenTreeView = vscode.window.createTreeView("ScriptGenView", {
-        treeDataProvider: selectScriptGenData,
+    // Script Generation and Trigger Flow setup with combined tree view
+    const scriptGenStorage = new GenericSessionStorage("I-V Characterization")
+    const scriptGenDataProvider = new ScriptGenDataProvider(scriptGenStorage)
+
+    const triggerFlowStorage = new GenericSessionStorage("Trigger Flow")
+    const triggerFlowDataProvider = new TriggerFlowDataProvider(
+        triggerFlowStorage,
+    )
+
+    // Create combined provider that shows both in one tree view
+    const combinedProvider = new CombinedScriptGenDataProvider(
+        scriptGenDataProvider,
+        triggerFlowDataProvider,
+    )
+
+    const treeView = vscode.window.createTreeView("ToolsView", {
+        treeDataProvider: combinedProvider,
     })
-    selectScriptGenData.setTreeView(scriptGenTreeView)
-    new ScriptGenWebViewMgr(context, selectScriptGenData)
+
+    scriptGenDataProvider.setTreeView(treeView)
+    triggerFlowDataProvider.setTreeView(treeView)
+
+    // Managers use their specific data providers
+    new ScriptGenWebViewManager(context, scriptGenDataProvider)
+    new TriggerFlowWebViewManager(context, triggerFlowDataProvider)
 
     Log.info("TSP Toolkit activation complete", LOGLOC)
 

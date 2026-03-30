@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -88,9 +88,13 @@
                         "id": "power-line-frequency-setting",
                         "title": "Set your power-line frequency",
                         "description": "Make sure to set your local power-line frequency (`tsp.lineFrequency`) in your extension settings.\nThis ensures the calculations within the I-V Characterization Script Generation feature are correct when using NPLC for measurments.",
-                        "completionEvents": ["onSettingChanged:tsp.lineFrequency"],
-                        "media": {"image": "./resources/walkthrough/LineFrequencySetting.png", "altText": "Modify tsp.lineFrequency setting to with 50 or 60 Hz"}
-
+                        "completionEvents": [
+                            "onSettingChanged:tsp.lineFrequency"
+                        ],
+                        "media": {
+                            "image": "./resources/walkthrough/LineFrequencySetting.png",
+                            "altText": "Modify tsp.lineFrequency setting to with 50 or 60 Hz"
+                        }
                     },
                     {
                         "id": "open-tsp-folder",
@@ -257,22 +261,22 @@
             {
                 "command": "tsp.saveTspOutputStart",
                 "title": "[Beta] Save commands and output to file",
-                "icon":  "$(git-stash)"
+                "icon": "$(git-stash)"
             },
             {
                 "command": "tsp.saveTspOutputEnd",
                 "title": "[Beta] Stop saving commands and output to file",
-                "icon":  "$(stop-circle)"
+                "icon": "$(stop-circle)"
             },
             {
                 "command": "tsp.saveBuffersToFile",
                 "title": "[Beta] Save buffers to a file",
-                "icon":  "$(layout-panel-dock)"
+                "icon": "$(layout-panel-dock)"
             },
             {
                 "command": "tsp.saveScriptOutput",
                 "title": "[Beta] Save TSP Script Output",
-                "icon":  "$(file-code)"
+                "icon": "$(file-code)"
             },
             {
                 "command": "tspdebug.debugContent",
@@ -288,7 +292,31 @@
             },
             {
                 "command": "tsp.deleteScriptGenSession",
-                "title": "Delete session",
+                "title": "Delete Script Generation Session",
+                "category": "TSP",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.viewTriggerFlowUI",
+                "title": "[Beta] New TriggerFlow Session",
+                "category": "TSP",
+                "icon": "$(add)"
+            },
+            {
+                "command": "tsp.deleteAllScriptGenSessions",
+                "title": "Delete all Script Generation sessions",
+                "category": "TSP",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.deleteTriggerFlowSession",
+                "title": "[Beta] Delete TriggerFlow Session",
+                "category": "TSP",
+                "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.deleteAllTriggerFlowSessions",
+                "title": "[Beta] Delete all TriggerFlow sessions",
                 "category": "TSP",
                 "icon": "$(trash)"
             }
@@ -306,7 +334,19 @@
                 "tsp.dumpQueueOnConnect": {
                     "type": "boolean",
                     "default": false,
-                    "description": "If `true`, collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "description": "Collect the contents of the instrument output queue and print it to the terminal when connecting.",
+                    "scope": "application"
+                },
+                "tsp.reset": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Reset instrument on connection.",
+                    "scope": "application"
+                },
+                "tsp.clearErrorQueue": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Clear error queue on connection.",
                     "scope": "application"
                 },
                 "tsp.tspLinkSystemConfigurations": {
@@ -339,6 +379,21 @@
                                     }
                                 }
                             }
+                        },
+                        "TriggerFlow": {
+                            "type": "array",
+                            "description": "Properties for TriggerFlow sessions.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "config": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -359,6 +414,12 @@
                         "60 Hz"
                     ],
                     "description": "The power-line frequency of the outlet your instruments are plugged into."
+                },
+                "tsp.ignoreMissingVisa": {
+                    "type": "boolean",
+                    "default": false,
+                    "scope": "application",
+                    "description": "Ignore the VISA installation check notification. VISA is optional and only required for VISA protocol instrument communication."
                 }
             }
         },
@@ -424,10 +485,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "tsp.sendFile",
-                    "when": "false"
-                },
-                {
                     "command": "systemConfigurations.addSystem",
                     "when": "false"
                 },
@@ -441,6 +498,14 @@
                 },
                 {
                     "command": "tsp.deleteScriptGenSession",
+                    "when": "false"
+                },
+                {
+                    "command": "tsp.viewTriggerFlowUI",
+                    "when": "false"
+                },
+                {
+                    "command": "tsp.deleteTriggerFlowSession",
                     "when": "false"
                 }
             ],
@@ -514,6 +579,16 @@
                     "command": "tsp.deleteScriptGenSession",
                     "when": "viewItem == SavedIVCharInstance",
                     "group": "inline"
+                },
+                {
+                    "command": "tsp.viewTriggerFlowUI",
+                    "when": "viewItem == SavedTriggerFlowTreeItem",
+                    "group": "inline"
+                },
+                {
+                    "command": "tsp.deleteTriggerFlowSession",
+                    "when": "viewItem == SavedTriggerFlowInstance",
+                    "group": "inline"
                 }
             ],
             "editor/title/run": [
@@ -555,8 +630,9 @@
                     "type": "webview"
                 },
                 {
-                    "id": "ScriptGenView",
-                    "name": "Script Generation"
+                    "id": "ToolsView",
+                    "name": "Tools",
+                    "icon": "resources/dark/script-gen-pane-icon.svg"
                 }
             ]
         },
@@ -659,8 +735,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.3",
-        "@tektronix/web-help-documents": "0.19.3",
+        "@tektronix/keithley_instrument_libraries": "0.19.4-1",
+        "@tektronix/web-help-documents": "0.19.4-1",
         "@types/cheerio": "0.22.35",
         "@vscode/codicons": "0.0.36",
         "@vscode/debugadapter": "^1.58.0",
@@ -673,12 +749,15 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.21.2",
-        "@tektronix/kic-cli-linux-x64": "0.21.2",
-        "@tektronix/kic-cli-win32-x64": "0.21.2",
-        "@tektronix/script-gen-darwin-arm64": "0.1.1",
-        "@tektronix/script-gen-linux-x64": "0.1.1",
-        "@tektronix/script-gen-win32-x64": "0.1.1"
+        "@tektronix/kic-cli-darwin-arm64": "0.21.3-7",
+        "@tektronix/kic-cli-linux-x64": "0.21.3-7",
+        "@tektronix/kic-cli-win32-x64": "0.21.3-7",
+        "@tektronix/script-gen-darwin-arm64": "0.1.2-0",
+        "@tektronix/script-gen-linux-x64": "0.1.2-0",
+        "@tektronix/script-gen-win32-x64": "0.1.2-0",
+        "@tektronix/trigger-flow-darwin-arm64": "0.1.0-0",
+        "@tektronix/trigger-flow-linux-x64": "0.1.0-0",
+        "@tektronix/trigger-flow-win32-x64": "0.1.0-0"
     },
     "extensionDependencies": [
         "sumneko.lua"
