@@ -26,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Enable send script command in command palette
 - Added command to delete all scriptgen sessions
 - Added TSP Toolkit Quick Start Guide link to Learning Resources section in README.md
+- Support TSP files with the `.tspa` extension
 - (**tsp-toolkit-webhelp**) Added webhelp manuals for DMM7510
 - (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
 - (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory

@@ -431,6 +431,7 @@ interface MissingDependency {
     description: string
     downloadUrl: string
     learnMoreUrl?: string
+    optional?: boolean
 }
 
 /**
@@ -583,19 +584,23 @@ async function showMissingDependenciesNotification(
     while (true) {
         // Build the message
         let message = ""
+        let depList = ""
 
-        if (missing.length === 1) {
-            message = `${missing[0].name} is required but not detected on your system.`
-        } else {
-            // Create a numbered list
-            const depList = missing
-                .map((dep, index) => `${index + 1}. ${dep.name}`) // 1. Name, 2. Name, ...
-                .join("\n")
-            message = `${missing.length} required dependencies are missing: [ ${depList} ].`
+        const numRequired = missing.filter((dep) => !dep.optional).length
+        const numOptional = missing.filter((dep) => dep.optional).length
+        const hasRequired = numRequired > 0
+
+        // Create a numbered list
+        depList = missing
+            .map((dep, index) => `${index + 1}. ${dep.name}`) // 1. Name, 2. Name, ...
+            .join("\n")
+        message = `TSP Toolkit: ${numRequired > 0 ? `${numRequired} required ${numOptional > 0 ? "and " : ""}` : ""}${numOptional > 0 ? `${numOptional} optional ` : ""}${missing.length === 1 ? "dependency is" : "dependencies are"} missing. Some features may not work correctly without required dependencies`
+
+        if (!hasRequired) {
+            message += "\n" + depList + "\n"
         }
 
-        const exclamation = "\u2757"
-        message += `\u00A0\u00A0${exclamation} Some features may not work correctly without these dependencies.`
+        console.log(message)
 
         // Create action buttons based on number of dependencies
         const actions: string[] = []
@@ -617,8 +622,13 @@ async function showMissingDependenciesNotification(
 
         actions.push("Dismiss")
 
-        const selection = await vscode.window.showWarningMessage(
+        const messageApi = hasRequired
+            ? vscode.window.showErrorMessage
+            : vscode.window.showWarningMessage
+
+        const selection = await messageApi(
             message,
+            { modal: hasRequired, detail: depList },
             ...actions,
         )
 
@@ -689,6 +699,7 @@ export async function checkSystemDependencies(): Promise<void> {
                     "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
                 learnMoreUrl:
                     "https://www.ivifoundation.org/specifications/default.aspx",
+                optional: true,
             })
         } else {
             Log.debug("VISA installation detected", logloc)
@@ -739,6 +750,7 @@ export async function checkSystemDependencies(): Promise<void> {
                     "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
                 learnMoreUrl:
                     "https://www.ivifoundation.org/specifications/default.aspx",
+                optional: true,
             })
         } else {
             Log.debug("VISA installation detected on Linux", logloc)
