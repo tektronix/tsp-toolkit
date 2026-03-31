@@ -45,7 +45,8 @@
                 "when": "true",
                 "icon": "./resources/TSP_Toolkit_128x128.png",
                 "featuredFor": [
-                    "**/*.tsp"
+                    "**/*.tsp",
+                    "**/*.tspa"
                 ],
                 "steps": [
                     {
@@ -426,21 +427,21 @@
         "menus": {
             "editor/context": [
                 {
-                    "when": "activeEditor && resourceExtname == .tsp",
+                    "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
-                    "when": "activeEditor && resourceExtname == .tsp",
+                    "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
                 }
             ],
             "editor/title/context": [
                 {
-                    "when": "activeEditor && resourceExtname == .tsp",
+                    "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
                 }
@@ -594,17 +595,17 @@
             "editor/title/run": [
                 {
                     "command": "tsp.sendFile",
-                    "when": "resourceExtname == .tsp",
+                    "when": "resourceExtname == .tsp || resourceExtname == .tspa",
                     "group": "navigation@1"
                 },
                 {
                     "command": "tspdebug.debugContent",
-                    "when": "resourceExtname == .tsp",
+                    "when": "resourceExtname == .tsp || resourceExtname == .tspa",
                     "group": "navigation@2"
                 },
                 {
                     "command": "tsp.saveScriptOutput",
-                    "when": "resourceExtname == .tsp",
+                    "when": "resourceExtname == .tsp || resourceExtname == .tspa",
                     "group": "navigation@3"
                 }
             ]

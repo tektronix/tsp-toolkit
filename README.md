@@ -302,6 +302,9 @@ for more information.
 - When upgrading an MP5103 mainframe over USBTMC or HiSLIP, IO errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
 - When upgrading TTI and 2600 products over VXI-11, IO Errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
 - There are occasional issues running scripts over VXI-11 on 2600 products that lead to mysterious TSP errors.
+- Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
+  instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
+  such as using `#lua_table` to get the number of elements in a table.
 
 <!--Refs-->
 [official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
