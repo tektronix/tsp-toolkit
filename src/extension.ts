@@ -306,7 +306,8 @@ export function activate(context: vscode.ExtensionContext) {
                     const activeEditor = vscode.window.activeTextEditor
                     if (
                         activeEditor &&
-                        activeEditor.document.uri.fsPath.endsWith(".tsp")
+                        (activeEditor.document.uri.fsPath.endsWith(".tsp") ||
+                            activeEditor.document.uri.fsPath.endsWith(".tspa"))
                     ) {
                         e = activeEditor.document.uri
                     } else {

@@ -41,6 +41,7 @@ export async function configure_initial_workspace_configurations() {
         "files.associations",
         {
             "*.tsp": "lua",
+            "*.tspa": "lua",
         },
         vscode.ConfigurationTarget.Global,
     )
