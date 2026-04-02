@@ -39,6 +39,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
 - (**tsp-toolkit-kic-cli**) Correctly decide whether to use `eventlog` or `errorqueue` for `_KIC["error_messages"]()` in common script
 - (**tsp-toolkit-kic-cli**) Check if each buffer passed in `.save --buffer` has any `nil` references
+- Save commands and output to file option icon status is not getting reset when connecting
 
 
 ### Changed
