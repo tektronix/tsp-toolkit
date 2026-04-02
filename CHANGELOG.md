@@ -21,7 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Highlights
 - **Trigger Flow** - [Beta] Visual trigger flow builder for creating complex instrument trigger sequences without manual scripting
-- **Data Export** - [Beta] Save instrument output and buffer contents directly to files, with options to start/stop logging commands and results in real-time
+- **Data Export** - [Beta] Save instrument output and buffer contents directly to files
 
 ### Added
 - \[Beta] Trigger Flow section in script generation view
