@@ -1,24 +1,24 @@
 import * as path from "node:path"
 import * as vscode from "vscode"
 
-import { SCRIPT_GEN_EXECUTABLE } from "./kic-script-gen-cli"
+import { TRIGGER_FLOW_EXECUTABLE } from "./kic-script-trigger-flow-cli"
 import { BaseSessionManager, SessionConfig } from "./baseSessionManager"
 import {
     GenericSessionStorage,
     SessionNameValidator,
 } from "./genericSessionStorage"
-import { ScriptGenDataProvider } from "./scriptGenDataProvider"
+import { TriggerFlowDataProvider } from "./triggerFlowDataProvider"
 import {
     SessionInstanceTreeItem,
     SessionTypeTreeItem,
 } from "./genericSessionDataProvider"
 
 /**
- * Script Generation specific session manager
- * Extends BaseSessionManager with Script Generation specific logic
+ * Trigger Flow specific session manager
+ * Extends BaseSessionManager with Trigger Flow specific logic
  */
-export class ScriptGenWebViewManager extends BaseSessionManager<
-    ScriptGenDataProvider,
+export class TriggerFlowWebViewManager extends BaseSessionManager<
+    TriggerFlowDataProvider,
     SessionTypeTreeItem | SessionInstanceTreeItem
 > {
     private readonly storage: GenericSessionStorage
@@ -26,12 +26,12 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
 
     constructor(
         context: vscode.ExtensionContext,
-        dataProvider?: ScriptGenDataProvider,
+        dataProvider?: TriggerFlowDataProvider,
     ) {
         const config: SessionConfig = {
-            executablePath: SCRIPT_GEN_EXECUTABLE,
-            serverPort: 27950,
-            panelTitle: "TSP Script Generation",
+            executablePath: TRIGGER_FLOW_EXECUTABLE,
+            serverPort: 27951, // Different port from script gen
+            panelTitle: "Trigger Flow",
             iconPaths: {
                 light: path.join(
                     __dirname,
@@ -48,17 +48,41 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
                     "script-gen-pane-icon.svg",
                 ),
             },
-            viewCommandId: "tsp.viewScriptGenUI",
-            deleteCommandId: "tsp.deleteScriptGenSession",
-            deleteAllCommandId: "tsp.deleteAllScriptGenSessions",
-            sessionType: "I-V Characterization",
+            viewCommandId: "tsp.viewTriggerFlowUI",
+            deleteCommandId: "tsp.deleteTriggerFlowSession",
+            deleteAllCommandId: "tsp.deleteAllTriggerFlowSessions",
+            sessionType: "Trigger Flow",
             scriptExtension: "tsp",
         }
 
         super(context, config, dataProvider)
 
-        this.storage = new GenericSessionStorage("I-V Characterization")
+        this.storage = new GenericSessionStorage("Trigger Flow")
         this.validator = new SessionNameValidator(this.storage)
+    }
+
+    /**
+     * Listen to workspace configuration changes
+     */
+    protected listenToConfigChanges(): void {
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
+                this.loadSystemConfigurations()
+                this.sendConfigData()
+                this.refreshDataProvider()
+            }
+        })
+    }
+
+    /**
+     * Send configuration data to child process
+     */
+    protected sendConfigData(): void {
+        const payload = { systems: this.existingSystems }
+        if (this.child?.stdin) {
+            this.child.stdin.write(`${JSON.stringify(payload)}\n`)
+            console.log(`Sent configuration data: ${JSON.stringify(payload)}`)
+        }
     }
 
     /**
@@ -68,13 +92,16 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
         treeItem?: SessionTypeTreeItem | SessionInstanceTreeItem,
     ): Promise<void> {
         // If clicked on category node, create new session
-        if (treeItem?.contextValue === "SavedIVCharTreeItem" || !treeItem) {
+        if (
+            treeItem?.contextValue === "SavedTriggerFlowTreeItem" ||
+            !treeItem
+        ) {
             await this.createNewSession()
         }
         // If clicked on session instance, open existing session
         else if (
-            treeItem?.contextValue === "SavedIVCharInstance" ||
-            treeItem?.contextValue === "ActiveSavedIVCharInstance"
+            treeItem?.contextValue === "SavedTriggerFlowInstance" ||
+            treeItem?.contextValue === "ActiveSavedTriggerFlowInstance"
         ) {
             if (
                 this.dataProvider &&
@@ -112,8 +139,8 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
 
         while (!isValid) {
             input = await vscode.window.showInputBox({
-                prompt: "Enter name for the script",
-                placeHolder: "e.g., My Script",
+                prompt: "Enter name for the trigger flow session",
+                placeHolder: "e.g., My Trigger Flow",
             })
 
             if (input === undefined) {
@@ -126,7 +153,6 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
         this.sessionName = input
 
         this.spawnChildProcess()
-        this.sendResetSignal()
         await this.openPanel()
         this.setActiveStatus(this.sessionName)
     }
@@ -138,54 +164,6 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
         treeItem: SessionTypeTreeItem | SessionInstanceTreeItem,
     ): string {
         return treeItem.label
-    }
-
-    /**
-     * Listen to workspace configuration changes
-     */
-    protected listenToConfigChanges(): void {
-        vscode.workspace.onDidChangeConfiguration((event) => {
-            if (
-                event.affectsConfiguration("tsp.tspLinkSystemConfigurations") ||
-                event.affectsConfiguration("tsp.lineFrequency")
-            ) {
-                this.loadSystemConfigurations()
-                this.sendConfigData()
-                this.refreshDataProvider()
-            }
-        })
-    }
-
-    /**
-     * Send configuration data to child process
-     */
-    protected sendConfigData(): void {
-        const payload = { systems: this.existingSystems }
-
-        let lf = vscode.workspace
-            .getConfiguration("tsp")
-            .get<number>("lineFrequency")
-
-        if (
-            typeof lf !== "number" ||
-            isNaN(lf) ||
-            lf <= 0 ||
-            !Number.isFinite(lf) ||
-            lf > 120
-        ) {
-            lf = 60
-        }
-
-        const lineFrequency = { lineFrequency: lf }
-
-        if (this.child?.stdin) {
-            this.child.stdin.write(`${JSON.stringify(lineFrequency)}\n`)
-            console.log(
-                `Sent line frequency data: ${JSON.stringify(lineFrequency)}`,
-            )
-            this.child.stdin.write(`${JSON.stringify(payload)}\n`)
-            console.log(`Sent configuration data: ${JSON.stringify(payload)}`)
-        }
     }
 
     /**
