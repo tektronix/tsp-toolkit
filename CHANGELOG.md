@@ -14,9 +14,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Removed -- for now removed features.
     Fixed -- for any bug fixes.
     Security -- in case of vulnerabilities.
+    Highlights -- Feature which needs to highlighted for the release.
 -->
 
 ## [1.4.2]
+
+### Highlights
+- **Trigger Flow** - [Beta] Visual trigger flow builder for creating complex instrument trigger sequences without manual scripting
+- **Data Export** - [Beta] Save instrument output and buffer contents directly to files, with options to start/stop logging commands and results in real-time
 
 ### Added
 - \[Beta] Trigger Flow section in script generation view
@@ -31,6 +36,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
 - (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory
 - (**tsp-toolkit-kic-cli**) Add option to print absolute timestamps when saving a buffer to a CSV file
+- Added notification message when extension updates to the latest version
 
 
 ### Fixed
