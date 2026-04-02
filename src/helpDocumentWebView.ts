@@ -16,8 +16,8 @@ export class HelpDocumentWebView {
         this.context.subscriptions.push(
             vscode.commands.registerCommand(
                 "kic.viewHelpDocument",
-                (helpfile: string) => {
-                    this.getHelpDocumentContent(helpfile)
+                (helpfile: string, location?: vscode.ViewColumn) => {
+                    this.getHelpDocumentContent(helpfile, location)
                 },
             ),
         )
@@ -27,12 +27,18 @@ export class HelpDocumentWebView {
      * or update existing one
      * @param helpfile html file name
      */
-    private static getHelpDocumentContent(helpfile: string) {
+    private static getHelpDocumentContent(
+        helpfile: string,
+        location?: vscode.ViewColumn,
+    ) {
         if (
             HelpDocumentWebView.currentPanel &&
             HelpDocumentWebView.currentPanel.title === helpfile
         ) {
-            HelpDocumentWebView.currentPanel.reveal(this.getViewColumn(), true)
+            HelpDocumentWebView.currentPanel.reveal(
+                location || this.getViewColumn(),
+                true,
+            )
         } else if (
             HelpDocumentWebView.currentPanel &&
             HelpDocumentWebView.currentPanel.title !== helpfile
@@ -40,7 +46,10 @@ export class HelpDocumentWebView {
             HelpDocumentWebView.currentPanel.title = helpfile
             HelpDocumentWebView.currentPanel.webview.html =
                 this.generateWebviewContent(helpfile)
-            HelpDocumentWebView.currentPanel.reveal(this.getViewColumn(), true)
+            HelpDocumentWebView.currentPanel.reveal(
+                location || this.getViewColumn(),
+                true,
+            )
         } else {
             const options = {
                 localResourceRoots: [
@@ -50,7 +59,10 @@ export class HelpDocumentWebView {
             const panel = vscode.window.createWebviewPanel(
                 "helpFileWebView",
                 helpfile,
-                { viewColumn: this.getViewColumn(), preserveFocus: true },
+                {
+                    viewColumn: location || this.getViewColumn(),
+                    preserveFocus: true,
+                },
                 options,
             )
 

@@ -16,6 +16,36 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
 -->
 
+## [1.4.2]
+
+### Added
+- \[Beta] Trigger Flow section in script generation view
+- Added activation dependency check for Linux and Windows
+- Added configuration to control reset and clear error queue on connection
+- Added supported model validation check before adding new system configuration
+- Enable send script command in command palette
+- Added command to delete all scriptgen sessions
+- Added TSP Toolkit Quick Start Guide link to Learning Resources section in README.md
+- Support TSP files with the `.tspa` extension
+- (**tsp-toolkit-webhelp**) Added webhelp manuals for DMM7510
+- (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
+- (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory
+- (**tsp-toolkit-kic-cli**) Add option to print absolute timestamps when saving a buffer to a CSV file
+
+
+### Fixed
+- (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
+- (**tsp-toolkit-kic-cli**) Logout is not happening for MP5000 when connection is disconnected
+- (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
+- (**tsp-toolkit-kic-cli**) Correctly decide whether to use `eventlog` or `errorqueue` for `_KIC["error_messages"]()` in common script
+- (**tsp-toolkit-kic-cli**) Check if each buffer passed in `.save --buffer` has any `nil` references
+- Save commands and output to file option icon status is not getting reset when connecting
+
+
+### Changed
+- (**tsp-toolkit-kic-cli**) Removed `kic_` prefix from loaded user scripts
+- Rename "Script Generation" view to "Tools"
+
 ## [1.4.1]
 
 ### Added
@@ -27,6 +57,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Sometimes the incorrect instrument can appear to be renamed if a saved instrument is renamed
+- Stop instruments from shifting in Instrument Explorer view.
 - (**tsp-toolkit-kic-cli**) Reduce number of messages send to instrument when closing debugger
 - (**tsp-toolkit-kic-cli**) Terminal process panics when USB cable is removed during connection
 - (**tsp-toolkit-kic-cli**) Fixed timeout issue with upgrading instruments over USB
@@ -439,7 +470,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
 [1.4.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.0
 [1.3.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.3.1
