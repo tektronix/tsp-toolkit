@@ -20,8 +20,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.4.2]
 
 ### Highlights
-- **Trigger Flow** - [Beta] Visual trigger flow builder for creating complex instrument trigger sequences without manual scripting
-- **Data Export** - [Beta] Save instrument output and buffer contents directly to files
+- **\[Beta] Trigger Flow** - Visual trigger flow builder for creating complex instrument trigger sequences without manual scripting
+- **\[Beta] Data Export** - Save instrument output and buffer contents directly to files
 
 ### Added
 - \[Beta] Trigger Flow section in script generation view
@@ -32,25 +32,27 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added command to delete all scriptgen sessions
 - Added TSP Toolkit Quick Start Guide link to Learning Resources section in README.md
 - Support TSP files with the `.tspa` extension
+- Added information message notification when extension updates to the latest version
 - (**tsp-toolkit-webhelp**) Added webhelp manuals for DMM7510
 - (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
 - (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory
 - (**tsp-toolkit-kic-cli**) Add option to print absolute timestamps when saving a buffer to a CSV file
-- Added information message notification when extension updates to the latest version
 
 
 ### Fixed
+- Save commands and output to file option icon status is not getting reset when connecting
 - (**tsp-toolkit-kic-cli**) Fixed issue in fetching nodes for DMM6500 with no scan card installed
 - (**tsp-toolkit-kic-cli**) Logout is not happening for MP5000 when connection is disconnected
 - (**tsp-toolkit-webhelp-to-json**) Missing trigger model commands for 2461
 - (**tsp-toolkit-kic-cli**) Correctly decide whether to use `eventlog` or `errorqueue` for `_KIC["error_messages"]()` in common script
 - (**tsp-toolkit-kic-cli**) Check if each buffer passed in `.save --buffer` has any `nil` references
-- Save commands and output to file option icon status is not getting reset when connecting
+- (**tsp-toolkit-kic-cli**) If an error occurs when reading a script file (such as non-UTF8 files like JPEGs), print the error and continue
+- (**tsp-toolkit-kic-cli**) Correct upgrade message based on flash target (mainframe or instrument)
 
 
 ### Changed
-- (**tsp-toolkit-kic-cli**) Removed `kic_` prefix from loaded user scripts
 - Rename "Script Generation" view to "Tools"
+- (**tsp-toolkit-kic-cli**) Removed `kic_` prefix from loaded user scripts
 
 ## [1.4.1]
 
