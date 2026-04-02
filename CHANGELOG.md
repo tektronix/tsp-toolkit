@@ -36,7 +36,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-webhelp-to-json**) Added language feature support for DMM7512, DMM6500 and DAQ6510
 - (**tsp-toolkit-kic-cli**) Add `--save` and `--run <RUN_ENABLE>` args for `.script` command to allow users to save scripts to non-volatile instrument memory
 - (**tsp-toolkit-kic-cli**) Add option to print absolute timestamps when saving a buffer to a CSV file
-- Added notification message when extension updates to the latest version
+- Added information message notification when extension updates to the latest version
 
 
 ### Fixed
