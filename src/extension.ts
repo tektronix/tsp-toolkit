@@ -197,35 +197,29 @@ async function checkVersionAndShowAnnouncement(
         // Update stored version
         await context.globalState.update("tsp-toolkit-version", currentVersion)
 
-        // Don't show announcement on first install (previousVersion is undefined)
+        let message = ""
+        message = `TSP Toolkit v${currentVersion} has been successfully installed. Check out the features!`
+
         if (previousVersion && currentVersion) {
-            Log.info(
-                `Showing update announcement for v${currentVersion}`,
-                LOGLOC,
+            message = `TSP Toolkit just upgraded to v${currentVersion}. Check out what's new!`
+        }
+        const changelogPath = vscode.Uri.joinPath(
+            context.extensionUri,
+            "CHANGELOG.md",
+        )
+
+        const action = await vscode.window.showInformationMessage(
+            message,
+            "View Changelog",
+            "Dismiss",
+        )
+
+        if (action === "View Changelog") {
+            // Open CHANGELOG.md file in preview mode
+            await vscode.commands.executeCommand(
+                "markdown.showPreview",
+                changelogPath,
             )
-
-            // Extract highlights from changelog
-            const changelogPath = vscode.Uri.joinPath(
-                context.extensionUri,
-                "CHANGELOG.md",
-            )
-
-            // Build notification message with highlights
-            const message = `TSP Toolkit just upgraded to v${currentVersion}. Check out what's new!`
-
-            const action = await vscode.window.showInformationMessage(
-                message,
-                "View Changelog",
-                "Dismiss",
-            )
-
-            if (action === "View Changelog") {
-                // Open CHANGELOG.md file in preview mode
-                await vscode.commands.executeCommand(
-                    "markdown.showPreview",
-                    changelogPath,
-                )
-            }
         }
     }
 }
