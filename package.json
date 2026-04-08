@@ -262,7 +262,10 @@
             {
                 "command": "tsp.saveTspOutputStart",
                 "title": "[Beta] Save commands and output to file",
-                "icon": "$(git-stash)"
+                "icon": {
+                    "light": "resources/light/save-commands-and-output.svg",
+                    "dark": "resources/dark/save-commands-and-output.svg"
+                }
             },
             {
                 "command": "tsp.saveTspOutputEnd",
@@ -272,12 +275,18 @@
             {
                 "command": "tsp.saveBuffersToFile",
                 "title": "[Beta] Save buffers to a file",
-                "icon": "$(layout-panel-dock)"
+                "icon": {
+                    "light": "resources/light/save-buffer.svg",
+                    "dark": "resources/dark/save-buffer.svg"
+                }
             },
             {
                 "command": "tsp.saveScriptOutput",
                 "title": "[Beta] Save TSP Script Output",
-                "icon": "$(file-code)"
+                "icon": {
+                    "light": "resources/light/run-and-save.svg",
+                    "dark": "resources/dark/run-and-save.svg"
+                }
             },
             {
                 "command": "tspdebug.debugContent",
