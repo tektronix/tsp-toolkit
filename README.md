@@ -287,12 +287,19 @@ for more information.
     - 2636B
     - 2651A
     - 2657A
+    - 3706A
+    - 707B
+    - 708B
+    - DAQ6510
+    - DMM6500
     - DMM7510
+    - DMM7512
     - MP5103
+        - MPSU50-2ST
+        - MSMU60-2
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
-- Instrument discovery might not work for 2600-series and 3706A due to firmware limitation.
-- Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
+- Instrument discovery might not work for 2600-series and 3706A due to firmware limitations
 - Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
 - Debugger does not function when the instrument is password protected
 - TSP script generation currently supports one MP5000 TSP node (`localnode` only). All channels must be on the same node but may be in separate modules.
