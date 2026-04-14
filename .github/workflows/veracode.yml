@@ -34,7 +34,7 @@ jobs:
         with:
           appname: "tsp-toolkit"
           createprofile: false
-          version: ${{ case( (endsWith(github.ref, 'main') && contains(github.head_ref, 'release/') && github.event.pull_request.merged ), 'release', (startsWith(github.ref, 'refs/release/') && startsWith(github.head_ref, 'refs/pull/')), 'pr-${{ github.ref_name}}', 'other') }}-${{ github.sha }}-${{github.job}}-${{github.run_id}}-${{github.run_attempt}}
+          version: ${{ case( (endsWith(github.ref, 'main') && contains(github.head_ref, 'release/') && github.event.pull_request.merged ), 'release', 'pr-${{ github.ref_name}}') }}-${{ github.sha }}-${{github.job}}-${{github.run_id}}-${{github.run_attempt}}
           filepath: "app.zip"
           scantimeout: 30
           vid: ${{ secrets.VERACODE_API_ID }}
