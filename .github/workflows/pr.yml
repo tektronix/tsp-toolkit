@@ -25,7 +25,7 @@ jobs:
       - name: Tool Versions
         run: npx prettier --version
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: run prettier
         run: npx prettier --list-different
 
@@ -42,7 +42,7 @@ jobs:
       - name: Tool Versions
         run: npx eslint --version
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
@@ -63,7 +63,7 @@ jobs:
         password: ${{secrets.GITHUB_TOKEN}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install Tools
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
@@ -71,7 +71,7 @@ jobs:
       - name: Generate NPM BOM
         run: npx @cyclonedx/cyclonedx-npm --output-format JSON --package-lock-only --output-reproducible --output-file npm.cdx.json
       - name: Upload Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: software-bom
           path: |
@@ -90,7 +90,7 @@ jobs:
       - name: Tool Versions
         run: npx prettier --version
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
@@ -126,7 +126,7 @@ jobs:
         run: |
           npm --version
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install dependencies
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
@@ -137,7 +137,7 @@ jobs:
         run: |
           npx vsce package --target ${{matrix.vscode-platform}}
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-${{matrix.vscode-platform}}
           path: "*.vsix"
@@ -172,7 +172,7 @@ jobs:
         password: ${{secrets.GITHUB_TOKEN}}
     steps:
       - name: Get Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: package-${{matrix.vscode-platform}}
           path: extension
@@ -201,12 +201,12 @@ jobs:
     if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) && github.event.pull_request.merged ) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
       - name: Get Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: package-*
           merge-multiple: true
@@ -238,7 +238,7 @@ jobs:
     if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) || github.event.pull_request.merged ) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -280,13 +280,13 @@ jobs:
 
       - run: 'git tag --list ${V}*'
       - name: Get Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: package-*
           merge-multiple: true
           path: extension
       #- name: Get SBOM
-      #  uses: actions/download-artifact@v4
+      #  uses: actions/download-artifact@v8
       #  with:
       #    name: software-bom
       #    path: sbom
