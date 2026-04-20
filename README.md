@@ -287,9 +287,6 @@ for more information.
     - 2636B
     - 2651A
     - 2657A
-    - 3706A
-    - 707B
-    - 708B
     - DAQ6510
     - DMM6500
     - DMM7510
