@@ -665,18 +665,19 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         return false
                     }
                     //Dump output queue if enabled
-                    let dump_path = undefined
-                    if (
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("dumpQueueOnConnect") === true
-                    ) {
-                        progress.report({
-                            message:
-                                "Dumping data from instrument output queue",
-                        })
-                        dump_path = await this.dumpOutputQueue()
-                    }
+                    // Disabled dumping output queue on connect until it is reimplemented
+                    //let dump_path = undefined
+                    //if (
+                    //    vscode.workspace
+                    //        .getConfiguration("tsp")
+                    //        .get("dumpQueueOnConnect") === true
+                    //) {
+                    //    progress.report({
+                    //        message:
+                    //            "Dumping data from instrument output queue",
+                    //    })
+                    //    dump_path = await this.dumpOutputQueue()
+                    //}
 
                     progress.report({
                         message:
@@ -793,14 +794,15 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     )
                     this.status = ConnectionStatus.Connected
 
-                    const additional_terminal_args = []
+                    const additional_terminal_args: string[] = []
 
-                    if (dump_path) {
-                        additional_terminal_args.push(
-                            "--dump-output",
-                            dump_path,
-                        )
-                    }
+                    // Disabled dumping output queue on connect until it is reimplemented
+                    //if (dump_path) {
+                    //    additional_terminal_args.push(
+                    //        "--dump-output",
+                    //        dump_path,
+                    //    )
+                    //}
 
                     progress.report({
                         message: `Connecting to instrument with model ${info.model} and S/N ${info.serial_number}`,
