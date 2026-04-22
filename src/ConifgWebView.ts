@@ -471,6 +471,90 @@ export class ConfigWebView implements WebviewViewProvider {
             (system) => !system.name,
         )
         if (systemWithEmptyName) {
+            // Validate localNode
+            const localNodeModel = systemWithEmptyName.localNode
+            if (!localNodeModel || !SUPPORTED_MODELS_DETAILS[localNodeModel]) {
+                vscode.window.showErrorMessage(
+                    `Cannot add new System. The local node model "${localNodeModel}" is not supported.`,
+                )
+                await this.removeSystemWithEmptyName(
+                    existingSystems,
+                    systemWithEmptyName,
+                )
+                return
+            }
+
+            // Validate all slot modules for localNode if slots and moduleOptions are present
+            const localNodeSlots = systemWithEmptyName.slots
+            const localNodeModuleOptions =
+                SUPPORTED_MODELS_DETAILS[localNodeModel].moduleOptions
+            const errorMessages: string[] = []
+            if (localNodeSlots && localNodeModuleOptions) {
+                const unsupportedLocalNodeModules = localNodeSlots.filter(
+                    (slot) => !localNodeModuleOptions.includes(slot.module),
+                )
+                if (unsupportedLocalNodeModules.length > 0) {
+                    errorMessages.push(
+                        `Local node model "${localNodeModel}" has unsupported module(s): ${unsupportedLocalNodeModules
+                            .map((s) => s.module)
+                            .join(", ")}.`,
+                    )
+                }
+            }
+
+            // Validate each node's mainframe and, if present, its slot modules
+            const nodes = systemWithEmptyName.nodes || []
+            const unsupportedNodeModels: string[] = []
+            const nodesWithUnsupportedModules: {
+                nodeId: string
+                mainframe: string
+                modules: string[]
+            }[] = []
+            for (const node of nodes) {
+                if (!SUPPORTED_MODELS_DETAILS[node.mainframe]) {
+                    unsupportedNodeModels.push(node.mainframe)
+                    continue
+                }
+                const slots = node.slots
+                const moduleOptions =
+                    SUPPORTED_MODELS_DETAILS[node.mainframe].moduleOptions
+                if (slots && moduleOptions) {
+                    const unsupportedModules = slots
+                        .filter((slot) => !moduleOptions.includes(slot.module))
+                        .map((slot) => slot.module)
+                    if (unsupportedModules.length > 0) {
+                        nodesWithUnsupportedModules.push({
+                            nodeId: node.nodeId,
+                            mainframe: node.mainframe,
+                            modules: unsupportedModules,
+                        })
+                    }
+                }
+            }
+            if (unsupportedNodeModels.length > 0) {
+                errorMessages.push(
+                    `Node(s) with unsupported model(s): ${unsupportedNodeModels.join(", ")}.`,
+                )
+            }
+            if (nodesWithUnsupportedModules.length > 0) {
+                for (const node of nodesWithUnsupportedModules) {
+                    errorMessages.push(
+                        `Node "${node.nodeId}" (${node.mainframe}) has unsupported module(s): ${node.modules.join(", ")}.`,
+                    )
+                }
+            }
+
+            if (errorMessages.length > 0) {
+                vscode.window.showErrorMessage(
+                    `Cannot add new System.\n${errorMessages.join("\n")}`,
+                )
+                await this.removeSystemWithEmptyName(
+                    existingSystems,
+                    systemWithEmptyName,
+                )
+                return
+            }
+
             const name = await this.getNewSystemName()
             if (name) {
                 systemWithEmptyName.name = name
@@ -484,20 +568,25 @@ export class ConfigWebView implements WebviewViewProvider {
                 this.render_new_system(systemWithEmptyName.name)
                 await this.activateSystem(systemWithEmptyName.name)
             } else {
-                const updatedSystems = existingSystems.filter(
-                    (system) => system !== systemWithEmptyName,
+                await this.removeSystemWithEmptyName(
+                    existingSystems,
+                    systemWithEmptyName,
                 )
-                await vscode.workspace
-                    .getConfiguration("tsp")
-                    .update(
-                        "tspLinkSystemConfigurations",
-                        updatedSystems,
-                        false,
-                    )
             }
         }
     }
 
+    private async removeSystemWithEmptyName(
+        existingSystems: SystemInfo[],
+        systemWithEmptyName: SystemInfo,
+    ) {
+        const updatedSystems = existingSystems.filter(
+            (system) => system !== systemWithEmptyName,
+        )
+        await vscode.workspace
+            .getConfiguration("tsp")
+            .update("tspLinkSystemConfigurations", updatedSystems, false)
+    }
     private async getNewSystemName() {
         const existingSystems: SystemInfo[] =
             vscode.workspace
