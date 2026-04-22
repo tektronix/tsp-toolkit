@@ -297,7 +297,7 @@ for more information.
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
 - Instrument discovery might not work for 2600-series and 3706A due to firmware limitations
-- Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
+- Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works and has been disabled
 - Debugger does not function when the instrument is password protected
 - TSP script generation currently supports one MP5000 TSP node (`localnode` only). All channels must be on the same node but may be in separate modules.
 - Attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string) will result in an error and is not currently supported

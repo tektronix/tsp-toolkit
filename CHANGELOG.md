@@ -50,6 +50,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - (**tsp-toolkit-kic-cli**) If an error occurs when reading a script file (such as non-UTF8 files like JPEGs), print the error and continue
 - (**tsp-toolkit-kic-cli**) Correct upgrade message based on flash target (mainframe or instrument)
 
+### Removed
+- Removed "dump queue on connect" functionality since it no longer worked
+
 
 ### Changed
 - Rename "Script Generation" view to "Tools"
