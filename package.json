@@ -341,12 +341,6 @@
                     "description": "A list of saved instrument details",
                     "scope": "application"
                 },
-                "tsp.dumpQueueOnConnect": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Collect the contents of the instrument output queue and print it to the terminal when connecting.",
-                    "scope": "application"
-                },
                 "tsp.reset": {
                     "type": "boolean",
                     "default": false,
