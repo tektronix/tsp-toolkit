@@ -43,7 +43,9 @@ export interface WebviewMessage {
 export enum WebviewCommandType {
     OPEN_SCRIPT = "open_script",
     UPDATE_SESSION = "update_session",
+    CREATE_NEW_SESSION = "create_new_session",
     OPEN_MANUAL = "open_manual",
+    GET_INITIAL_CONFIGURATION = "get_initial_configuration",
 }
 
 /**
@@ -121,7 +123,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
 
             this.child.stdout?.on("data", (data: Buffer) => {
                 const output = data.toString()
-                this.handleChildStdout(output, this.sessionName)
+                console.log(`${this.config.sessionType} stdout: ${output}`)
             })
 
             this.child.on("error", (error) => {
@@ -138,36 +140,6 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                     `${this.config.sessionType} stderr: ${error.toString()}`,
                 )
             })
-        }
-    }
-
-    /**
-     * Handle stdout data from child process
-     */
-    protected handleChildStdout(
-        output: string,
-        sessionName: string | undefined,
-    ): void {
-        console.log(
-            `Received data from ${this.config.sessionType} executable: ${output}`,
-        )
-
-        if (output.includes("instrument data requested")) {
-            const name = sessionName || "default_session"
-            this.sendSessionPathData(name)
-            this.sendConfigData()
-            this.lastSentData = name
-        }
-
-        // Handle initial response and save session
-        if (
-            output.includes('"request_type":"initial_response"') &&
-            sessionName
-        ) {
-            this.saveSession(
-                sessionName,
-                output.substring(output.indexOf('{"request_type"')),
-            )
         }
     }
 
@@ -245,6 +217,20 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                 this.openGeneratedScript()
 
                 break
+            case WebviewCommandType.CREATE_NEW_SESSION:
+                if (this.sessionName) {
+                    this.saveSession(
+                        this.sessionName,
+                        message.payload.substring(
+                            message.payload.indexOf('{"request_type"'),
+                        ),
+                    )
+                } else {
+                    console.error(
+                        "Cannot update session: sessionName is undefined",
+                    )
+                }
+                break
             case WebviewCommandType.UPDATE_SESSION:
                 if (this.sessionName) {
                     this.updateSession(
@@ -274,9 +260,18 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                 )
 
                 break
+            case WebviewCommandType.GET_INITIAL_CONFIGURATION:
+                this.sendInitialConfiguration()
+                break
             default:
                 console.warn(`Unknown command from webview: ${message.command}`)
         }
+    }
+    sendInitialConfiguration(): void {
+        const name = this.sessionName || "default_session"
+        this.sendSessionPathData(name)
+        this.sendConfigData()
+        this.lastSentData = name
     }
 
     /**
@@ -341,7 +336,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         this.panel?.onDidDispose(() => {
             this.panel = undefined
             if (this.child) {
-                this.child.stdin?.write("shutdown\n")
+                this.child.stdin?.write('{"shutdown": true}\n')
             }
             this.setActiveStatus(undefined)
         })
