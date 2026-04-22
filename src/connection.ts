@@ -638,6 +638,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
         this.status = ConnectionStatus.Connected
+        if (this._parent) {
+            this._parent.savingTspOutput = false
+        }
+
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
             const result = await vscode.window.withProgress(
@@ -661,18 +665,19 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         return false
                     }
                     //Dump output queue if enabled
-                    let dump_path = undefined
-                    if (
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("dumpQueueOnConnect") === true
-                    ) {
-                        progress.report({
-                            message:
-                                "Dumping data from instrument output queue",
-                        })
-                        dump_path = await this.dumpOutputQueue()
-                    }
+                    // Disabled dumping output queue on connect until it is reimplemented
+                    //let dump_path = undefined
+                    //if (
+                    //    vscode.workspace
+                    //        .getConfiguration("tsp")
+                    //        .get("dumpQueueOnConnect") === true
+                    //) {
+                    //    progress.report({
+                    //        message:
+                    //            "Dumping data from instrument output queue",
+                    //    })
+                    //    dump_path = await this.dumpOutputQueue()
+                    //}
 
                     progress.report({
                         message:
@@ -789,14 +794,15 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     )
                     this.status = ConnectionStatus.Connected
 
-                    const additional_terminal_args = []
+                    const additional_terminal_args: string[] = []
 
-                    if (dump_path) {
-                        additional_terminal_args.push(
-                            "--dump-output",
-                            dump_path,
-                        )
-                    }
+                    // Disabled dumping output queue on connect until it is reimplemented
+                    //if (dump_path) {
+                    //    additional_terminal_args.push(
+                    //        "--dump-output",
+                    //        dump_path,
+                    //    )
+                    //}
 
                     progress.report({
                         message: `Connecting to instrument with model ${info.model} and S/N ${info.serial_number}`,
@@ -826,6 +832,22 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
                     if (this._keyring) {
                         terminal_args.push("--keyring", this._keyring)
+                    }
+
+                    if (
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("reset") === true
+                    ) {
+                        terminal_args.push("--reset")
+                    }
+
+                    if (
+                        vscode.workspace
+                            .getConfiguration("tsp")
+                            .get("clearErrorQueue") === true
+                    ) {
+                        terminal_args.push("--clear-error-queue")
                     }
 
                     Log.debug("Starting VSCode Terminal", LOGLOC)
