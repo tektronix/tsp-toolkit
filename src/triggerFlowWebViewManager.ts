@@ -154,6 +154,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
 
         this.spawnChildProcess()
         await this.openPanel()
+        this.sendResetSignal()
         this.setActiveStatus(this.sessionName)
     }
 
@@ -194,6 +195,10 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
             vscode.window.showErrorMessage(
                 "Data provider is not initialized. Cannot update session.",
             )
+            return
+        }
+        if (!this.storage.sessionExists(name)) {
+            this.saveSession(name, config)
             return
         }
 
