@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+      - release/*
+    tags:
+      - "*"
+  pull_request:
+     types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
   workflow_dispatch:
 
 jobs:
@@ -13,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: create new package-lock.json
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
@@ -21,11 +30,11 @@ jobs:
       - name: ZIP source folder
         run: zip -r app.zip src package-lock.json
       - name: Run Veracode Policy scan
-        uses: veracode/veracode-uploadandscan-action@0.2.6
+        uses: veracode/veracode-uploadandscan-action@0.2.10
         with:
           appname: "tsp-toolkit"
           createprofile: false
-          version: ${{ github.sha }}
+          version: ${{ case( (endsWith(github.ref, 'main') && contains(github.head_ref, 'release/') && github.event.pull_request.merged ), 'release', github.ref_name) }}-${{ github.sha }}-${{github.job}}-${{github.run_id}}-${{github.run_attempt}}
           filepath: "app.zip"
           scantimeout: 30
           vid: ${{ secrets.VERACODE_API_ID }}
