@@ -21,6 +21,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
     - **\[Beta]** Save script output to a file
     - **\[Beta]** Save buffer contents to a file
     - **\[Beta]** Start and stop saving commands and output to a file
+* **\[Beta] TriggerFlow® Visual Editor** - Generate trigger model code by moving trigger model block on a canvas.
 
 ## Quick Start
 
@@ -87,6 +88,7 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 - **Reset & Abort**: Control instrument state with reset and abort functions.
 - **\[Beta] Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
 - **\[Beta] Save Commands and Output to File**: Save any proceeding commands and their output to a file
+* **\[Beta] TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
 
 ### Terminal Usage
 
@@ -309,6 +311,7 @@ for more information.
 - Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
   instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
   such as using `#lua_table` to get the number of elements in a table.
+- The TriggerFlow® Visual Editor is in Beta and we expect there will be issues. Please let us know any improvements or issues that can make it better!
 
 <!--Refs-->
 [official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
