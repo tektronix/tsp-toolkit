@@ -21,6 +21,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
     - **\[Beta]** Save script output to a file
     - **\[Beta]** Save buffer contents to a file
     - **\[Beta]** Start and stop saving commands and output to a file
+* **\[Beta] TriggerFlow® Visual Editor** - Generate trigger model code by moving trigger model block on a canvas.
 
 ## Quick Start
 
@@ -87,6 +88,7 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 - **Reset & Abort**: Control instrument state with reset and abort functions.
 - **\[Beta] Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
 - **\[Beta] Save Commands and Output to File**: Save any proceeding commands and their output to a file
+* **\[Beta] TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
 
 ### Terminal Usage
 
@@ -232,6 +234,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 ### Learning Resources
 
 - [TSP Toolkit Feature Walkthrough][tsp-toolkit-feature-walkthrough]
+- [TSP Toolkit Quick Start Guide (PDF)][tsp-toolkit-quick-start-guide]
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
@@ -239,6 +242,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Script Example Repository][tsp-script-examples]
     - Clone or download the ZIP file of the repository using the "Code" button
     ![Clone or download from GitHub using the "Code" button][pic-example-repo-download]
+- [Lua-5.0 Manual Reference][official-Lua-5.0-reference]
 
 ### Supported Locales
 
@@ -285,13 +289,17 @@ for more information.
     - 2636B
     - 2651A
     - 2657A
+    - DAQ6510
+    - DMM6500
     - DMM7510
+    - DMM7512
     - MP5103
+        - MPSU50-2ST
+        - MSMU60-2
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
-- Instrument discovery might not work for 2600-series and 3706A due to firmware limitation.
-- Running the debugger with a breakpoint on a `trigger.detector[x].wait(y)` command will cause the MP5103 to crash
-- Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works
+- Instrument discovery might not work for 2600-series and 3706A due to firmware limitations
+- Dumping the instrument queue with the "Dump queue on connect" setting enabled no longer works and has been disabled
 - Debugger does not function when the instrument is password protected
 - TSP script generation currently supports one MP5000 TSP node (`localnode` only). All channels must be on the same node but may be in separate modules.
 - Attempting to connect to a raw socket over VISA (using `TCPIP0::<...>::SOCKET` VISA resource string) will result in an error and is not currently supported
@@ -300,8 +308,13 @@ for more information.
 - When upgrading an MP5103 mainframe over USBTMC or HiSLIP, IO errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
 - When upgrading TTI and 2600 products over VXI-11, IO Errors may occur. Prefer using raw sockets (just the IP address) to flash firmware.
 - There are occasional issues running scripts over VXI-11 on 2600 products that lead to mysterious TSP errors.
+- Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
+  instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
+  such as using `#lua_table` to get the number of elements in a table.
+- The TriggerFlow® Visual Editor is in Beta and we expect there will be issues. Please let us know any improvements or issues that can make it better!
 
 <!--Refs-->
+[official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
 [app-note-script-gen]: https://www.tek.com/en/application-note/accelerate-automation-effortless-script-generation-with-tsp-toolkit
 [app-note-how-to-write-tsp-scripts]: https://www.tek.com/en/documents/application-note/how-to-write-scripts-for-test-script-processing-(tsp)
 [code]: https://code.visualstudio.com/
@@ -318,6 +331,7 @@ for more information.
 [tsp-toolkit-dev-process]: ./CONTRIBUTING.md#development-process
 [tsp-video-series]: https://www.youtube.com/@tektronix/search?query=TSP
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
+[tsp-toolkit-quick-start-guide]: https://www.tek.com/en/manual/tsp-toolkit-quick-start-guide
 
 <!--Pics-->
 [pic-send-script-to-terminal]: https://github.com/tektronix/tsp-toolkit/blob/main/images/SendScriptToTerminal.png?raw=true
