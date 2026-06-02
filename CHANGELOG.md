@@ -26,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - **tsp-toolkit-trigger-flow** - Many bug fixes and improvements to functionality and appearance.
 - **tsp-toolkit-kic-cli** - Improved reliability of sending firmware updates, particularly affecting Linux
+- **tsp-toolkit-kic-cli** - Fixed issue where attempting to save script output to a locked file can cause a crash
 
 
 ## [1.4.2]
