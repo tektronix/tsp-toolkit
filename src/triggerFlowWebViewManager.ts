@@ -31,7 +31,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         const config: SessionConfig = {
             executablePath: TRIGGER_FLOW_EXECUTABLE,
             serverPort: 27951, // Different port from script gen
-            panelTitle: "[Beta] Trigger Flow",
+            panelTitle: "TriggerFlow®",
             iconPaths: {
                 light: path.join(
                     __dirname,
@@ -139,8 +139,8 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
 
         while (!isValid) {
             input = await vscode.window.showInputBox({
-                prompt: "Enter name for the trigger flow session",
-                placeHolder: "e.g., My Trigger Flow",
+                prompt: "Enter name for the TriggerFlow session",
+                placeHolder: "e.g., My TriggerFlow",
             })
 
             if (input === undefined) {
