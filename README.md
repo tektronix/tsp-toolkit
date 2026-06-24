@@ -36,6 +36,10 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
    - Use the Instrument Explorer to discover instruments on your network and connect by clicking the play button (▶️)
    - Click the "+" button in the Instrument Explorer to connect via IP address or VISA resource string
    - Use the Command Palette (Ctrl+Shift+P) and run "TSP: Connect"
+> ℹ️ **Note:**
+> If your instrument is operating using secure connections, TSP Toolkit will prompt for a password to be
+> entered before connecting. The security settings for your instrument must be configured before using TSP Toolkit.
+> For more information on configuring your instrument's security settings, please see your instrument's reference manual.
 - **Step 6.** [Configure your project](#configure-your-project) for your [TSP-Link™][tsp-link] instrument configuration.
 - **Step 7.** Edit and run your TSP scripts by right-clicking them in the file explorer,
               file tabs, or editor window and selecting "Send Script to Terminal"
