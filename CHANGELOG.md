@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.1]
+
+### Fixed
+- **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
+- **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
+
 
 ## [1.5.0]
 
