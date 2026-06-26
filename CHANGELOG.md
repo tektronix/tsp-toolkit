@@ -18,6 +18,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.1]
 
+### Fixed
+- **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
+- **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
+
+
 ## [1.5.0]
 
 ### Highlights
