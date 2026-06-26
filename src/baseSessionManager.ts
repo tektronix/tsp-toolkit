@@ -60,6 +60,33 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected sessionName: string | undefined
     protected lastSentData: string | undefined
 
+    // Mapping of block names to manual URLs for the OPEN_MANUAL command
+    // in future, this details we can keep catalog file?.
+    private blockNameandManualUrlMap: Record<string, string> = {
+        MEASURE: "114968.htm",
+        "LOG EVENT": "115503.htm",
+        NOTIFY: "114971.htm",
+        "MEASURE OVERLAPPED": "114969.htm",
+        "WAIT ON EVENT": "114975.htm",
+        "NO OPERATION": "114970.htm",
+        branch: "117325.htm",
+        "ONCE EXCLUDED": "114965.htm",
+        "< LOOP COUNTER": "114961.htm",
+        ONCE: "114964.htm",
+        "ON EVENT": "114966.htm",
+        ALWAYS: "114960.htm",
+        "CONFIG LIST RECALL": "115501.htm",
+        "CONFIG LIST PREV": "115500.htm",
+        "CONFIG LIST NEXT": "115499.htm",
+        "SOURCE OUTPUT": "114974.htm",
+        "CONSTANT DELAY": "114967.htm",
+        "SOURCE ACTION SKIP": "115827.htm",
+        "SOURCE ACTION SET": "132966.htm",
+        "SOURCE ACTION BIAS": "115504.htm",
+        "SOURCE ACTION STEP": "114973.htm",
+        "RESET BRANCH COUNTER": "114972.htm",
+    }
+
     constructor(
         protected readonly context: vscode.ExtensionContext,
         protected readonly config: SessionConfig,
@@ -246,19 +273,25 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                 }
                 break
             case WebviewCommandType.OPEN_MANUAL:
-                //this.openManual(message.payload)
+                try {
+                    const payload = message.payload as unknown
+                    const blockData =
+                        typeof payload === "string"
+                            ? (JSON.parse(payload) as {
+                                  block_name?: string
+                              })
+                            : (payload as { block_name?: string })
 
-                // const blockName = message.payload.substring(
-                //     message.payload.indexOf('{"block_name":"') + 15,
-                //     message.payload.indexOf('"}'),
-                // )
-                // this.openManual(blockName)
-                void vscode.commands.executeCommand(
-                    "kic.viewHelpDocument",
-                    "MPSU50-2ST/115504.htm",
-                    vscode.ViewColumn.Beside,
-                )
-
+                    if (blockData.block_name) {
+                        this.openManual(blockData.block_name)
+                    } else {
+                        console.error(
+                            "Missing block_name in OPEN_MANUAL payload",
+                        )
+                    }
+                } catch {
+                    console.error("Invalid payload for OPEN_MANUAL command")
+                }
                 break
             case WebviewCommandType.GET_INITIAL_CONFIGURATION:
                 this.sendInitialConfiguration()
@@ -315,6 +348,12 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
 
     private openManual(blockName: string): void {
         console.log(`Opening manual for block: ${blockName}`)
+        void vscode.commands.executeCommand(
+            "kic.viewHelpDocument",
+            `MSMU60-2/${this.blockNameandManualUrlMap[blockName]}`,
+            blockName,
+            vscode.ViewColumn.Beside,
+        )
     }
 
     /**
