@@ -213,7 +213,6 @@ following commands:
 |:---------------------------------|:------------------------------------------------------------------------------------|
 | TSP: Connect                     | Opens a new terminal session to an instrument (be sure to close with `.exit`, see the [Known Issues](#known-issues) section below) |
 | TSP: Debug TSP File              | Start debugging the current TSP file on the connected instrument                    |
-| TSP Toolkit: Focus on Script Generation View   | Open the Automated TSP Script Generation interface                               |
 
 
 To see all available Tektronix TSP Toolkit commands, open the Command Palette and type `TSP`.
