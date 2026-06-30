@@ -16,6 +16,24 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.1]
+
+### Fixed
+- **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
+- **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
+
+
+## [1.5.0]
+
+### Highlights
+- **TriggerFlow®** - (Stabilized) Visual trigger flow builder for creating complex instrument trigger sequences without manual scripting
+- **Data Export** - (Stabilized) Save instrument output and buffer contents directly to files
+
+### Fixed
+- **tsp-toolkit-trigger-flow** - Many bug fixes and improvements to functionality and appearance.
+- **tsp-toolkit-kic-cli** - Improved reliability of sending firmware updates, particularly affecting Linux
+- **tsp-toolkit-kic-cli** - Fixed issue where attempting to save script output to a locked file can cause a crash
+
 
 ## [1.4.2]
 
@@ -482,7 +500,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
 [1.4.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.0
