@@ -22,6 +22,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
 - **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
 
+### Added
+- **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
+
 
 ## [1.5.0]
 
