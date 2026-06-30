@@ -16,8 +16,12 @@ export class HelpDocumentWebView {
         this.context.subscriptions.push(
             vscode.commands.registerCommand(
                 "kic.viewHelpDocument",
-                (helpfile: string, location?: vscode.ViewColumn) => {
-                    this.getHelpDocumentContent(helpfile, location)
+                (
+                    helpfile: string,
+                    title?: string,
+                    location?: vscode.ViewColumn,
+                ) => {
+                    this.getHelpDocumentContent(helpfile, title, location)
                 },
             ),
         )
@@ -26,9 +30,12 @@ export class HelpDocumentWebView {
      * check for current webview pane and decide needs to create
      * or update existing one
      * @param helpfile html file name
+     * @param title optional title for the webview panel
+     * @param location optional view column for the webview panel
      */
     private static getHelpDocumentContent(
         helpfile: string,
+        title?: string,
         location?: vscode.ViewColumn,
     ) {
         if (
@@ -58,7 +65,7 @@ export class HelpDocumentWebView {
             }
             const panel = vscode.window.createWebviewPanel(
                 "helpFileWebView",
-                helpfile,
+                title || helpfile,
                 {
                     viewColumn: location || this.getViewColumn(),
                     preserveFocus: true,
