@@ -748,7 +748,6 @@
         "class-transformer": "0.5.1",
         "json-rpc-2.0": "1.7.0",
         "path-browserify": "1.0.1",
-        "portfinder": "1.0.32",
         "sax-ts": "1.2.13",
         "xml-js": "1.6.11"
     },
