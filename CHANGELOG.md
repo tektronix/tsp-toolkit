@@ -23,6 +23,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
 
 ### Added
+- **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
+- **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
 - **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
 
 
