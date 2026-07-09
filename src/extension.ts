@@ -34,6 +34,68 @@ import {
 let _instrExplorer: InstrumentsExplorer
 
 /**
+ * Represents a contributed TSP Toolkit configuration setting.
+ */
+interface ResettableSetting {
+    key: string
+    label: string
+    description?: string
+}
+
+/**
+ * Represents one reset option shown to the user.
+ */
+interface ResetAction {
+    id: string
+    label: string
+    description: string
+    detail?: string
+    execute(): Promise<void>
+}
+
+interface ManifestConfigurationSection {
+    properties?: Record<string, unknown>
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null
+}
+
+function getManifestConfigurationSections(
+    packageJson: unknown,
+): ManifestConfigurationSection[] {
+    if (!isRecord(packageJson)) {
+        return []
+    }
+
+    const contributes = packageJson["contributes"]
+    if (!isRecord(contributes)) {
+        return []
+    }
+
+    const configuration = contributes["configuration"]
+    if (Array.isArray(configuration)) {
+        return configuration.filter(isRecord)
+    }
+
+    if (isRecord(configuration)) {
+        return [configuration]
+    }
+
+    return []
+}
+
+const RESET_LABELS: Record<string, string> = {
+    "tsp.savedInstruments": "Saved Instruments",
+    "tsp.tspLinkSystemConfigurations": "Saved Instrument Configurations",
+    "tsp.lineFrequency": "Power Line Frequency",
+    "tsp.ignoreMissingVisa": "Ignore Missing VISA Warning",
+    "tsp.showFunction": "Show Functions in Variables Pane",
+    "tsp.reset": "Reset Instrument on Connection",
+    "tsp.clearErrorQueue": "Clear Error Queue on Connection",
+}
+
+/**
  * Function will create terminal with given connection details
  * @param connection_string connection string example 'tsPop@127.0.0.1'
  * @param model_serial model serial number
@@ -441,6 +503,12 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             },
         },
+        {
+            name: "tsp.resetToolkitDefaults",
+            cb: async () => {
+                await resetToolkitDefaults()
+            },
+        },
     ])
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
@@ -593,6 +661,203 @@ function updateExtensionSettings() {
                 })
         }
     })
+}
+
+function collectResettableSettings(): ResettableSetting[] {
+    const extension = vscode.extensions.getExtension("Tektronix.tsp-toolkit")
+
+    const configs = getManifestConfigurationSections(extension?.packageJSON)
+
+    if (configs.length === 0) {
+        return []
+    }
+
+    const settings: ResettableSetting[] = []
+
+    for (const config of configs) {
+        const properties = config.properties ?? {}
+
+        for (const [key, value] of Object.entries(properties)) {
+            if (!key.startsWith("tsp.")) {
+                continue
+            }
+
+            const property = value as {
+                description?: string
+                markdownDescription?: string
+            }
+
+            settings.push({
+                key,
+                label: RESET_LABELS[key] ?? key,
+                description:
+                    property.description ?? property.markdownDescription,
+            })
+        }
+    }
+
+    return settings
+}
+
+async function resetConfigurationKey(key: string): Promise<boolean> {
+    const configuration = vscode.workspace.getConfiguration()
+
+    const inspect = configuration.inspect(key)
+
+    if (!inspect) {
+        return false
+    }
+
+    let updated = false
+
+    if (inspect.globalValue !== undefined) {
+        await configuration.update(
+            key,
+            undefined,
+            vscode.ConfigurationTarget.Global,
+        )
+        updated = true
+    }
+
+    if (inspect.workspaceValue !== undefined) {
+        await configuration.update(
+            key,
+            undefined,
+            vscode.ConfigurationTarget.Workspace,
+        )
+        updated = true
+    }
+
+    if (inspect.workspaceFolderValue !== undefined) {
+        await configuration.update(
+            key,
+            undefined,
+            vscode.ConfigurationTarget.WorkspaceFolder,
+        )
+        updated = true
+    }
+
+    return updated
+}
+
+//Reset multiple settings and return the number of settings that were reset
+async function resetSettings(settings: ResettableSetting[]): Promise<number> {
+    let count = 0
+
+    for (const setting of settings) {
+        if (await resetConfigurationKey(setting.key)) {
+            count++
+        }
+    }
+
+    return count
+}
+
+//Build a list of reset actions for the user to choose from
+function buildResetActions(): ResetAction[] {
+    const settings = collectResettableSettings()
+
+    const savedInstruments = settings.filter(
+        (s) => s.key === "tsp.savedInstruments",
+    )
+
+    const systemConfigurations = settings.filter(
+        (s) => s.key === "tsp.tspLinkSystemConfigurations",
+    )
+
+    const otherSettings = settings.filter(
+        (s) =>
+            s.key !== "tsp.savedInstruments" &&
+            s.key !== "tsp.tspLinkSystemConfigurations",
+    )
+
+    return [
+        {
+            id: "savedInstruments",
+            label: "Saved Instruments",
+            description: "Reset saved instruments",
+            execute: async () => {
+                await resetSettings(savedInstruments)
+            },
+        },
+
+        {
+            id: "systemConfigurations",
+            label: "Saved Instrument Configurations",
+            description: "Reset saved instrument configurations",
+            execute: async () => {
+                await resetSettings(systemConfigurations)
+            },
+        },
+
+        {
+            id: "preferences",
+            label: "Other TSP Toolkit Preferences",
+            description: "Reset remaining extension settings",
+            detail: otherSettings.map((s) => s.label).join(", "),
+            execute: async () => {
+                await resetSettings(otherSettings)
+            },
+        },
+
+        {
+            id: "scriptGen",
+            label: "Delete Script Generation Sessions",
+            description: "Delete all Script Generation sessions",
+            execute: async () => {
+                await vscode.commands.executeCommand(
+                    "tsp.deleteAllScriptGenSessions",
+                )
+            },
+        },
+
+        {
+            id: "triggerFlow",
+            label: "Delete TriggerFlow Sessions",
+            description: "Delete all TriggerFlow sessions",
+            execute: async () => {
+                await vscode.commands.executeCommand(
+                    "tsp.deleteAllTriggerFlowSessions",
+                )
+            },
+        },
+    ]
+}
+
+async function resetToolkitDefaults() {
+    const actions = buildResetActions()
+
+    const picks = actions.map((action) => ({
+        label: action.label,
+        description: action.description,
+        detail: action.detail,
+        action,
+    }))
+
+    const selected = await vscode.window.showQuickPick(picks, {
+        title: "Reset TSP Toolkit",
+        canPickMany: true,
+    })
+
+    if (!selected?.length) {
+        return
+    }
+
+    const confirmation = await vscode.window.showWarningMessage(
+        `Reset ${selected.length} selected item(s)?`,
+        { modal: true },
+        "Reset",
+    )
+
+    if (confirmation !== "Reset") {
+        return
+    }
+
+    for (const item of selected) {
+        await item.action.execute()
+    }
+
+    vscode.window.showInformationMessage("TSP Toolkit reset completed.")
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {

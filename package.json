@@ -329,6 +329,12 @@
                 "title": "Delete all TriggerFlow sessions",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.resetToolkitDefaults",
+                "title": "Reset TSP Toolkit to Defaults",
+                "category": "TSP",
+                "icon": "$(trash)"
             }
         ],
         "configuration": {
