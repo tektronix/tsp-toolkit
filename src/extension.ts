@@ -50,7 +50,7 @@ interface ResetAction {
     label: string
     description: string
     detail?: string
-    execute(): Promise<void>
+    execute(): Promise<number>
 }
 
 interface ManifestConfigurationSection {
@@ -768,7 +768,8 @@ function buildResetActions(): ResetAction[] {
     const otherSettings = settings.filter(
         (s) =>
             s.key !== "tsp.savedInstruments" &&
-            s.key !== "tsp.tspLinkSystemConfigurations",
+            s.key !== "tsp.tspLinkSystemConfigurations" &&
+            s.key !== "tsp.script_generation",
     )
 
     return [
@@ -776,8 +777,8 @@ function buildResetActions(): ResetAction[] {
             id: "savedInstruments",
             label: "Saved Instruments",
             description: "Reset saved instruments",
-            execute: async () => {
-                await resetSettings(savedInstruments)
+            execute: async (): Promise<number> => {
+                return resetSettings(savedInstruments)
             },
         },
 
@@ -785,8 +786,8 @@ function buildResetActions(): ResetAction[] {
             id: "systemConfigurations",
             label: "Saved Instrument Configurations",
             description: "Reset saved instrument configurations",
-            execute: async () => {
-                await resetSettings(systemConfigurations)
+            execute: async (): Promise<number> => {
+                return resetSettings(systemConfigurations)
             },
         },
 
@@ -795,8 +796,8 @@ function buildResetActions(): ResetAction[] {
             label: "Other TSP Toolkit Preferences",
             description: "Reset remaining extension settings",
             detail: otherSettings.map((s) => s.label).join(", "),
-            execute: async () => {
-                await resetSettings(otherSettings)
+            execute: async (): Promise<number> => {
+                return resetSettings(otherSettings)
             },
         },
 
@@ -804,10 +805,11 @@ function buildResetActions(): ResetAction[] {
             id: "scriptGen",
             label: "Delete Script Generation Sessions",
             description: "Delete all Script Generation sessions",
-            execute: async () => {
+            execute: async (): Promise<number> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllScriptGenSessions",
                 )
+                return 1
             },
         },
 
@@ -815,10 +817,11 @@ function buildResetActions(): ResetAction[] {
             id: "triggerFlow",
             label: "Delete TriggerFlow Sessions",
             description: "Delete all TriggerFlow sessions",
-            execute: async () => {
+            execute: async (): Promise<number> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllTriggerFlowSessions",
                 )
+                return 1
             },
         },
     ]
@@ -853,11 +856,15 @@ async function resetToolkitDefaults() {
         return
     }
 
+    let processedCount = 0
+
     for (const item of selected) {
-        await item.action.execute()
+        processedCount += await item.action.execute()
     }
 
-    vscode.window.showInformationMessage("TSP Toolkit reset completed.")
+    vscode.window.showInformationMessage(
+        `TSP Toolkit reset completed. ${processedCount} reset operation(s) were applied across ${selected.length} selected item(s).`,
+    )
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
