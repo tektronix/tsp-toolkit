@@ -740,7 +740,7 @@ async function resetConfigurationKey(key: string): Promise<boolean> {
     return updated
 }
 
-//Reset multiple settings and return the number of settings that were reset
+//Reset multiple settings and return the number of setting keys that were reset
 async function resetSettings(settings: ResettableSetting[]): Promise<number> {
     let count = 0
 
@@ -846,8 +846,10 @@ async function resetToolkitDefaults() {
         return
     }
 
+    const selectedSummary = selected.map((item) => `- ${item.label}`).join("\n")
+
     const confirmation = await vscode.window.showWarningMessage(
-        `Reset ${selected.length} selected item(s)?`,
+        `You are about to reset the following item(s):\n${selectedSummary}\n\nThis action cannot be undone. Continue?`,
         { modal: true },
         "Reset",
     )
@@ -863,7 +865,7 @@ async function resetToolkitDefaults() {
     }
 
     vscode.window.showInformationMessage(
-        `TSP Toolkit reset completed. ${processedCount} reset operation(s) were applied across ${selected.length} selected item(s).`,
+        `TSP Toolkit reset completed. Processed ${selected.length} selected reset item(s) and applied ${processedCount} change(s).`,
     )
 }
 
