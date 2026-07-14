@@ -331,8 +331,8 @@
                 "icon": "$(trash)"
             },
             {
-                "command": "tsp.resetToolkitDefaults",
-                "title": "Reset TSP Toolkit to Defaults",
+                "command": "tsp.resetToDefaults",
+                "title": "Reset to Defaults",
                 "category": "TSP",
                 "icon": "$(trash)"
             }

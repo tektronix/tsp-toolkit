@@ -504,7 +504,7 @@ export function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "tsp.resetToolkitDefaults",
+            name: "tsp.resetToDefaults",
             cb: async () => {
                 await resetToolkitDefaults()
             },
@@ -830,7 +830,7 @@ async function resetToolkitDefaults() {
     }))
 
     const selected = await vscode.window.showQuickPick(picks, {
-        title: "Reset TSP Toolkit",
+        title: "Reset to Defaults",
         canPickMany: true,
     })
 
