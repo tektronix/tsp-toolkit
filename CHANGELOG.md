@@ -27,6 +27,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
+- Added Reset to Default command in command palette.
 - **tsp-toolkit-trigger-flow** - Maximum limit of 10k for number of delay parameter.
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
 - **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
