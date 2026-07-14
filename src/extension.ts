@@ -50,7 +50,7 @@ interface ResetAction {
     label: string
     description: string
     detail?: string
-    execute(): Promise<number>
+    execute(): Promise<void>
 }
 
 interface ManifestConfigurationSection {
@@ -740,17 +740,11 @@ async function resetConfigurationKey(key: string): Promise<boolean> {
     return updated
 }
 
-//Reset multiple settings and return the number of setting keys that were reset
-async function resetSettings(settings: ResettableSetting[]): Promise<number> {
-    let count = 0
-
+//Reset multiple settings to their default values
+async function resetSettings(settings: ResettableSetting[]): Promise<void> {
     for (const setting of settings) {
-        if (await resetConfigurationKey(setting.key)) {
-            count++
-        }
+        await resetConfigurationKey(setting.key)
     }
-
-    return count
 }
 
 //Build a list of reset actions for the user to choose from
@@ -777,8 +771,8 @@ function buildResetActions(): ResetAction[] {
             id: "savedInstruments",
             label: "Saved Instruments",
             description: "Reset saved instruments",
-            execute: async (): Promise<number> => {
-                return resetSettings(savedInstruments)
+            execute: async (): Promise<void> => {
+                await resetSettings(savedInstruments)
             },
         },
 
@@ -786,8 +780,8 @@ function buildResetActions(): ResetAction[] {
             id: "systemConfigurations",
             label: "Saved Instrument Configurations",
             description: "Reset saved instrument configurations",
-            execute: async (): Promise<number> => {
-                return resetSettings(systemConfigurations)
+            execute: async (): Promise<void> => {
+                await resetSettings(systemConfigurations)
             },
         },
 
@@ -796,8 +790,8 @@ function buildResetActions(): ResetAction[] {
             label: "Other TSP Toolkit Preferences",
             description: "Reset remaining extension settings",
             detail: otherSettings.map((s) => s.label).join(", "),
-            execute: async (): Promise<number> => {
-                return resetSettings(otherSettings)
+            execute: async (): Promise<void> => {
+                await resetSettings(otherSettings)
             },
         },
 
@@ -805,11 +799,10 @@ function buildResetActions(): ResetAction[] {
             id: "scriptGen",
             label: "Delete Script Generation Sessions",
             description: "Delete all Script Generation sessions",
-            execute: async (): Promise<number> => {
+            execute: async (): Promise<void> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllScriptGenSessions",
                 )
-                return 1
             },
         },
 
@@ -817,11 +810,10 @@ function buildResetActions(): ResetAction[] {
             id: "triggerFlow",
             label: "Delete TriggerFlow Sessions",
             description: "Delete all TriggerFlow sessions",
-            execute: async (): Promise<number> => {
+            execute: async (): Promise<void> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllTriggerFlowSessions",
                 )
-                return 1
             },
         },
     ]
@@ -846,27 +838,24 @@ async function resetToolkitDefaults() {
         return
     }
 
-    const selectedSummary = selected.map((item) => `- ${item.label}`).join("\n")
+    //const selectedSummary = selected.map((item) => item.label).join(", ")
+    const selectedSummary = selected.map((item, index) => `${index + 1}. ${item.label}`).join(", ")
 
     const confirmation = await vscode.window.showWarningMessage(
-        `You are about to reset the following item(s):\n${selectedSummary}\n\nThis action cannot be undone. Continue?`,
-        { modal: true },
+        `Reset the following items:\n${selectedSummary}.\n This action cannot be undone. Continue?`,
         "Reset",
+        "Cancel",
     )
 
     if (confirmation !== "Reset") {
         return
     }
 
-    let processedCount = 0
-
     for (const item of selected) {
-        processedCount += await item.action.execute()
+        await item.action.execute()
     }
 
-    vscode.window.showInformationMessage(
-        `TSP Toolkit reset completed. Processed ${selected.length} selected reset item(s) and applied ${processedCount} change(s).`,
-    )
+    vscode.window.showInformationMessage("TSP Toolkit reset completed.")
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
