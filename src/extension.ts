@@ -834,7 +834,7 @@ async function resetToolkitDefaults() {
         canPickMany: true,
     })
 
-    if (!selected?.length) {
+    if (selected?.length <= 0) {
         return
     }
 
