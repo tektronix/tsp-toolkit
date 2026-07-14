@@ -834,12 +834,14 @@ async function resetToolkitDefaults() {
         canPickMany: true,
     })
 
-    if (!selected?.length) {
+    if (!selected || selected.length === 0) {
         return
     }
 
     //const selectedSummary = selected.map((item) => item.label).join(", ")
-    const selectedSummary = selected.map((item, index) => `${index + 1}. ${item.label}`).join(", ")
+    const selectedSummary = selected
+        .map((item, index) => `${index + 1}. ${item.label}`)
+        .join(", ")
 
     const confirmation = await vscode.window.showWarningMessage(
         `Reset the following items:\n${selectedSummary}.\n This action cannot be undone. Continue?`,
