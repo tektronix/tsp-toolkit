@@ -28,6 +28,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Added Reset to Default command in command palette.
+- **tsp-toolkit-trigger-flow** - Keyboard navigation has been added to the Trigger Model modal pane.
 - **tsp-toolkit-trigger-flow** - Maximum limit of 10k for number of delay parameter.
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
 - **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
