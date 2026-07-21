@@ -314,6 +314,8 @@ for more information.
 - Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
   instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
   such as using `#lua_table` to get the number of elements in a table.
+- When connecting to a GPIB instrument, ensure passwords are disabled for the GPIB interface.
+    - The GPIB interface doesn't provide any other mechanisms to get instrument information except by running `*IDN?`. If the interface is password protected, instrument information cannot be retrieved and TSP Toolkit can't know what kind of instrument it is attempting to connect to.
 
 <!--Refs-->
 [official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
