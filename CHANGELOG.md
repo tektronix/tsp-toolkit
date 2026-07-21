@@ -28,6 +28,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Added Reset to Default command in command palette.
+- Add GPIB password information to Known Issues section of README
 - **tsp-toolkit-trigger-flow** - Keyboard navigation has been added to the Trigger Model modal pane.
 - **tsp-toolkit-trigger-flow** - Maximum limit of 10k for number of delay parameter.
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
@@ -513,7 +514,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1
