@@ -299,6 +299,7 @@ for more information.
     - MP5103
         - MPSU50-2ST
         - MSMU60-2
+        - MSMU200-2
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
 - Instrument discovery might not work for 2600-series and 3706A due to firmware limitations
