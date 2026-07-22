@@ -1,10 +1,6 @@
+import { ChildProcessWithoutNullStreams } from "node:child_process"
 import * as vscode from "vscode"
-import {
-    JSONRPC,
-    JSONRPCClient,
-    JSONRPCRequest,
-    JSONRPCResponse,
-} from "json-rpc-2.0"
+import { JSONRPCClient, JSONRPCResponse } from "json-rpc-2.0"
 import { plainToInstance } from "class-transformer"
 import {
     Connection,
@@ -53,12 +49,6 @@ const rpcClient: JSONRPCClient = new JSONRPCClient(
     createID,
 )
 
-const jsonRPCRequest: JSONRPCRequest = {
-    jsonrpc: JSONRPC,
-    id: createID(),
-    method: "get_instr_list",
-}
-
 type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
 type VscTdp = vscode.TreeDataProvider<TreeData>
 
@@ -83,7 +73,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.constructor()",
         }
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
-        this.getSavedInstruments().catch(() => {})
+        this.getSavedInstruments().catch(() => { })
         this.configWatcherEnable(true)
     }
 
@@ -386,7 +376,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
                     if (e.affectsConfiguration("tsp.savedInstruments")) {
-                        this.getSavedInstruments().catch(() => {})
+                        this.getSavedInstruments().catch(() => { })
                     }
                 })
         } else if (!enabled && this._savedInstrumentConfigWatcher) {
@@ -405,7 +395,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 if (
                     c.addr === details.addr &&
                     (c.type as string).toLowerCase() ===
-                        details.type.toLowerCase()
+                    details.type.toLowerCase()
                 ) {
                     return c
                 }
@@ -436,7 +426,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             () => {
                                 resolve()
                             },
-                            () => {},
+                            () => { },
                         )
                     })
                 })
@@ -542,153 +532,101 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     /**
      * @returns true when new instruments are discovered
      */
-    async getContent(): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            rpcClient.requestAdvanced(jsonRPCRequest).then(
-                (jsonRPCResponse: JSONRPCResponse) => {
-                    if (jsonRPCResponse.error) {
-                        reject(
-                            new Error(
-                                `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
-                            ),
-                        )
-                        Log.error(
-                            `Received an error with code ${jsonRPCResponse.error.code} and message ${jsonRPCResponse.error.message}`,
-                            {
-                                file: "instruments.ts",
-                                func: "InstrumentProvider.getContent()",
-                            },
-                        )
-                    } else {
-                        // Parse discovered instruments
-                        const discoveredInstrInfos =
-                            InstrumentProvider.parseDiscoveredInstruments(
-                                jsonRPCResponse,
-                            )
+    async getContent(
+        discovery_proc: ChildProcessWithoutNullStreams,
+    ): Promise<boolean> {
+        const LOGLOC: SourceLocation = {
+            file: "instrumentProvider.ts",
+            func: "InstrumentProvider.getContent()",
+        }
+        return new Promise((resolve) => {
+            let discover_raw: string = ""
+            let discoveredInstrInfos: InstrInfo[] = []
 
-                        // Compare with existing instruments to detect IP address changes
-                        for (const discovered of discoveredInstrInfos) {
-                            const existing = this._instruments.find(
-                                (i) =>
-                                    i.info.serial_number ===
-                                    discovered.serial_number,
-                            )
+            discovery_proc.stdout.on("data", (chunk: Buffer | string) => {
+                discover_raw += chunk.toString()
+            })
 
-                            if (existing) {
-                                const existingAddr =
-                                    existing.connections[0]?.addr
-                                const discoveredAddr = discovered.instr_address
+            discovery_proc.on("exit", (code: number) => {
+                if (code) {
+                    Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
+                }
 
-                                if (
-                                    existingAddr &&
-                                    existingAddr !== discoveredAddr
-                                ) {
-                                    // Update the saved instruments configuration if this instrument was saved
-                                    if (existing.saved) {
-                                        this.updateSaved(existing).catch(
-                                            (err) => {
-                                                Log.error(
-                                                    `Failed to update saved instrument: ${err}`,
-                                                    {
-                                                        file: "instruments.ts",
-                                                        func: "InstrumentProvider.getContent()",
-                                                    },
-                                                )
-                                            },
-                                        )
-                                    }
-                                }
+
+                discoveredInstrInfos =
+                    InstrumentProvider.parseDiscoveredInstruments(discover_raw)
+
+                // Compare with existing instruments to detect IP address changes
+                for (const discovered of discoveredInstrInfos) {
+                    const existing = this._instruments.find(
+                        (i) =>
+                            i.info.serial_number === discovered.serial_number,
+                    )
+
+                    if (existing) {
+                        const existingAddr = existing.connections[0]?.addr
+                        const discoveredAddr = discovered.instr_address
+
+                        if (existingAddr && existingAddr !== discoveredAddr) {
+                            // Update the saved instruments configuration if this instrument was saved
+                            if (existing.saved) {
+                                this.updateSaved(existing).catch((err) => {
+                                    Log.error(
+                                        `Failed to update saved instrument: ${err}`,
+                                        {
+                                            file: "instruments.ts",
+                                            func: "InstrumentProvider.getContent()",
+                                        },
+                                    )
+                                })
                             }
                         }
-
-                        this.addOrUpdateInstruments(
-                            discoveredInstrInfos.map((v: InstrInfo) => {
-                                this.instruments_discovered = true
-                                const i = Instrument.from(v)
-                                i.connections[0].status =
-                                    ConnectionStatus.Active
-                                i.updateStatus()
-                                return i
-                            }),
-                        )
-
-                        if (this.instruments_discovered) {
-                            this.reloadTreeData()
-                        }
                     }
+                }
 
-                    resolve(this.instruments_discovered)
-                },
-                () => {
-                    Log.error("RPC Instr List Fetch failed!", {
-                        file: "instruments.ts",
-                        func: "InstrumentProvider.getContent()",
-                    })
-                    reject(new Error("RPC Instr List Fetch failed!"))
-                },
-            )
-            //todo
+                this.addOrUpdateInstruments(
+                    discoveredInstrInfos.map((v: InstrInfo) => {
+                        this.instruments_discovered = true
+                        const i = Instrument.from(v)
+                        i.connections[0].status = ConnectionStatus.Active
+                        i.updateStatus()
+                        return i
+                    }),
+                )
+
+                if (this.instruments_discovered) {
+                    this.reloadTreeData()
+                }
+                resolve(this.instruments_discovered)
+            })
         })
     }
 
     /**
      * Used to parse the discovered instrument details and create a list for the same
      *
-     * @param jsonRPCResponse - json rpc response whose result needs to be parsed
+     * @param discovered_raw - json rpc response whose result needs to be parsed
      * to extract the discovered instrument details
      */
-    private static parseDiscoveredInstruments(
-        jsonRPCResponse: JSONRPCResponse,
-    ): InstrInfo[] {
+    static parseDiscoveredInstruments(discovered_raw: string): InstrInfo[] {
         const discovery_list: InstrInfo[] = []
-        const res: unknown = jsonRPCResponse.result
-        if (typeof res === "string") {
-            const instrList = res.split("\n")
+        if (typeof discovered_raw === "string") {
+            const instrList = discovered_raw.split("\n")
 
             //need to remove the last newline element??
-            instrList?.forEach((instr) => {
-                let new_instr: InstrInfo | undefined = undefined
+            for (const instr of instrList) {
                 if (instr.length > 0) {
                     const obj = plainToInstance(InstrInfo, JSON.parse(instr))
 
-                    if (discovery_list.length === 0) {
+                    if (!discovery_list.find(x =>
+                        x.serial_number === obj.serial_number
+                        && x.model === obj.model
+                        && x.instr_address === obj.instr_address)
+                    ) {
                         discovery_list.push(obj)
-                    } else {
-                        let idx = -1
-                        new_instr = undefined
-
-                        for (let i = 0; i < discovery_list.length; i++) {
-                            new_instr = undefined
-                            if (
-                                DiscoveryHelper.createUniqueID(
-                                    discovery_list[i],
-                                ) === DiscoveryHelper.createUniqueID(obj)
-                            ) {
-                                if (
-                                    discovery_list[i].instr_address !=
-                                    obj.instr_address
-                                ) {
-                                    idx = i
-                                    new_instr = obj
-                                    break
-                                } else {
-                                    break
-                                }
-                            } else {
-                                new_instr = obj
-                            }
-                        }
-
-                        if (new_instr !== undefined) {
-                            if (idx > -1) {
-                                discovery_list[idx] = new_instr
-                            } else {
-                                discovery_list.push(new_instr)
-                            }
-                        }
                     }
                 }
-            })
+            }
         }
         return discovery_list
     }
@@ -773,7 +711,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             v.io_type === i.type &&
                             (i.type === IoType.Visa
                                 ? v.instr_address.substring(0, 4) ==
-                                  i.addr.substring(0, 4)
+                                i.addr.substring(0, 4)
                                 : true)
                         )
                     })
@@ -794,7 +732,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         if (
                             instrList[m].io_type === IoType.Visa &&
                             instrList[m].instr_address.substring(0, 4) ==
-                                i.addr.substring(0, 4)
+                            i.addr.substring(0, 4)
                         ) {
                             instrList[m].instr_address = i.addr
                         } else {

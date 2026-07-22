@@ -91,7 +91,7 @@ export function toIoType(str: string): IoType {
  * instr_categ - versatest, tti, 26xx etc.
  */
 
-interface IInstrInfo {
+export interface IInstrInfo {
     io_type: IoType
     instr_address: string
     manufacturer: string
