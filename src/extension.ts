@@ -6,13 +6,14 @@ import { HelpDocumentWebView } from "./helpDocumentWebView"
 import {
     ConnectionDetails,
     ConnectionHelper,
+    InstrInfo,
     IoType,
     NO_OPEN_WORKSPACE_MESSAGE,
 } from "./resourceManager"
 import { configure_initial_workspace_configurations } from "./workspaceManager"
 import { Log, SourceLocation } from "./logging"
 import { InstrumentsExplorer } from "./instrumentExplorer"
-import { Connection } from "./connection"
+import { Connection, ConnectionStatus } from "./connection"
 import { InstrumentProvider } from "./instrumentProvider"
 import { ConfigWebView } from "./ConifgWebView"
 import { activateTspDebug } from "./activateTspDebug"
@@ -747,13 +748,43 @@ async function resetSettings(settings: ResettableSetting[]): Promise<void> {
     }
 }
 
+// Return the serial numbers of saved instruments that have at least one connected terminal
+function getConnectedSavedSerialNumbers(): Set<string> {
+    const connected = new Set<string>()
+    for (const instrument of InstrumentProvider.instance.instruments) {
+        if (!instrument.saved) {
+            continue
+        }
+        const hasActiveTerminal = instrument.connections.some(
+            (c) => c.status === ConnectionStatus.Connected,
+        )
+        if (hasActiveTerminal) {
+            connected.add(instrument.info.serial_number)
+        }
+    }
+    return connected
+}
+
+// Delete saved instruments that have no active terminal connection; keep those that do
+async function resetSavedInstrumentsPreservingActiveConnections(): Promise<void> {
+    const config = vscode.workspace.getConfiguration("tsp")
+    const saved = config.get<InstrInfo[]>("savedInstruments") ?? []
+    const connectedSerials = getConnectedSavedSerialNumbers()
+
+    const kept = saved.filter((instr) =>
+        connectedSerials.has(instr.serial_number),
+    )
+
+    await config.update(
+        "savedInstruments",
+        kept,
+        vscode.ConfigurationTarget.Global,
+    )
+}
+
 //Build a list of reset actions for the user to choose from
 function buildResetActions(): ResetAction[] {
     const settings = collectResettableSettings()
-
-    const savedInstruments = settings.filter(
-        (s) => s.key === "tsp.savedInstruments",
-    )
 
     const systemConfigurations = settings.filter(
         (s) => s.key === "tsp.tspLinkSystemConfigurations",
@@ -770,9 +801,10 @@ function buildResetActions(): ResetAction[] {
         {
             id: "savedInstruments",
             label: "Saved Instruments",
-            description: "Reset saved instruments",
+            description:
+                "Delete saved instruments; instruments with active connections are kept",
             execute: async (): Promise<void> => {
-                await resetSettings(savedInstruments)
+                await resetSavedInstrumentsPreservingActiveConnections()
             },
         },
 
