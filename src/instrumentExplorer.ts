@@ -144,7 +144,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 ])
 
                 this.treeDataProvider?.getContent(discover).catch((e) => {
-                    Log.error(`Error: ${e.toString()}`, LOGLOC)
+                    Log.error(`Error: ${e}`, LOGLOC)
                 })
 
                 discover.on("exit", () => {

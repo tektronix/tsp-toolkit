@@ -73,7 +73,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.constructor()",
         }
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
-        this.getSavedInstruments().catch(() => { })
+        this.getSavedInstruments().catch(() => {})
         this.configWatcherEnable(true)
     }
 
@@ -376,7 +376,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
                     if (e.affectsConfiguration("tsp.savedInstruments")) {
-                        this.getSavedInstruments().catch(() => { })
+                        this.getSavedInstruments().catch(() => {})
                     }
                 })
         } else if (!enabled && this._savedInstrumentConfigWatcher) {
@@ -395,7 +395,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 if (
                     c.addr === details.addr &&
                     (c.type as string).toLowerCase() ===
-                    details.type.toLowerCase()
+                        details.type.toLowerCase()
                 ) {
                     return c
                 }
@@ -426,7 +426,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             () => {
                                 resolve()
                             },
-                            () => { },
+                            () => {},
                         )
                     })
                 })
@@ -552,7 +552,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
                 }
 
-
                 discoveredInstrInfos =
                     InstrumentProvider.parseDiscoveredInstruments(discover_raw)
 
@@ -618,10 +617,14 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 if (instr.length > 0) {
                     const obj = plainToInstance(InstrInfo, JSON.parse(instr))
 
-                    if (!discovery_list.find(x =>
-                        x.serial_number === obj.serial_number
-                        && x.model === obj.model
-                        && x.instr_address === obj.instr_address)
+                    if (
+                        !discovery_list.find((x) => {
+                            return (
+                                x.serial_number === obj.serial_number &&
+                                x.model === obj.model &&
+                                x.instr_address === obj.instr_address
+                            )
+                        })
                     ) {
                         discovery_list.push(obj)
                     }
@@ -711,7 +714,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             v.io_type === i.type &&
                             (i.type === IoType.Visa
                                 ? v.instr_address.substring(0, 4) ==
-                                i.addr.substring(0, 4)
+                                  i.addr.substring(0, 4)
                                 : true)
                         )
                     })
@@ -732,7 +735,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         if (
                             instrList[m].io_type === IoType.Visa &&
                             instrList[m].instr_address.substring(0, 4) ==
-                            i.addr.substring(0, 4)
+                                i.addr.substring(0, 4)
                         ) {
                             instrList[m].instr_address = i.addr
                         } else {
@@ -752,16 +755,3 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     }
 }
 
-class DiscoveryHelper {
-    public static createUniqueID(info: InstrInfo): string {
-        let res = ""
-        res = info.io_type.toString() + ":" + this.createModelSerial(info)
-        return res
-    }
-
-    public static createModelSerial(info: InstrInfo): string {
-        let res = ""
-        res = info.model + "#" + info.serial_number
-        return res
-    }
-}
