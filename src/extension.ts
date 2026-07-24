@@ -802,7 +802,8 @@ function buildResetActions(): ResetAction[] {
         (s) =>
             s.key !== "tsp.savedInstruments" &&
             s.key !== "tsp.tspLinkSystemConfigurations" &&
-            s.key !== "tsp.script_generation",
+            s.key !== "tsp.scriptGenSessions" &&
+            s.key !== "tsp.triggerFlowSessions",
     )
 
     return [
