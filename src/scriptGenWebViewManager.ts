@@ -57,7 +57,10 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
 
         super(context, config, dataProvider)
 
-        this.storage = new GenericSessionStorage("I-V Characterization")
+        this.storage = new GenericSessionStorage(
+            "I-V Characterization",
+            "scriptGenSessions",
+        )
         this.validator = new SessionNameValidator(this.storage)
     }
 

@@ -407,6 +407,50 @@
                         }
                     }
                 },
+                "tsp.scriptGenSessions": {
+                    "type": "object",
+                    "scope": "window",
+                    "description": "Saved sessions for I-V Characterization script generation.",
+                    "properties": {
+                        "I-V Characterization": {
+                            "type": "array",
+                            "description": "Properties for I-V Characterization script generation.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "config": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tsp.triggerFlowSessions": {
+                    "type": "object",
+                    "scope": "window",
+                    "description": "Saved sessions for TriggerFlow.",
+                    "properties": {
+                        "Trigger Flow": {
+                            "type": "array",
+                            "description": "Properties for TriggerFlow sessions.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "config": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "tsp.lineFrequency": {
                     "type": "number",
                     "enum": [

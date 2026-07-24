@@ -57,7 +57,10 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
 
         super(context, config, dataProvider)
 
-        this.storage = new GenericSessionStorage("Trigger Flow")
+        this.storage = new GenericSessionStorage(
+            "Trigger Flow",
+            "triggerFlowSessions",
+        )
         this.validator = new SessionNameValidator(this.storage)
     }
 
