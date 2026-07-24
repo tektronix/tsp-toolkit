@@ -1,4 +1,5 @@
 import * as vscode from "vscode"
+import { Log } from "./logging"
 
 /**
  * Represents a single session configuration
@@ -22,6 +23,9 @@ export interface SessionCollection {
 export class GenericSessionStorage {
     private readonly settingsKey: string
     private readonly sessionType: string
+    private static readonly LEGACY_SETTINGS_KEY = "script_generation"
+    private static readonly SCRIPT_GEN_SETTINGS_KEY = "scriptGenSessions"
+    private static readonly TRIGGER_FLOW_SETTINGS_KEY = "triggerFlowSessions"
 
     constructor(sessionType: string, settingsKey = "script_generation") {
         this.sessionType = sessionType
@@ -143,6 +147,68 @@ export class GenericSessionStorage {
         vscode.workspace
             .getConfiguration("tsp")
             .update(this.settingsKey, sessions, false)
+    }
+
+    public static async migrateLegacySessions(): Promise<void> {
+        const workspaceConfig = vscode.workspace.getConfiguration()
+
+        // Nothing to migrate if legacy key doesn't exist
+        const legacyConfig =
+            workspaceConfig.get<SessionCollection>(
+                `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
+            )
+
+        if (!legacyConfig || Object.keys(legacyConfig).length === 0) {
+            return
+        }
+
+        const ivSessions = legacyConfig["I-V Characterization"] ?? []
+        const triggerFlowSessions = legacyConfig["Trigger Flow"] ?? []
+
+        // If either new key already exists, assume migration has already
+        // been performed (or the user has started using the new version).
+        const scriptGenConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY}`,
+        )
+
+        const triggerFlowConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY}`,
+        )
+
+        try{
+            if (!scriptGenConfig && ivSessions.length > 0) {
+                await workspaceConfig.update(
+                    `tsp.${GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY}`,
+                    {
+                        "I-V Characterization": ivSessions,
+                    },
+                    vscode.ConfigurationTarget.Workspace,
+                )
+            }
+
+            if (!triggerFlowConfig && triggerFlowSessions.length > 0) {
+                await workspaceConfig.update(
+                    `tsp.${GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY}`,
+                    {
+                        "Trigger Flow": triggerFlowSessions,
+                    },
+                    vscode.ConfigurationTarget.Workspace,
+                )
+            }
+            
+            // Remove legacy storage once migration succeeds
+            await workspaceConfig.update(
+                `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
+                undefined,
+                vscode.ConfigurationTarget.Workspace,
+            )
+        }catch (error) {
+            console.error("Failed to migrate legacy sessions:", error)
+            Log.error(
+                `Failed to migrate legacy session storage: ${error}`,
+                { file: "genericSessionStorage.ts", func: "migrateLegacySessions()" },
+            )
+        }
     }
 }
 

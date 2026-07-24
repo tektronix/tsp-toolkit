@@ -288,7 +288,7 @@ async function checkVersionAndShowAnnouncement(
 }
 
 // Called when the extension is activated.
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
     Log.info("TSP Toolkit activating", LOGLOC)
 
@@ -546,11 +546,19 @@ export function activate(context: vscode.ExtensionContext) {
 
     activateTspDebug(context)
 
+    await GenericSessionStorage.migrateLegacySessions()
+
     // Script Generation and Trigger Flow setup with combined tree view
-    const scriptGenStorage = new GenericSessionStorage("I-V Characterization")
+    const scriptGenStorage = new GenericSessionStorage(
+        "I-V Characterization",
+        "scriptGenSessions",
+    )
     const scriptGenDataProvider = new ScriptGenDataProvider(scriptGenStorage)
 
-    const triggerFlowStorage = new GenericSessionStorage("Trigger Flow")
+    const triggerFlowStorage = new GenericSessionStorage(
+        "Trigger Flow",
+        "triggerFlowSessions",
+    )
     const triggerFlowDataProvider = new TriggerFlowDataProvider(
         triggerFlowStorage,
     )
