@@ -881,13 +881,24 @@ async function resetToolkitDefaults() {
 
     //const selectedSummary = selected.map((item) => item.label).join(", ")
     const selectedSummary = selected
-        .map((item, index) => `${index + 1}. ${item.label}`)
-        .join(", ")
+        .map((item, index) => {
+            const activeSessionWarning =
+                item.action.id === "scriptGen" ||
+                item.action.id === "triggerFlow"
+                    ? "\n   - Note: Active and saved sessions will be deleted."
+                    : ""
+
+            return `${index + 1}. ${item.label}${activeSessionWarning}`
+        })
+        .join("\n")
 
     const confirmation = await vscode.window.showWarningMessage(
-        `Reset the following items:\n${selectedSummary}.\n This action cannot be undone. Continue?`,
+        `The following items will be reset:\n\n${selectedSummary}\n\nThis action cannot be undone.`,
+        {
+            modal: true,
+            detail: "Do you want to continue?",
+        },
         "Reset",
-        "Cancel",
     )
 
     if (confirmation !== "Reset") {
