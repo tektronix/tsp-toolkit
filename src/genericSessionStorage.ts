@@ -153,10 +153,9 @@ export class GenericSessionStorage {
         const workspaceConfig = vscode.workspace.getConfiguration()
 
         // Nothing to migrate if legacy key doesn't exist
-        const legacyConfig =
-            workspaceConfig.get<SessionCollection>(
-                `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
-            )
+        const legacyConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
+        )
 
         if (!legacyConfig || Object.keys(legacyConfig).length === 0) {
             return
@@ -175,7 +174,7 @@ export class GenericSessionStorage {
             `tsp.${GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY}`,
         )
 
-        try{
+        try {
             if (!scriptGenConfig && ivSessions.length > 0) {
                 await workspaceConfig.update(
                     `tsp.${GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY}`,
@@ -195,18 +194,21 @@ export class GenericSessionStorage {
                     vscode.ConfigurationTarget.Workspace,
                 )
             }
-            
+
             // Remove legacy storage once migration succeeds
             await workspaceConfig.update(
                 `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
                 undefined,
                 vscode.ConfigurationTarget.Workspace,
             )
-        }catch (error) {
+        } catch (error) {
             console.error("Failed to migrate legacy sessions:", error)
             Log.error(
-                `Failed to migrate legacy session storage: ${error}`,
-                { file: "genericSessionStorage.ts", func: "migrateLegacySessions()" },
+                `Failed to migrate legacy session storage: ${error instanceof Error ? error.message : String(error)}`,
+                {
+                    file: "genericSessionStorage.ts",
+                    func: "migrateLegacySessions()",
+                },
             )
         }
     }
