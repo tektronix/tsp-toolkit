@@ -75,7 +75,7 @@ export class GenericSessionStorage {
 
         existingSessions[this.sessionType].push(newSession)
 
-        this.updateSettings(existingSessions)
+        void this.updateSettings(existingSessions)
     }
 
     /**
@@ -92,14 +92,12 @@ export class GenericSessionStorage {
 
         if (currentSession) {
             currentSession.config = updatedConfig
-            try {
-                this.updateSettings(existingSessions)
-            } catch (error) {
+            void this.updateSettings(existingSessions).catch((error) => {
                 console.error(
                     `Failed to update ${this.sessionType} settings:`,
                     error,
                 )
-            }
+            })
         }
     }
 
@@ -113,16 +111,16 @@ export class GenericSessionStorage {
             existingSessions[this.sessionType] || []
         ).filter((session) => session.name !== name)
 
-        this.updateSettings(existingSessions)
+        void this.updateSettings(existingSessions)
     }
 
     /**
      * Remove all sessions of this type
      */
-    removeAllSessions(): void {
+    removeAllSessions(): Promise<void> {
         const existingSessions = this.loadSessions()
         existingSessions[this.sessionType] = []
-        this.updateSettings(existingSessions)
+        return this.updateSettings(existingSessions)
     }
 
     /**
@@ -143,10 +141,12 @@ export class GenericSessionStorage {
     /**
      * Update workspace settings
      */
-    private updateSettings(sessions: SessionCollection): void {
-        vscode.workspace
-            .getConfiguration("tsp")
-            .update(this.settingsKey, sessions, false)
+    private updateSettings(sessions: SessionCollection): Promise<void> {
+        return Promise.resolve(
+            vscode.workspace
+                .getConfiguration("tsp")
+                .update(this.settingsKey, sessions, false),
+        )
     }
 
     public static async migrateLegacySessions(): Promise<void> {

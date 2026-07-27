@@ -219,8 +219,8 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
     /**
      * Remove all sessions
      */
-    protected removeAllSessions(): void {
-        this.storage.removeAllSessions()
+    protected removeAllSessions(): Promise<void> {
+        return this.storage.removeAllSessions()
     }
 
     /**
