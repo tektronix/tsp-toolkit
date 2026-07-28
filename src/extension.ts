@@ -998,44 +998,23 @@ async function resetToolkitDefaults() {
     const executableItems = previewResults.filter(
         (r) => r.preview.shouldExecute,
     )
-    const skippedItems = previewResults.filter((r) => !r.preview.shouldExecute)
 
     if (executableItems.length === 0) {
-        const skippedSummary = skippedItems
-            .map(
-                (result, index) =>
-                    `${index + 1}. ${result.item.label}: ${result.preview.skipReason ?? "Already in default state."}`,
-            )
-            .join("\n")
-
-        await vscode.window.showInformationMessage(
-            `Nothing to reset.\n\nSkipped:\n${skippedSummary}`,
-        )
+        await vscode.window.showInformationMessage("Nothing to reset.")
         return
     }
 
-    const resetSummary = executableItems
+    const resetSummary = previewResults
         .map((result, index) => {
             const warningLine = result.preview.warningNote
-                ? `\n   - ${result.preview.warningNote}`
+                ? `\n    - ${result.preview.warningNote}`
                 : ""
             return `${index + 1}. ${result.item.label}${warningLine}`
         })
         .join("\n")
 
-    const skippedSummary = skippedItems
-        .map(
-            (result, index) =>
-                `${index + 1}. ${result.item.label}: ${result.preview.skipReason ?? "Already in default state."}`,
-        )
-        .join("\n")
-
-    const skippedSection = skippedSummary
-        ? `\n\nWill be skipped:\n${skippedSummary}`
-        : ""
-
     const confirmation = await vscode.window.showWarningMessage(
-        `The following items will be reset:\n\n${resetSummary}${skippedSection}\n\nThis action cannot be undone.`,
+        `The following items will be reset:\n\n${resetSummary}\n\nThis action cannot be undone.`,
         {
             modal: true,
             detail: "Do you want to continue?",
@@ -1051,13 +1030,7 @@ async function resetToolkitDefaults() {
         await result.item.action.execute()
     }
 
-    const completionSkippedSection = skippedSummary
-        ? `\n\nSkipped:\n${skippedSummary}`
-        : ""
-
-    vscode.window.showInformationMessage(
-        `TSP Toolkit reset completed.${completionSkippedSection}`,
-    )
+    vscode.window.showInformationMessage("TSP Toolkit reset completed.")
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
