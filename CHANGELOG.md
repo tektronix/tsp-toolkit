@@ -19,6 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.5.1]
 
 ### Fixed
+- Ensure GPIB interfaces are visible in InstrumentExplorer
 - **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
 - **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
 - **tsp-toolkit-trigger-flow** - Multiple issues have been corrected for delay time and number of delays parameter.
