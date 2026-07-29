@@ -51,7 +51,14 @@ interface ResetAction {
     label: string
     description: string
     detail?: string
+    preview(): ResetActionPreview | Promise<ResetActionPreview>
     execute(): Promise<void>
+}
+
+interface ResetActionPreview {
+    shouldExecute: boolean
+    skipReason?: string
+    warningNote?: string
 }
 
 interface ManifestConfigurationSection {
@@ -288,7 +295,7 @@ async function checkVersionAndShowAnnouncement(
 }
 
 // Called when the extension is activated.
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
     Log.info("TSP Toolkit activating", LOGLOC)
 
@@ -546,11 +553,19 @@ export function activate(context: vscode.ExtensionContext) {
 
     activateTspDebug(context)
 
+    await GenericSessionStorage.migrateLegacySessions()
+
     // Script Generation and Trigger Flow setup with combined tree view
-    const scriptGenStorage = new GenericSessionStorage("I-V Characterization")
+    const scriptGenStorage = new GenericSessionStorage(
+        "I-V Characterization",
+        "scriptGenSessions",
+    )
     const scriptGenDataProvider = new ScriptGenDataProvider(scriptGenStorage)
 
-    const triggerFlowStorage = new GenericSessionStorage("Trigger Flow")
+    const triggerFlowStorage = new GenericSessionStorage(
+        "Trigger Flow",
+        "triggerFlowSessions",
+    )
     const triggerFlowDataProvider = new TriggerFlowDataProvider(
         triggerFlowStorage,
     )
@@ -748,6 +763,16 @@ async function resetSettings(settings: ResettableSetting[]): Promise<void> {
     }
 }
 
+function hasConfiguredValue(key: string): boolean {
+    const inspect = vscode.workspace.getConfiguration().inspect(key)
+    return Boolean(
+        inspect &&
+            (inspect.globalValue !== undefined ||
+                inspect.workspaceValue !== undefined ||
+                inspect.workspaceFolderValue !== undefined),
+    )
+}
+
 // Return the serial numbers of saved instruments that have at least one connected terminal
 function getConnectedSavedSerialNumbers(): Set<string> {
     const connected = new Set<string>()
@@ -794,7 +819,8 @@ function buildResetActions(): ResetAction[] {
         (s) =>
             s.key !== "tsp.savedInstruments" &&
             s.key !== "tsp.tspLinkSystemConfigurations" &&
-            s.key !== "tsp.script_generation",
+            s.key !== "tsp.scriptGenSessions" &&
+            s.key !== "tsp.triggerFlowSessions",
     )
 
     return [
@@ -803,6 +829,32 @@ function buildResetActions(): ResetAction[] {
             label: "Saved Instruments",
             description:
                 "Delete saved instruments; instruments with active connections are kept",
+            preview: (): ResetActionPreview => {
+                const config = vscode.workspace.getConfiguration("tsp")
+                const saved = config.get<InstrInfo[]>("savedInstruments") ?? []
+
+                if (saved.length === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason: "No saved instruments found.",
+                    }
+                }
+
+                const connectedSerials = getConnectedSavedSerialNumbers()
+                const removable = saved.filter(
+                    (instr) => !connectedSerials.has(instr.serial_number),
+                )
+
+                if (removable.length === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason:
+                            "Only active saved instruments exist and are preserved.",
+                    }
+                }
+
+                return { shouldExecute: true }
+            },
             execute: async (): Promise<void> => {
                 await resetSavedInstrumentsPreservingActiveConnections()
             },
@@ -812,6 +864,21 @@ function buildResetActions(): ResetAction[] {
             id: "systemConfigurations",
             label: "Saved Instrument Configurations",
             description: "Reset saved instrument configurations",
+            preview: (): ResetActionPreview => {
+                const systems =
+                    vscode.workspace
+                        .getConfiguration("tsp")
+                        .get<unknown[]>("tspLinkSystemConfigurations") ?? []
+
+                if (systems.length === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason: "No saved instrument configurations found.",
+                    }
+                }
+
+                return { shouldExecute: true }
+            },
             execute: async (): Promise<void> => {
                 await resetSettings(systemConfigurations)
             },
@@ -822,6 +889,21 @@ function buildResetActions(): ResetAction[] {
             label: "Other TSP Toolkit Preferences",
             description: "Reset remaining extension settings",
             detail: otherSettings.map((s) => s.label).join(", "),
+            preview: (): ResetActionPreview => {
+                const configuredSettings = otherSettings.filter((setting) =>
+                    hasConfiguredValue(setting.key),
+                )
+
+                if (configuredSettings.length === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason:
+                            "All selected preferences are already at defaults.",
+                    }
+                }
+
+                return { shouldExecute: true }
+            },
             execute: async (): Promise<void> => {
                 await resetSettings(otherSettings)
             },
@@ -831,6 +913,24 @@ function buildResetActions(): ResetAction[] {
             id: "scriptGen",
             label: "Delete Script Generation Sessions",
             description: "Delete all Script Generation sessions",
+            preview: (): ResetActionPreview => {
+                const storage = new GenericSessionStorage(
+                    "I-V Characterization",
+                    "scriptGenSessions",
+                )
+                if (storage.getSessionCount() === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason: "No Script Generation sessions found.",
+                    }
+                }
+
+                return {
+                    shouldExecute: true,
+                    warningNote:
+                        "Note: Active and saved sessions will be deleted.",
+                }
+            },
             execute: async (): Promise<void> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllScriptGenSessions",
@@ -842,6 +942,24 @@ function buildResetActions(): ResetAction[] {
             id: "triggerFlow",
             label: "Delete TriggerFlow Sessions",
             description: "Delete all TriggerFlow sessions",
+            preview: (): ResetActionPreview => {
+                const storage = new GenericSessionStorage(
+                    "Trigger Flow",
+                    "triggerFlowSessions",
+                )
+                if (storage.getSessionCount() === 0) {
+                    return {
+                        shouldExecute: false,
+                        skipReason: "No TriggerFlow sessions found.",
+                    }
+                }
+
+                return {
+                    shouldExecute: true,
+                    warningNote:
+                        "Note: Active and saved sessions will be deleted.",
+                }
+            },
             execute: async (): Promise<void> => {
                 await vscode.commands.executeCommand(
                     "tsp.deleteAllTriggerFlowSessions",
@@ -870,23 +988,46 @@ async function resetToolkitDefaults() {
         return
     }
 
-    //const selectedSummary = selected.map((item) => item.label).join(", ")
-    const selectedSummary = selected
-        .map((item, index) => `${index + 1}. ${item.label}`)
-        .join(", ")
+    const previewResults = await Promise.all(
+        selected.map(async (item) => ({
+            item,
+            preview: await item.action.preview(),
+        })),
+    )
+
+    const executableItems = previewResults.filter(
+        (r) => r.preview.shouldExecute,
+    )
+
+    if (executableItems.length === 0) {
+        await vscode.window.showInformationMessage("Nothing to reset.")
+        return
+    }
+
+    const resetSummary = previewResults
+        .map((result, index) => {
+            const warningLine = result.preview.warningNote
+                ? `\n    - ${result.preview.warningNote}`
+                : ""
+            return `${index + 1}. ${result.item.label}${warningLine}`
+        })
+        .join("\n")
 
     const confirmation = await vscode.window.showWarningMessage(
-        `Reset the following items:\n${selectedSummary}.\n This action cannot be undone. Continue?`,
+        `The following items will be reset:\n\n${resetSummary}\n\nThis action cannot be undone.`,
+        {
+            modal: true,
+            detail: "Do you want to continue?",
+        },
         "Reset",
-        "Cancel",
     )
 
     if (confirmation !== "Reset") {
         return
     }
 
-    for (const item of selected) {
-        await item.action.execute()
+    for (const result of executableItems) {
+        await result.item.action.execute()
     }
 
     vscode.window.showInformationMessage("TSP Toolkit reset completed.")
