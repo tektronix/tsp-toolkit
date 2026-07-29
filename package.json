@@ -745,8 +745,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.4",
-        "@tektronix/web-help-documents": "0.19.4",
+        "@tektronix/keithley_instrument_libraries": "0.19.5-0",
+        "@tektronix/web-help-documents": "0.19.5-0",
         "@types/cheerio": "0.22.35",
         "@vscode/codicons": "0.0.36",
         "@vscode/debugadapter": "^1.58.0",

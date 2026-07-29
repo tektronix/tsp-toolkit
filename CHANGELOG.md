@@ -28,6 +28,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
+- (**tsp-toolkit-webhelp-to-json**) language feature support for MSMU200-2
+- (**tsp-toolkit-webhelp**) latest webhelp manuals for MPSU50-2ST and MSMU60-2
+- (**tsp-toolkit-webhelp**) webhelp manuals for MSMU200-2
 - Added Reset to Default command in command palette.
 - Add GPIB password information to Known Issues section of README
 - **tsp-toolkit-trigger-flow** - Keyboard navigation has been added to the Trigger Model modal pane.
