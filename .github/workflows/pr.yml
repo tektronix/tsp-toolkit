@@ -251,7 +251,7 @@ jobs:
       - name: Publish to OpenVSX
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
-          # install vsce
+          # install ovsx
           npm install
           npx ovsx publish extension/*.vsix
         env:
