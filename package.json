@@ -783,6 +783,7 @@
         "license-checker": "25.0.1",
         "mocha": "^11.7.6",
         "nyc": "^18.0.0",
+        "ovsx": "^1.0.2",
         "prettier": "3.3.3",
         "source-map-support": "0.5.21",
         "ts-node": "10.9.2",
@@ -802,9 +803,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.22.0-4",
-        "@tektronix/kic-cli-linux-x64": "0.22.0-4",
-        "@tektronix/kic-cli-win32-x64": "0.22.0-4",
+        "@tektronix/kic-cli-darwin-arm64": "0.22.0-5",
+        "@tektronix/kic-cli-linux-x64": "0.22.0-5",
+        "@tektronix/kic-cli-win32-x64": "0.22.0-5",
         "@tektronix/script-gen-darwin-arm64": "0.1.4-0",
         "@tektronix/script-gen-linux-x64": "0.1.4-0",
         "@tektronix/script-gen-win32-x64": "0.1.4-0",
