@@ -57,7 +57,10 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
 
         super(context, config, dataProvider)
 
-        this.storage = new GenericSessionStorage("Trigger Flow")
+        this.storage = new GenericSessionStorage(
+            "Trigger Flow",
+            "triggerFlowSessions",
+        )
         this.validator = new SessionNameValidator(this.storage)
     }
 
@@ -216,8 +219,8 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
     /**
      * Remove all sessions
      */
-    protected removeAllSessions(): void {
-        this.storage.removeAllSessions()
+    protected removeAllSessions(): Promise<void> {
+        return this.storage.removeAllSessions()
     }
 
     /**
