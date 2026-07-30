@@ -40,6 +40,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
 - **tsp-toolkit-kic-cli** - Add connection support for 2601C-PULSE and 2605C-PULSE
 
+### Removed
+- **tsp-toolkit-trigger-flow** - Removed Apply and Cancel buttons from delay list popup.
+
 
 ## [1.5.0]
 
