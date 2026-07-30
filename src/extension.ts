@@ -95,7 +95,7 @@ function getManifestConfigurationSections(
 
 const RESET_LABELS: Record<string, string> = {
     "tsp.savedInstruments": "Saved Instruments",
-    "tsp.tspLinkSystemConfigurations": "Saved Instrument Configurations",
+    "tsp.tspLinkSystemConfigurations": "Saved System Configurations",
     "tsp.lineFrequency": "Power Line Frequency",
     "tsp.ignoreMissingVisa": "Ignore Missing VISA Warning",
     "tsp.showFunction": "Show Functions in Variables Pane",
@@ -862,8 +862,8 @@ function buildResetActions(): ResetAction[] {
 
         {
             id: "systemConfigurations",
-            label: "Saved Instrument Configurations",
-            description: "Reset saved instrument configurations",
+            label: "Saved System Configurations",
+            description: "Reset saved system configurations",
             preview: (): ResetActionPreview => {
                 const systems =
                     vscode.workspace
@@ -873,7 +873,7 @@ function buildResetActions(): ResetAction[] {
                 if (systems.length === 0) {
                     return {
                         shouldExecute: false,
-                        skipReason: "No saved instrument configurations found.",
+                        skipReason: "No saved system configurations found.",
                     }
                 }
 
