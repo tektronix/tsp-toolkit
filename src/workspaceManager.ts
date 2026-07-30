@@ -122,13 +122,21 @@ export async function updateLuaLibraryConfigurations(): Promise<void> {
         newLibrarySettings.push(join(COMMAND_SETS, "tsp-lua-5.0"))
 
         const luaDefinitionsFolderPath = join(COMMAND_SETS, "nodes_definitions")
-        if (fs.existsSync(luaDefinitionsFolderPath)) {
-            fs.rmSync(luaDefinitionsFolderPath, {
+
+        // Ensure the folder exists, then clear its contents. We intentionally
+        // avoid deleting and recreating the folder itself: on Windows a
+        // recursive remove can leave the directory in a "pending delete" state
+        // (held open by the indexer/AV/Explorer), which makes an immediate
+        // mkdir of the same name fail with EPERM.
+        fs.mkdirSync(luaDefinitionsFolderPath, { recursive: true })
+        for (const entry of fs.readdirSync(luaDefinitionsFolderPath)) {
+            fs.rmSync(join(luaDefinitionsFolderPath, entry), {
                 recursive: true,
                 force: true,
+                maxRetries: 3,
+                retryDelay: 100,
             })
         }
-        fs.mkdirSync(luaDefinitionsFolderPath, { recursive: true })
 
         const systemInfo: SystemInfo[] =
             vscode.workspace

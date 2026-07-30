@@ -8,6 +8,7 @@ export const CONNECTION_RE =
 
 const MPSU50_2ST = "MPSU50-2ST"
 const MSMU60_2 = "MSMU60-2"
+const MSMU200_2 = "MSMU200-2"
 const EMPTY = "Empty"
 
 export const NO_OPEN_WORKSPACE_MESSAGE =
@@ -19,7 +20,7 @@ const TREBUCHET_SUPPORTED_MODELS_DETAILS: Record<
 > = {
     MP5103: {
         noOfSlots: 3,
-        moduleOptions: [EMPTY, MPSU50_2ST, MSMU60_2],
+        moduleOptions: [EMPTY, MPSU50_2ST, MSMU60_2, MSMU200_2],
     },
 }
 
@@ -43,7 +44,8 @@ models = models.filter(
         model !== "tsp-lua-5.0" &&
         model !== "nodes_definitions" &&
         model !== MPSU50_2ST &&
-        model !== MSMU60_2,
+        model !== MSMU60_2 &&
+        model !== MSMU200_2,
 )
 
 export const SUPPORTED_MODELS_DETAILS = models.reduce<
@@ -91,7 +93,7 @@ export function toIoType(str: string): IoType {
  * instr_categ - versatest, tti, 26xx etc.
  */
 
-interface IInstrInfo {
+export interface IInstrInfo {
     io_type: IoType
     instr_address: string
     manufacturer: string
