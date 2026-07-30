@@ -25,6 +25,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Multiple issues have been corrected for delay time and number of delays parameter.
 - **tsp-toolkit-trigger-flow** - Improve rendering performance for trigger models with many event-dependent blocks
 - **tsp-toolkit-trigger-flow** - Minor fixes to appearance and UI element alignment
+- **tsp-toolkit-trigger-flow** - Incorrect mandatory indicator for List field in constant delay block
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
