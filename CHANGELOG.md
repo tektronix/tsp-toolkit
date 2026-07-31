@@ -16,6 +16,34 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.1]
+
+### Fixed
+- Ensure GPIB interfaces are visible in InstrumentExplorer
+- **tsp-toolkit-trigger-flow** - Recall TriggerFlow sessions with empty models.
+- **tsp-toolkit-trigger-flow** - Correctly print special characters in the generated script.
+- **tsp-toolkit-trigger-flow** - Multiple issues have been corrected for delay time and number of delays parameter.
+- **tsp-toolkit-trigger-flow** - Improve rendering performance for trigger models with many event-dependent blocks
+- **tsp-toolkit-trigger-flow** - Minor fixes to appearance and UI element alignment
+- **tsp-toolkit-trigger-flow** - Incorrect mandatory indicator for List field in constant delay block
+- **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
+
+### Added
+- (**tsp-toolkit-webhelp-to-json**) language feature support for MSMU200-2
+- (**tsp-toolkit-webhelp**) latest webhelp manuals for MPSU50-2ST and MSMU60-2
+- (**tsp-toolkit-webhelp**) webhelp manuals for MSMU200-2
+- Added Reset to Default command in command palette.
+- Add GPIB password information to Known Issues section of README
+- **tsp-toolkit-trigger-flow** - Keyboard navigation has been added to the Trigger Model modal pane.
+- **tsp-toolkit-trigger-flow** - Maximum limit of 10k for number of delay parameter.
+- **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
+- **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
+- **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
+- **tsp-toolkit-kic-cli** - Add connection support for 2601C-PULSE and 2605C-PULSE
+
+### Removed
+- **tsp-toolkit-trigger-flow** - Removed Apply and Cancel buttons from delay list popup.
+
 
 ## [1.5.0]
 
@@ -494,7 +522,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
 [1.4.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.1

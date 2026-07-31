@@ -59,6 +59,8 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected treeview?: vscode.TreeView<TSessionInstance>
     protected sessionName: string | undefined
     protected lastSentData: string | undefined
+    // Guard: prevents webview messages from writing back session data during deleteAll
+    private isDeletingAllSessions = false
 
     // Mapping of block names to manual URLs for the OPEN_MANUAL command
     // in future, this details we can keep catalog file?.
@@ -124,8 +126,8 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         // Delete all sessions command
         const deleteAllCmd = vscode.commands.registerCommand(
             this.config.deleteAllCommandId,
-            () => {
-                this.deleteAllSessions()
+            async () => {
+                await this.deleteAllSessions()
             },
         )
         this.context.subscriptions.push(deleteAllCmd)
@@ -239,6 +241,11 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
      * Handle messages from webview
      */
     protected handleWebviewMessage(message: WebviewMessage): void {
+        // Drop all messages while a deleteAll is in progress to prevent
+        // the Rust process from writing sessions back after they were cleared
+        if (this.isDeletingAllSessions) {
+            return
+        }
         switch (message.command as WebviewCommandType) {
             case WebviewCommandType.OPEN_SCRIPT:
                 this.openGeneratedScript()
@@ -503,12 +510,17 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     /**
      * Delete all sessions
      */
-    protected deleteAllSessions(): void {
-        if (this.panel) {
-            this.panel.dispose()
+    protected async deleteAllSessions(): Promise<void> {
+        this.isDeletingAllSessions = true
+        try {
+            if (this.panel) {
+                this.panel.dispose()
+            }
+            await this.removeAllSessions()
+            this.deleteAllDataProviderItems()
+        } finally {
+            this.isDeletingAllSessions = false
         }
-        this.removeAllSessions()
-        this.deleteAllDataProviderItems()
     }
 
     // Abstract methods to be implemented by subclasses
@@ -519,7 +531,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected abstract saveSession(name: string, config: string): void
     protected abstract updateSession(name: string, config: string): void
     protected abstract removeSession(name: string): void
-    protected abstract removeAllSessions(): void
+    protected abstract removeAllSessions(): Promise<void>
     protected abstract getSessionConfig(name: string): string | undefined
     protected abstract sessionExists(name: string): boolean
     protected abstract refreshDataProvider(): void

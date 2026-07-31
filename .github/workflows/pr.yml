@@ -184,8 +184,8 @@ jobs:
       - name: Run ClamAV
         run: clamscan -v extension/*.vsix
 
-  publish:
-    name: Publish
+  publish_vsce:
+    name: Publish VSCode Marketplace
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -215,12 +215,48 @@ jobs:
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
           # install vsce
-          npm install --devDependencies
+          npm install
           for f in extension/*.vsix; do
             npx vsce publish --packagePath "$f"
           done
         env:
           VSCE_PAT: ${{secrets.VSCE_PAT}}
+  publish_ovsx:
+    name: Publish to OpenVSX
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
+      pull-requests: read
+      packages: read
+    needs:
+      - compile
+      - test
+      #- sbom
+      - lint
+      - style
+    if: ${{ (endsWith(github.base_ref, 'main') && (contains(github.head_ref, 'release/')) && github.event.pull_request.merged ) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Get Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: extension
+      - name: Publish to OpenVSX
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          # install ovsx
+          npm install
+          npx ovsx publish extension/*.vsix
+        env:
+          OVSX_PAT: ${{secrets.OVSX_PAT}}
+
 
   release:
     name: Release
