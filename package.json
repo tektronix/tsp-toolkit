@@ -226,8 +226,8 @@
                 "icon": "$(circle-slash)"
             },
             {
-                "command": "InstrumentsExplorer.upgradeFirmware",
-                "title": "Upgrade Firmware",
+                "command": "InstrumentsExplorer.updateFirmware",
+                "title": "Update Firmware",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
@@ -527,7 +527,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "false"
                 },
                 {
@@ -610,7 +610,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
                     "group": "inline"
                 },
