@@ -16,6 +16,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.2]
+
+### Changed
+- Rename 'Upgrade firmware' to 'Update firmware'.
+
+
 ## [1.5.1]
 
 ### Fixed
