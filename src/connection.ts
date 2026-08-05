@@ -209,6 +209,250 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
+    private async runConnectFlow(
+        name: string | undefined,
+        progress: vscode.Progress<{ message?: string; increment?: number }>,
+        cancel: vscode.CancellationToken,
+        orig_status: ConnectionStatus | undefined,
+        LOGLOC: { file: string; func: string },
+    ): Promise<boolean> {
+        this.status = ConnectionStatus.Connected
+
+        cancel.onCancellationRequested(() => {
+            Log.info("Connection cancelled by user", LOGLOC)
+            if (this._background_process) {
+                this._background_process?.kill("SIGTERM")
+            }
+            this.status = orig_status
+        })
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+        //Dump output queue if enabled
+        // Disabled dumping output queue on connect until it is reimplemented
+        //let dump_path = undefined
+        //if (
+        //    vscode.workspace
+        //        .getConfiguration("tsp")
+        //        .get("dumpQueueOnConnect") === true
+        //) {
+        //    progress.report({
+        //        message:
+        //            "Dumping data from instrument output queue",
+        //    })
+        //    dump_path = await this.dumpOutputQueue()
+        //}
+
+        progress.report({
+            message: "Checking if instrument requires authentication",
+        })
+
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+
+        const login_required = await this.checkLogin()
+        if (login_required.type === "NotPrompted") {
+            Log.debug("No login required", LOGLOC)
+        } else if (login_required.type === "InUse") {
+            vscode.window.showErrorMessage(
+                `Instrument at ${this._addr} already in use. Make sure you logout at other locations before connecting.`,
+            )
+            Log.error("Connection failed: instrument already in use.", LOGLOC)
+            this.status = orig_status
+            return false
+        } else if (login_required.type === "Protected") {
+            for (let i = 1; i <= 3; i++) {
+                //TODO: Prompt for the required information (if any)
+                if (i > 1 && login_required.keyring) {
+                    login_required.keyring = undefined
+                }
+
+                progress.report({
+                    message: `Attempt ${i} of 3: Prompting for instrument authentication details`,
+                })
+                const login_details = await this.promptDetails(login_required)
+
+                this._keyring = await this.login(login_details)
+
+                if (this._keyring) {
+                    break
+                }
+                if (
+                    (this._keyring === undefined || this._keyring === null) &&
+                    i < 3
+                ) {
+                    vscode.window.showWarningMessage(
+                        `Credentials incorrect for instrument at ${this._addr}, please try again.`,
+                    )
+                    Log.error("Credentials are incorrect, please try again.", LOGLOC)
+                }
+                if (
+                    (this._keyring === undefined || this._keyring === null) &&
+                    i == 3
+                ) {
+                    vscode.window.showErrorMessage(
+                        `Unable to connect to instrument at ${this._addr}, please check your credentials and try again.`,
+                    )
+                    Log.error(
+                        "Connection failed: unable to reach requested instrument, user exceeded login attempts.",
+                        LOGLOC,
+                    )
+                    this.status = orig_status
+                    return false
+                }
+            }
+        } else {
+            vscode.window.showErrorMessage(
+                `Unable to connect to instrument at ${this._addr}`,
+            )
+            Log.error(
+                "Connection failed: unable to reach requested instrument.",
+                LOGLOC,
+            )
+            this.status = orig_status
+            return false
+        }
+        //Get instrument info
+        progress.report({
+            message: "Getting instrument information",
+        })
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+
+        const info = await this.ping()
+
+        if (!info) {
+            vscode.window.showErrorMessage(
+                `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
+            )
+            this.status = orig_status
+            return false
+        }
+
+        if (!this._parent) {
+            this._parent = new Instrument(info, name !== "" ? name : undefined)
+            this._parent.addConnection(this)
+        }
+        InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
+        await InstrumentProvider.instance.saveInstrument(this._parent)
+        this.status = ConnectionStatus.Connected
+
+        const additional_terminal_args: string[] = []
+
+        // Disabled dumping output queue on connect until it is reimplemented
+        //if (dump_path) {
+        //    additional_terminal_args.push(
+        //        "--dump-output",
+        //        dump_path,
+        //    )
+        //}
+
+        progress.report({
+            message: `Connecting to instrument with model ${info.model} and S/N ${info.serial_number}`,
+        })
+
+        //Connect terminal
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+
+        const terminal_args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "connect",
+            this.addr,
+        ]
+
+        if (additional_terminal_args) {
+            for (const a of additional_terminal_args) {
+                terminal_args.push(a)
+            }
+        }
+
+        if (this._keyring) {
+            terminal_args.push("--keyring", this._keyring)
+        }
+
+        if (vscode.workspace.getConfiguration("tsp").get("reset") === true) {
+            terminal_args.push("--reset")
+        }
+
+        if (
+            vscode.workspace.getConfiguration("tsp").get("clearErrorQueue") ===
+            true
+        ) {
+            terminal_args.push("--clear-error-queue")
+        }
+
+        Log.debug("Starting VSCode Terminal", LOGLOC)
+        this._terminal = vscode.window.createTerminal({
+            name: this._parent.name,
+            shellPath: EXECUTABLE,
+            shellArgs: terminal_args,
+            isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
+            iconPath: {
+                light: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "light",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+                dark: vscode.Uri.file(
+                    join(
+                        __dirname,
+                        "..",
+                        "resources",
+                        "dark",
+                        "tsp-terminal-icon.svg",
+                    ),
+                ),
+            },
+        })
+
+        this._terminal?.show(false)
+        vscode.window.onDidCloseTerminal((t) => {
+            Log.info("Terminal closed", LOGLOC)
+            if (
+                t.creationOptions.iconPath !== undefined &&
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                t.creationOptions.iconPath.toString().search("tsp-terminal-icon") &&
+                t.name === this._parent?.name &&
+                t.processId === this._terminal?.processId
+            ) {
+                this.status = ConnectionStatus.Active
+                this._terminal = undefined
+
+                if (t.exitStatus?.reason !== vscode.TerminalExitReason.Process) {
+                    setTimeout(() => {
+                        Log.debug("Resetting closed instrument", LOGLOC)
+                        this.reset().catch(() => {})
+                        this.status = ConnectionStatus.Active
+                    }, 500)
+                }
+            }
+        }, this)
+
+        Log.debug(`Connected to ${this._parent.name}`, LOGLOC)
+
+        progress.report({
+            message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
+        })
+
+        return true
+    }
+
     async checkLogin(timeout_ms?: number): Promise<LoginStatus> {
         const LOGLOC = {
             file: "instruments.ts",
@@ -634,7 +878,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return dump_path
     }
 
-    async connect(name?: string): Promise<boolean> {
+    async connect(
+        name?: string,
+        progressContext?: {
+            progress: vscode.Progress<{ message?: string; increment?: number }>
+            token: vscode.CancellationToken
+        },
+    ): Promise<boolean> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
         this.status = ConnectionStatus.Connected
@@ -644,279 +894,24 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
+            if (progressContext) {
+                return this.runConnectFlow(
+                    name,
+                    progressContext.progress,
+                    progressContext.token,
+                    orig_status,
+                    LOGLOC,
+                )
+            }
+
             const result = await vscode.window.withProgress(
                 {
                     cancellable: true,
                     location: vscode.ProgressLocation.Notification,
                     title: "Connecting to instrument",
                 },
-                async (progress, cancel) => {
-                    this.status = ConnectionStatus.Connected
-
-                    cancel.onCancellationRequested(() => {
-                        Log.info("Connection cancelled by user", LOGLOC)
-                        if (this._background_process) {
-                            this._background_process?.kill("SIGTERM")
-                        }
-                        this.status = orig_status
-                    })
-                    if (cancel.isCancellationRequested) {
-                        this.status = orig_status
-                        return false
-                    }
-                    //Dump output queue if enabled
-                    // Disabled dumping output queue on connect until it is reimplemented
-                    //let dump_path = undefined
-                    //if (
-                    //    vscode.workspace
-                    //        .getConfiguration("tsp")
-                    //        .get("dumpQueueOnConnect") === true
-                    //) {
-                    //    progress.report({
-                    //        message:
-                    //            "Dumping data from instrument output queue",
-                    //    })
-                    //    dump_path = await this.dumpOutputQueue()
-                    //}
-
-                    progress.report({
-                        message:
-                            "Checking if instrument requires authentication",
-                    })
-
-                    if (cancel.isCancellationRequested) {
-                        this.status = orig_status
-                        return false
-                    }
-
-                    const login_required = await this.checkLogin()
-                    if (login_required.type === "NotPrompted") {
-                        Log.debug("No login required", LOGLOC)
-                    } else if (login_required.type === "InUse") {
-                        vscode.window.showErrorMessage(
-                            `Instrument at ${this._addr} already in use. Make sure you logout at other locations before connecting.`,
-                        )
-                        Log.error(
-                            "Connection failed: instrument already in use.",
-                            LOGLOC,
-                        )
-                        this.status = orig_status
-                        return false
-                    } else if (login_required.type === "Protected") {
-                        for (let i = 1; i <= 3; i++) {
-                            //TODO: Prompt for the required information (if any)
-                            if (i > 1 && login_required.keyring) {
-                                login_required.keyring = undefined
-                            }
-
-                            progress.report({
-                                message: `Attempt ${i} of 3: Prompting for instrument authentication details`,
-                            })
-                            const login_details =
-                                await this.promptDetails(login_required)
-
-                            this._keyring = await this.login(login_details)
-
-                            if (this._keyring) {
-                                break
-                            }
-                            if (
-                                (this._keyring === undefined ||
-                                    this._keyring === null) &&
-                                i < 3
-                            ) {
-                                vscode.window.showWarningMessage(
-                                    `Credentials incorrect for instrument at ${this._addr}, please try again.`,
-                                )
-                                Log.error(
-                                    "Credentials are incorrect, please try again.",
-                                    LOGLOC,
-                                )
-                            }
-                            if (
-                                (this._keyring === undefined ||
-                                    this._keyring === null) &&
-                                i == 3
-                            ) {
-                                vscode.window.showErrorMessage(
-                                    `Unable to connect to instrument at ${this._addr}, please check your credentials and try again.`,
-                                )
-                                Log.error(
-                                    "Connection failed: unable to reach requested instrument, user exceeded login attempts.",
-                                    LOGLOC,
-                                )
-                                this.status = orig_status
-                                return false
-                            }
-                        }
-                    } else {
-                        vscode.window.showErrorMessage(
-                            `Unable to connect to instrument at ${this._addr}`,
-                        )
-                        Log.error(
-                            "Connection failed: unable to reach requested instrument.",
-                            LOGLOC,
-                        )
-                        this.status = orig_status
-                        return false
-                    }
-                    //Get instrument info
-                    progress.report({
-                        message: "Getting instrument information",
-                    })
-                    if (cancel.isCancellationRequested) {
-                        this.status = orig_status
-                        return false
-                    }
-
-                    const info = await this.ping()
-
-                    if (!info) {
-                        vscode.window.showErrorMessage(
-                            `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
-                        )
-                        this.status = orig_status
-                        return false
-                    }
-
-                    if (!this._parent) {
-                        this._parent = new Instrument(
-                            info,
-                            name !== "" ? name : undefined,
-                        )
-                        this._parent.addConnection(this)
-                    }
-                    InstrumentProvider.instance.addOrUpdateInstrument(
-                        this._parent,
-                    )
-                    await InstrumentProvider.instance.saveInstrument(
-                        this._parent,
-                    )
-                    this.status = ConnectionStatus.Connected
-
-                    const additional_terminal_args: string[] = []
-
-                    // Disabled dumping output queue on connect until it is reimplemented
-                    //if (dump_path) {
-                    //    additional_terminal_args.push(
-                    //        "--dump-output",
-                    //        dump_path,
-                    //    )
-                    //}
-
-                    progress.report({
-                        message: `Connecting to instrument with model ${info.model} and S/N ${info.serial_number}`,
-                    })
-
-                    //Connect terminal
-                    if (cancel.isCancellationRequested) {
-                        this.status = orig_status
-                        return false
-                    }
-
-                    const terminal_args = [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date().toISOString().substring(0, 10)}-kic.log`,
-                        ),
-                        "connect",
-                        this.addr,
-                    ]
-
-                    if (additional_terminal_args) {
-                        for (const a of additional_terminal_args) {
-                            terminal_args.push(a)
-                        }
-                    }
-
-                    if (this._keyring) {
-                        terminal_args.push("--keyring", this._keyring)
-                    }
-
-                    if (
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("reset") === true
-                    ) {
-                        terminal_args.push("--reset")
-                    }
-
-                    if (
-                        vscode.workspace
-                            .getConfiguration("tsp")
-                            .get("clearErrorQueue") === true
-                    ) {
-                        terminal_args.push("--clear-error-queue")
-                    }
-
-                    Log.debug("Starting VSCode Terminal", LOGLOC)
-                    this._terminal = vscode.window.createTerminal({
-                        name: this._parent.name,
-                        shellPath: EXECUTABLE,
-                        shellArgs: terminal_args,
-                        isTransient: true, // Don't try to reinitialize the terminal when restarting vscode
-                        iconPath: {
-                            light: vscode.Uri.file(
-                                join(
-                                    __dirname,
-                                    "..",
-                                    "resources",
-                                    "light",
-                                    "tsp-terminal-icon.svg",
-                                ),
-                            ),
-                            dark: vscode.Uri.file(
-                                join(
-                                    __dirname,
-                                    "..",
-                                    "resources",
-                                    "dark",
-                                    "tsp-terminal-icon.svg",
-                                ),
-                            ),
-                        },
-                    })
-
-                    this._terminal?.show(false)
-                    vscode.window.onDidCloseTerminal((t) => {
-                        Log.info("Terminal closed", LOGLOC)
-                        if (
-                            t.creationOptions.iconPath !== undefined &&
-                            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                            t.creationOptions.iconPath
-                                .toString()
-                                .search("tsp-terminal-icon") &&
-                            t.name === this._parent?.name &&
-                            t.processId === this._terminal?.processId
-                        ) {
-                            this.status = ConnectionStatus.Active
-                            this._terminal = undefined
-
-                            if (
-                                t.exitStatus?.reason !==
-                                vscode.TerminalExitReason.Process
-                            ) {
-                                setTimeout(() => {
-                                    Log.debug(
-                                        "Resetting closed instrument",
-                                        LOGLOC,
-                                    )
-                                    this.reset().catch(() => {})
-                                    this.status = ConnectionStatus.Active
-                                }, 500)
-                            }
-                        }
-                    }, this)
-
-                    Log.debug(`Connected to ${this._parent.name}`, LOGLOC)
-
-                    progress.report({
-                        message: `Connected to instrument with model ${info.model} and S/N ${info.serial_number}, saving to global settings`,
-                    })
-
-                    return true
-                },
+                async (progress, cancel) =>
+                    this.runConnectFlow(name, progress, cancel, orig_status, LOGLOC),
             )
             return result ?? false
         } else {

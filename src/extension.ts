@@ -129,7 +129,7 @@ export async function createTerminal(
             location: vscode.ProgressLocation.Notification,
             title: "Connecting to instrument",
         },
-        async () => {
+        async (progress, token) => {
             let conn: Connection
             let name = ""
 
@@ -208,7 +208,12 @@ export async function createTerminal(
                 }
             }
 
-            if (await conn.connect(name)) {
+            if (
+                await conn.connect(name, {
+                    progress,
+                    token,
+                })
+            ) {
                 return conn
             }
             return Promise.resolve(undefined)
