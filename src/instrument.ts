@@ -350,7 +350,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         )
     }
 
-    async upgrade(): Promise<void> {
+    async update(): Promise<void> {
         let connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
         )
@@ -394,7 +394,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                         .slice(1)
                         .map((n) => `Slot ${n}`),
                 ],
-                { canPickMany: false, title: "What do you want to upgrade?" },
+                { canPickMany: false, title: "What do you want to update?" },
             )
             if (!slot_str) {
                 return
@@ -412,13 +412,13 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             filters: {
                 "Firmware Files": ["x", "upg"],
             },
-            openLabel: "Upgrade",
+            openLabel: "Update",
         })
         if (!file) {
             return
         }
 
-        await connection.upgrade(file[0].fsPath, slot)
+        await connection.update(file[0].fsPath, slot)
     }
 
     /**
