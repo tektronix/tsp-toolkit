@@ -130,6 +130,10 @@ export async function createTerminal(
             title: "Connecting to instrument",
         },
         async (progress, token) => {
+            progress.report({
+                message: "Preparing instrument connection",
+            })
+
             let conn: Connection
             let name = ""
 
@@ -159,6 +163,10 @@ export async function createTerminal(
                 conn = connection
             }
 
+            if (token.isCancellationRequested) {
+                return Promise.resolve(undefined)
+            }
+
             if (conn.type === IoType.Visa && isMacOS) {
                 const errorMsg = "VISA connection is not supported on macOS."
                 vscode.window.showErrorMessage(errorMsg)
@@ -173,6 +181,10 @@ export async function createTerminal(
                     .get<boolean>("ignoreMissingVisa", false)
 
                 if (!ignoreMissingVisa) {
+                    progress.report({
+                        message: "Checking VISA prerequisites",
+                    })
+
                     let hasVisa = false
                     if (isWindows) {
                         hasVisa = await checkVisaInstallation()
