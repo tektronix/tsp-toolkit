@@ -11,13 +11,17 @@ import { updateLuaLibraryConfigurations } from "./workspaceManager"
 
 export class ConfigWebView implements WebviewViewProvider {
     public static readonly viewType = "systemConfigurations"
-    private _webviewView!: vscode.WebviewView
+    private _webviewView: vscode.WebviewView | undefined
     constructor(private readonly _extensionUri: Uri) {
         // Register a callback for configuration changes
         vscode.workspace.onDidChangeConfiguration(async (event) => {
             if (event.affectsConfiguration("tsp.tspLinkSystemConfigurations")) {
                 await this.getSystemName()
                 await updateLuaLibraryConfigurations()
+                // Push the latest configuration list to the view immediately after reset/update.
+                if (this._webviewView) {
+                    this.reloadUi(this._webviewView)
+                }
             }
         })
     }
@@ -234,6 +238,10 @@ export class ConfigWebView implements WebviewViewProvider {
             vscode.window.showInformationMessage(`${NO_OPEN_WORKSPACE_MESSAGE}`)
             return
         }
+        // The view may not be resolved yet (for example if the pane was never opened).
+        if (!this._webviewView) {
+            return
+        }
         const savedSystems: SystemInfo[] =
             vscode.workspace
                 .getConfiguration("tsp")
@@ -447,6 +455,10 @@ export class ConfigWebView implements WebviewViewProvider {
     }
 
     private render_new_system(system_name: string) {
+        // Ignore render requests until the webview has been created.
+        if (!this._webviewView) {
+            return
+        }
         const savedSystems: SystemInfo[] =
             vscode.workspace
                 .getConfiguration("tsp")
