@@ -29,6 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
+- (**tsp-toolkit-script-gen**) script generation feature support for MSMU200-2 
 - (**tsp-toolkit-webhelp-to-json**) language feature support for MSMU200-2
 - (**tsp-toolkit-webhelp**) latest webhelp manuals for MPSU50-2ST and MSMU60-2
 - (**tsp-toolkit-webhelp**) webhelp manuals for MSMU200-2
