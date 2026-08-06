@@ -27,6 +27,10 @@ export enum ConnectionStatus {
      */
     Active,
     /**
+     * This connection interface is in the process of connecting to the instrument
+     */
+    Connecting,
+    /**
      * This connection interface was deemed connected and already has a terminal associated with it
      */
     Connected,
@@ -76,6 +80,8 @@ export function statusToString(status: ConnectionStatus | undefined): string {
             return "Inactive"
         case ConnectionStatus.Active:
             return "Active"
+        case ConnectionStatus.Connecting:
+            return "Connecting"
         case ConnectionStatus.Connected:
             return "Connected"
     }
@@ -216,7 +222,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         orig_status: ConnectionStatus | undefined,
         LOGLOC: { file: string; func: string },
     ): Promise<boolean> {
-        this.status = ConnectionStatus.Connected
+        this.status = ConnectionStatus.Connecting
 
         cancel.onCancellationRequested(() => {
             Log.info("Connection cancelled by user", LOGLOC)
@@ -422,6 +428,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         })
 
         this._terminal?.show(false)
+
+        this.status = ConnectionStatus.Connected
+
         vscode.window.onDidCloseTerminal((t) => {
             Log.info("Terminal closed", LOGLOC)
             if (
@@ -908,7 +917,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 {
                     cancellable: true,
                     location: vscode.ProgressLocation.Notification,
-                    title: "Connecting to instrument",
+                    title: `Connecting to ${this.addr}`,
                 },
                 async (progress, cancel) =>
                     this.runConnectFlow(name, progress, cancel, orig_status, LOGLOC),

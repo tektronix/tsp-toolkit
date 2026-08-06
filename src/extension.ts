@@ -127,11 +127,11 @@ export async function createTerminal(
         {
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
-            title: "Connecting to instrument",
+            title: `Connecting to ${typeof connection === "string" ? connection : connection.addr}`,
         },
         async (progress, token) => {
             progress.report({
-                message: "Preparing instrument connection",
+                message: `Preparing connection to ${typeof connection === "string" ? connection : connection.addr}`,
             })
 
             let conn: Connection
@@ -182,7 +182,7 @@ export async function createTerminal(
 
                 if (!ignoreMissingVisa) {
                     progress.report({
-                        message: "Checking VISA prerequisites",
+                        message: `Checking VISA prerequisites for ${connection}`,
                     })
 
                     let hasVisa = false
