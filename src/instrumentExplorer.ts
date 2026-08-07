@@ -43,7 +43,10 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
         this.treeDataProvider = treeDataProvider
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
-            StatusBarManager.instance.showMessage("Checking saved instrument connections...", StatusType.Progress)
+            StatusBarManager.instance.showMessage(
+                "Checking saved instrument connections...",
+                StatusType.Progress,
+            )
             this.treeDataProvider
                 ?.refresh(async () => {
                     await this.startDiscovery()
@@ -92,7 +95,10 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(removeInstrument)
         context.subscriptions.push(changeIPAddr)
 
-        StatusBarManager.instance.showMessage("Checking saved instrument connections...", StatusType.Progress)
+        StatusBarManager.instance.showMessage(
+            "Checking saved instrument connections...",
+            StatusType.Progress,
+        )
 
         this.treeDataProvider
             ?.refresh(async () => await this.startDiscovery())
@@ -112,40 +118,36 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
     private startDiscovery(): Promise<void> {
         const LOGLOC: SourceLocation = {
-            file: "instruments.ts",
+            file: "instrumentExplorer.ts",
             func: "InstrumentExplorer.startDiscovery()",
         }
         return new Promise<void>((resolve) => {
             if (!this._discoveryInProgress) {
-                StatusBarManager.instance.showMessage("Discovering new instrument connections...", StatusType.Progress)
-
-                this._discoveryInProgress = true
-                const discover = child.spawn(
-                    DISCOVER_EXECUTABLE,
-                    [
-                        "--log-file",
-                        join(
-                            LOG_DIR,
-                            `${new Date()
-                                .toISOString()
-                                .substring(0, 10)}-kic-discover.log`,
-                        ),
-                        "all",
-                        "--timeout",
-                        DISCOVERY_TIMEOUT.toString(),
-                        "--exit",
-                    ],
-                    //,
-                    // {
-                    //     detached: true,
-                    //     stdio: "ignore",
-                    // }
+                StatusBarManager.instance.showMessage(
+                    "Discovering new instrument connections...",
+                    StatusType.Progress,
                 )
 
-                discover.on("exit", (code) => {
-                    if (code) {
-                        Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
-                    }
+                this._discoveryInProgress = true
+                const discover = child.spawn(DISCOVER_EXECUTABLE, [
+                    "--log-file",
+                    join(
+                        LOG_DIR,
+                        `${new Date()
+                            .toISOString()
+                            .substring(0, 10)}-kic-discover.log`,
+                    ),
+                    "all",
+                    "--timeout",
+                    DISCOVERY_TIMEOUT.toString(),
+                    "--exit",
+                ])
+
+                this.treeDataProvider?.getContent(discover).catch((e) => {
+                    Log.error(`Error: ${e}`, LOGLOC)
+                })
+
+                discover.on("exit", () => {
                     StatusBarManager.instance.hide()
                     clearInterval(this.intervalID)
                     this._discoveryInProgress = false
@@ -155,13 +157,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 //subprocess.unref()
 
                 //this.treeDataProvider?.clear()
-
-                this.intervalID = setInterval(() => {
-                    this.treeDataProvider?.getContent().then(
-                        () => {},
-                        () => {},
-                    )
-                }, 1000)
             }
         })
     }
@@ -247,7 +242,10 @@ export class InstrumentsExplorer implements vscode.Disposable {
                 func: "InstrumentsExplorer.changeIP()",
             },
         )
-        StatusBarManager.instance.showMessage(`IP address updated to ${trimmedIP}`, StatusType.Info)
+        StatusBarManager.instance.showMessage(
+            `IP address updated to ${trimmedIP}`,
+            StatusType.Info,
+        )
     }
 
     public async saveWhileConnect(instrument: Instrument) {
