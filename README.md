@@ -240,6 +240,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Toolkit Quick Start Guide (PDF)][tsp-toolkit-quick-start-guide]
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
+- [TSP Toolkit TriggerFlow Demo][trigger-flow-demo-video]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
@@ -335,6 +336,7 @@ for more information.
 [tsp-toolkit-discussions]: https://github.com/tektronix/tsp-toolkit/discussions
 [tsp-toolkit-dev-process]: ./CONTRIBUTING.md#development-process
 [tsp-video-series]: https://www.youtube.com/@tektronix/search?query=TSP
+[trigger-flow-demo-video]: https://www.tek.com/en/video/product-demo/build-trigger-models-visually-with-triggerflow
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
 [tsp-toolkit-quick-start-guide]: https://www.tek.com/en/manual/tsp-toolkit-quick-start-guide
 
