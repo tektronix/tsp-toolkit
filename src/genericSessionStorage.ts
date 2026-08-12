@@ -201,6 +201,54 @@ export class GenericSessionStorage {
                 undefined,
                 vscode.ConfigurationTarget.Workspace,
             )
+            let migratedScriptGen = false
+            let migratedTriggerFlow = false
+
+            // Check if the target keys already have real sessions (not just empty containers).
+            // An object like { "I-V Characterization": [] } has keys but no sessions,
+            // so migration should still run in that case.
+            const scriptGenHasSessions =
+                (scriptGenConfig?.["I-V Characterization"]?.length ?? 0) > 0
+            const triggerFlowHasSessions =
+                (triggerFlowConfig?.["Trigger Flow"]?.length ?? 0) > 0
+
+            if (!scriptGenHasSessions && ivSessions.length > 0) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY,
+                    {
+                        "I-V Characterization": ivSessions,
+                    },
+                    false,
+                )
+                migratedScriptGen = true
+            }
+
+            if (!triggerFlowHasSessions && triggerFlowSessions.length > 0) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY,
+                    {
+                        "Trigger Flow": triggerFlowSessions,
+                    },
+                    false,
+                )
+                migratedTriggerFlow = true
+            }
+
+            // Remove legacy storage when all session types have been accounted for:
+            // either migrated in this run, or already present in the new keys, or
+            // there were no sessions to migrate for that type.
+            const scriptGenAccountedFor =
+                migratedScriptGen || scriptGenHasSessions || ivSessions.length === 0
+            const triggerFlowAccountedFor =
+                migratedTriggerFlow || triggerFlowHasSessions || triggerFlowSessions.length === 0
+
+            if (scriptGenAccountedFor && triggerFlowAccountedFor) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.LEGACY_SETTINGS_KEY,
+                    undefined,
+                    false,
+                )
+            }
         } catch (error) {
             console.error("Failed to migrate legacy sessions:", error)
             Log.error(
