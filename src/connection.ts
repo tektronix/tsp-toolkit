@@ -1031,27 +1031,27 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     }
 
     /**
-     * Upgrade the instrument that can be connected to by this Connection.
+     * Update the instrument that can be connected to by this Connection.
      *
      * If a connection does not already exist, create one and then send the appropriate
-     * `.upgrade` command.
+     * `.update` command.
      *
-     * **Note:** This could be done using the `kic upgrade` subcommand in the future. This method
+     * **Note:** This could be done using the `kic update` subcommand in the future. This method
      * was chosen to maintain any possible visual loading bars that may eventually be
      * printed to the terminal
      *
-     * @param filepath The path to the upgrade file
-     * @param slot (optional) The slot of the mainframe to upgrade
+     * @param filepath The path to the update file
+     * @param slot (optional) The slot of the mainframe to update
      */
-    async upgrade(filepath: string, slot?: number) {
+    async update(filepath: string, slot?: number) {
         const LOGLOC = {
             file: "instruments.ts",
-            func: "Connection.upgrade()",
+            func: "Connection.update()",
         }
         if (!this._terminal) {
             await this.connect()
         }
-        Log.debug("Terminal exists, sending .upgrade", LOGLOC)
+        Log.debug("Terminal exists, sending .update", LOGLOC)
 
         const fileSize = statSync(filepath).size
         if (fileSize === 0) {
@@ -1060,10 +1060,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         vscode.window.showInformationMessage(
-            `Starting upgrade on ${this._parent?.name}@${this._addr}${slot ? `, slot ${slot}` : ""}`,
+            `Starting update on ${this._parent?.name}@${this._addr}${slot ? `, slot ${slot}` : ""}`,
         )
         this._terminal?.sendText(
-            `.upgrade ${slot ? `--slot ${slot}` : ""} "${filepath}"`,
+            `.update ${slot ? `--slot ${slot}` : ""} "${filepath}"`,
         )
         return
     }

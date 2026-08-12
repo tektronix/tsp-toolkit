@@ -297,7 +297,7 @@ async function checkVersionAndShowAnnouncement(
         message = `TSP Toolkit v${currentVersion} has been successfully installed. Check out the features!`
 
         if (previousVersion && currentVersion) {
-            message = `TSP Toolkit just upgraded to v${currentVersion}. Check out what's new!`
+            message = `TSP Toolkit just updated to v${currentVersion}. Check out what's new!`
         }
         const changelogPath = vscode.Uri.joinPath(
             context.extensionUri,
@@ -443,9 +443,9 @@ export async function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "InstrumentsExplorer.upgradeFirmware",
+            name: "InstrumentsExplorer.updateFirmware",
             cb: async (e: Instrument) => {
-                await e.upgrade()
+                await e.update()
             },
         },
         // {
