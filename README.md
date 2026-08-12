@@ -240,6 +240,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Toolkit Quick Start Guide (PDF)][tsp-toolkit-quick-start-guide]
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
+- [TSP Toolkit TriggerFlow Demo][trigger-flow-demo-video]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
@@ -299,6 +300,7 @@ for more information.
     - MP5103
         - MPSU50-2ST
         - MSMU60-2
+        - MSMU200-2
 - Upgrading firmware on the 3706A, 707B, and 708B instruments is not successful. This will NOT
   render the instrument inoperable, but will not complete successfully.
 - Instrument discovery might not work for 2600-series and 3706A due to firmware limitations
@@ -314,6 +316,8 @@ for more information.
 - Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
   instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
   such as using `#lua_table` to get the number of elements in a table.
+- When connecting to a GPIB instrument, ensure passwords are disabled for the GPIB interface.
+    - The GPIB interface doesn't provide any other mechanisms to get instrument information except by running `*IDN?`. If the interface is password protected, instrument information cannot be retrieved and TSP Toolkit can't know what kind of instrument it is attempting to connect to.
 
 <!--Refs-->
 [official-Lua-5.0-reference]: https://www.lua.org/manual/5.0/
@@ -332,6 +336,7 @@ for more information.
 [tsp-toolkit-discussions]: https://github.com/tektronix/tsp-toolkit/discussions
 [tsp-toolkit-dev-process]: ./CONTRIBUTING.md#development-process
 [tsp-video-series]: https://www.youtube.com/@tektronix/search?query=TSP
+[trigger-flow-demo-video]: https://www.tek.com/en/video/product-demo/build-trigger-models-visually-with-triggerflow
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
 [tsp-toolkit-quick-start-guide]: https://www.tek.com/en/manual/tsp-toolkit-quick-start-guide
 
