@@ -1,11 +1,5 @@
 import * as vscode from "vscode"
-import {
-    ConnectionHelper,
-    idn_to_string,
-    IIDNInfo,
-    InstrInfo,
-    IoType,
-} from "./resourceManager"
+import { idn_to_string, IIDNInfo, InstrInfo, IoType } from "./resourceManager"
 import {
     Connection,
     ConnectionStatus,
@@ -442,8 +436,9 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         // Find if a connection of the same type already exists (regardless of address)
         const sameTypeIdx = this._connections.findIndex(
             (v) =>
-                (v.type === IoType.Lan && v.type === connection.type) ||
-                ConnectionHelper.AreSameVisaType(v.addr, connection.addr),
+                // For VISA type addrs, check to see if the connections are of the same type cheaply
+                v.addr.substring(0, 3) == connection.addr.substring(0, 3) ||
+                (v.type === IoType.Lan && v.type === connection.type),
         )
         if (sameTypeIdx > -1) {
             // If the address is the same, just update status if needed

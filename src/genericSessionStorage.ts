@@ -1,4 +1,5 @@
 import * as vscode from "vscode"
+import { Log } from "./logging"
 
 /**
  * Represents a single session configuration
@@ -22,6 +23,9 @@ export interface SessionCollection {
 export class GenericSessionStorage {
     private readonly settingsKey: string
     private readonly sessionType: string
+    private static readonly LEGACY_SETTINGS_KEY = "script_generation"
+    private static readonly SCRIPT_GEN_SETTINGS_KEY = "scriptGenSessions"
+    private static readonly TRIGGER_FLOW_SETTINGS_KEY = "triggerFlowSessions"
 
     constructor(sessionType: string, settingsKey = "script_generation") {
         this.sessionType = sessionType
@@ -71,7 +75,7 @@ export class GenericSessionStorage {
 
         existingSessions[this.sessionType].push(newSession)
 
-        this.updateSettings(existingSessions)
+        void this.updateSettings(existingSessions)
     }
 
     /**
@@ -88,14 +92,12 @@ export class GenericSessionStorage {
 
         if (currentSession) {
             currentSession.config = updatedConfig
-            try {
-                this.updateSettings(existingSessions)
-            } catch (error) {
+            void this.updateSettings(existingSessions).catch((error) => {
                 console.error(
                     `Failed to update ${this.sessionType} settings:`,
                     error,
                 )
-            }
+            })
         }
     }
 
@@ -109,16 +111,16 @@ export class GenericSessionStorage {
             existingSessions[this.sessionType] || []
         ).filter((session) => session.name !== name)
 
-        this.updateSettings(existingSessions)
+        void this.updateSettings(existingSessions)
     }
 
     /**
      * Remove all sessions of this type
      */
-    removeAllSessions(): void {
+    removeAllSessions(): Promise<void> {
         const existingSessions = this.loadSessions()
         existingSessions[this.sessionType] = []
-        this.updateSettings(existingSessions)
+        return this.updateSettings(existingSessions)
     }
 
     /**
@@ -139,10 +141,98 @@ export class GenericSessionStorage {
     /**
      * Update workspace settings
      */
-    private updateSettings(sessions: SessionCollection): void {
-        vscode.workspace
-            .getConfiguration("tsp")
-            .update(this.settingsKey, sessions, false)
+    private updateSettings(sessions: SessionCollection): Promise<void> {
+        return Promise.resolve(
+            vscode.workspace
+                .getConfiguration("tsp")
+                .update(this.settingsKey, sessions, false),
+        )
+    }
+
+    public static async migrateLegacySessions(): Promise<void> {
+        const workspaceConfig = vscode.workspace.getConfiguration()
+
+        // Nothing to migrate if legacy key doesn't exist
+        const legacyConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
+        )
+
+        if (!legacyConfig || Object.keys(legacyConfig).length === 0) {
+            return
+        }
+
+        const ivSessions = legacyConfig["I-V Characterization"] ?? []
+        const triggerFlowSessions = legacyConfig["Trigger Flow"] ?? []
+
+        // If either new key already exists, assume migration has already
+        // been performed (or the user has started using the new version).
+        const scriptGenConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY}`,
+        )
+
+        const triggerFlowConfig = workspaceConfig.get<SessionCollection>(
+            `tsp.${GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY}`,
+        )
+
+        try {
+            let migratedScriptGen = false
+            let migratedTriggerFlow = false
+
+            // Check if the target keys already have real sessions (not just empty containers).
+            // An object like { "I-V Characterization": [] } has keys but no sessions,
+            // so migration should still run in that case.
+            const scriptGenHasSessions =
+                (scriptGenConfig?.["I-V Characterization"]?.length ?? 0) > 0
+            const triggerFlowHasSessions =
+                (triggerFlowConfig?.["Trigger Flow"]?.length ?? 0) > 0
+
+            if (!scriptGenHasSessions && ivSessions.length > 0) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY,
+                    {
+                        "I-V Characterization": ivSessions,
+                    },
+                    false,
+                )
+                migratedScriptGen = true
+            }
+
+            if (!triggerFlowHasSessions && triggerFlowSessions.length > 0) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY,
+                    {
+                        "Trigger Flow": triggerFlowSessions,
+                    },
+                    false,
+                )
+                migratedTriggerFlow = true
+            }
+
+            // Remove legacy storage when all session types have been accounted for:
+            // either migrated in this run, or already present in the new keys, or
+            // there were no sessions to migrate for that type.
+            const scriptGenAccountedFor =
+                migratedScriptGen || scriptGenHasSessions || ivSessions.length === 0
+            const triggerFlowAccountedFor =
+                migratedTriggerFlow || triggerFlowHasSessions || triggerFlowSessions.length === 0
+
+            if (scriptGenAccountedFor && triggerFlowAccountedFor) {
+                await vscode.workspace.getConfiguration("tsp").update(
+                    GenericSessionStorage.LEGACY_SETTINGS_KEY,
+                    undefined,
+                    false,
+                )
+            }
+        } catch (error) {
+            console.error("Failed to migrate legacy sessions:", error)
+            Log.error(
+                `Failed to migrate legacy session storage: ${error instanceof Error ? error.message : String(error)}`,
+                {
+                    file: "genericSessionStorage.ts",
+                    func: "migrateLegacySessions()",
+                },
+            )
+        }
     }
 }
 
