@@ -14,5 +14,8 @@ jobs:
       - uses: actions/add-to-project@v2
         with:
           project-url: https://github.com/orgs/tektronix/projects/3
+          # This is an organization Secret. See organization owners at
+          # https://github.com/orgs/tektronix/people?query=role%3Aowner
+          # if you need to update.
           github-token: ${{ secrets.TSP_TOOLKIT_ADD_TO_PROJECT_PAT }}
 
