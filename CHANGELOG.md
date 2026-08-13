@@ -22,6 +22,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Rename 'Upgrade firmware' to 'Update firmware'.
 - Update instrument explorer as new discovered instruments come in rather than after discovery completes
 - **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
+### Added
+- TSP language interop feature.
+- **tsp-toolkit-language-interop** - Implement tsp language interop feature
 
 
 
