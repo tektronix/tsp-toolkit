@@ -20,6 +20,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
+- Update instrument explorer as new discovered instruments come in rather than after discovery completes
+- **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
+
 
 
 ## [1.5.1]

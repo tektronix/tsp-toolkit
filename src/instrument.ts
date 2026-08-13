@@ -118,9 +118,12 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 serial_number: info.serial_number,
                 vendor: info.manufacturer,
             },
-            info.friendly_name.length === 0 ? undefined : info.friendly_name,
+            info.friendly_name && info.friendly_name.length > 0
+                ? info.friendly_name
+                : undefined,
         )
-        n._category = info.instr_categ
+        n._category =
+            info.instr_categ ?? instr_map.get(info.model) ?? "versatest"
         n.addConnection(Connection.from(info))
 
         return n
