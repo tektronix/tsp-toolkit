@@ -24,6 +24,7 @@ import { CombinedScriptGenDataProvider } from "./combinedScriptGenDataProvider"
 import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
 import { GenericSessionStorage } from "./genericSessionStorage"
 import { isMacOS } from "./utility"
+import { convertTspToPython } from "./tspConverter"
 import {
     checkSystemDependencies,
     checkVisaInstallation,
@@ -33,6 +34,7 @@ import {
 } from "./dependencyChecker"
 
 let _instrExplorer: InstrumentsExplorer
+let _tspConverterDiagnostics: vscode.DiagnosticCollection
 
 /**
  * Represents a contributed TSP Toolkit configuration setting.
@@ -299,6 +301,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const LOGLOC: SourceLocation = { file: "extension.ts", func: "activate()" }
     Log.info("TSP Toolkit activating", LOGLOC)
 
+    // Diagnostic collection for TSP → Python conversion warnings/errors
+    _tspConverterDiagnostics =
+        vscode.languages.createDiagnosticCollection("tsp-converter")
+    context.subscriptions.push(_tspConverterDiagnostics)
+
     // Check for version updates and show announcement
     Log.debug("Checking for version updates", LOGLOC)
     void checkVersionAndShowAnnouncement(context)
@@ -515,6 +522,12 @@ export async function activate(context: vscode.ExtensionContext) {
             name: "tsp.resetToDefaults",
             cb: async () => {
                 await resetToolkitDefaults()
+            },
+        },
+        {
+            name: "tsp.convertToPython",
+            cb: async (e: vscode.Uri) => {
+                await convertTspToPython(e, _tspConverterDiagnostics)
             },
         },
     ])

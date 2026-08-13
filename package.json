@@ -335,6 +335,11 @@
                 "title": "Reset to Defaults",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.convertToPython",
+                "title": "Convert TSP to Python",
+                "category": "TSP"
             }
         ],
         "configuration": {
@@ -483,12 +488,22 @@
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .tsp",
+                    "command": "tsp.convertToPython",
+                    "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
+                    "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .tsp",
+                    "command": "tsp.convertToPython",
                     "group": "navigation"
                 }
             ],
@@ -763,6 +778,7 @@
         "copy-static": "copyfiles -u 1 src/**/*.{js,css} out"
     },
     "devDependencies": {
+        "@tektronix/tsp-language-interop-types": "0.1.0-0",
         "@istanbuljs/nyc-config-typescript": "^1.0.0",
         "@types/chai": "4.3.18",
         "@types/mocha": "10.0.10",
@@ -803,6 +819,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
+        "@tektronix/tsp-language-interop-win32-x64": "0.1.0-0",
+        "@tektronix/tsp-language-interop-darwin-arm64": "0.1.0-0",
+        "@tektronix/tsp-language-interop-linux-x64": "0.1.0-0",
         "@tektronix/kic-cli-darwin-arm64": "0.23.0-1",
         "@tektronix/kic-cli-linux-x64": "0.23.0-1",
         "@tektronix/kic-cli-win32-x64": "0.23.0-1",
