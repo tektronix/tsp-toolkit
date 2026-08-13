@@ -175,32 +175,6 @@ export class GenericSessionStorage {
         )
 
         try {
-            if (!scriptGenConfig && ivSessions.length > 0) {
-                await workspaceConfig.update(
-                    `tsp.${GenericSessionStorage.SCRIPT_GEN_SETTINGS_KEY}`,
-                    {
-                        "I-V Characterization": ivSessions,
-                    },
-                    vscode.ConfigurationTarget.Workspace,
-                )
-            }
-
-            if (!triggerFlowConfig && triggerFlowSessions.length > 0) {
-                await workspaceConfig.update(
-                    `tsp.${GenericSessionStorage.TRIGGER_FLOW_SETTINGS_KEY}`,
-                    {
-                        "Trigger Flow": triggerFlowSessions,
-                    },
-                    vscode.ConfigurationTarget.Workspace,
-                )
-            }
-
-            // Remove legacy storage once migration succeeds
-            await workspaceConfig.update(
-                `tsp.${GenericSessionStorage.LEGACY_SETTINGS_KEY}`,
-                undefined,
-                vscode.ConfigurationTarget.Workspace,
-            )
             let migratedScriptGen = false
             let migratedTriggerFlow = false
 
