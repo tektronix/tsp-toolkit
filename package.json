@@ -790,8 +790,8 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.5-0",
-        "@tektronix/web-help-documents": "0.19.5-0",
+        "@tektronix/keithley_instrument_libraries": "0.19.5",
+        "@tektronix/web-help-documents": "0.19.5",
         "@types/cheerio": "0.22.35",
         "@vscode/codicons": "0.0.36",
         "@vscode/debugadapter": "^1.58.0",
@@ -806,12 +806,12 @@
         "@tektronix/kic-cli-darwin-arm64": "0.23.0-0",
         "@tektronix/kic-cli-linux-x64": "0.23.0-0",
         "@tektronix/kic-cli-win32-x64": "0.23.0-0",
-        "@tektronix/script-gen-darwin-arm64": "0.1.4-0",
-        "@tektronix/script-gen-linux-x64": "0.1.4-0",
-        "@tektronix/script-gen-win32-x64": "0.1.4-0",
-        "@tektronix/trigger-flow-darwin-arm64": "0.2.1-17",
-        "@tektronix/trigger-flow-linux-x64": "0.2.1-17",
-        "@tektronix/trigger-flow-win32-x64": "0.2.1-17"
+        "@tektronix/script-gen-darwin-arm64": "0.1.4",
+        "@tektronix/script-gen-linux-x64": "0.1.4",
+        "@tektronix/script-gen-win32-x64": "0.1.4",
+        "@tektronix/trigger-flow-darwin-arm64": "0.2.1",
+        "@tektronix/trigger-flow-linux-x64": "0.2.1",
+        "@tektronix/trigger-flow-win32-x64": "0.2.1"
     },
     "extensionDependencies": [
         "sumneko.lua"

@@ -845,6 +845,7 @@ function buildResetActions(): ResetAction[] {
         (s) =>
             s.key !== "tsp.savedInstruments" &&
             s.key !== "tsp.tspLinkSystemConfigurations" &&
+            s.key !== "tsp.script_generation" &&
             s.key !== "tsp.scriptGenSessions" &&
             s.key !== "tsp.triggerFlowSessions",
     )
@@ -1025,11 +1026,11 @@ async function resetToolkitDefaults() {
         (r) => r.preview.shouldExecute,
     )
 
-    if (executableItems.length === 0) {
-        await vscode.window.showInformationMessage("Nothing to reset.")
-        return
-    }
-
+    // if (executableItems.length === 0) {
+    //     await vscode.window.showInformationMessage("Nothing to reset.")
+    //     return
+    // }
+    
     const resetSummary = previewResults
         .map((result, index) => {
             const warningLine = result.preview.warningNote
@@ -1055,8 +1056,8 @@ async function resetToolkitDefaults() {
     for (const result of executableItems) {
         await result.item.action.execute()
     }
-
-    vscode.window.showInformationMessage("TSP Toolkit reset completed.")
+    
+    vscode.window.showInformationMessage("Reset completed successfully.")
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
