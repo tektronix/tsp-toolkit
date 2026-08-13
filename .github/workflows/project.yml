@@ -14,5 +14,5 @@ jobs:
       - uses: actions/add-to-project@v2
         with:
           project-url: https://github.com/orgs/tektronix/projects/3
-          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          github-token: ${{ secrets.TSP_TOOLKIT_ADD_TO_PROJECT_PAT }}
 
