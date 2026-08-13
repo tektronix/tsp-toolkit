@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -226,8 +226,8 @@
                 "icon": "$(circle-slash)"
             },
             {
-                "command": "InstrumentsExplorer.upgradeFirmware",
-                "title": "Upgrade Firmware",
+                "command": "InstrumentsExplorer.updateFirmware",
+                "title": "Update Firmware",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
@@ -527,7 +527,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "false"
                 },
                 {
@@ -610,7 +610,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
                     "group": "inline"
                 },
@@ -803,9 +803,9 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.22.0",
-        "@tektronix/kic-cli-linux-x64": "0.22.0",
-        "@tektronix/kic-cli-win32-x64": "0.22.0",
+        "@tektronix/kic-cli-darwin-arm64": "0.23.0-1",
+        "@tektronix/kic-cli-linux-x64": "0.23.0-1",
+        "@tektronix/kic-cli-win32-x64": "0.23.0-1",
         "@tektronix/script-gen-darwin-arm64": "0.1.4",
         "@tektronix/script-gen-linux-x64": "0.1.4",
         "@tektronix/script-gen-win32-x64": "0.1.4",
