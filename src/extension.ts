@@ -182,7 +182,7 @@ export async function createTerminal(
 
                 if (!ignoreMissingVisa) {
                     progress.report({
-                        message: `Checking VISA prerequisites for ${connection}`,
+                        message: `Checking VISA prerequisites for ${typeof connection === "string" ? connection : connection.addr}`,
                     })
 
                     let hasVisa = false
@@ -193,6 +193,12 @@ export async function createTerminal(
                     } else {
                         // macOS or other platforms - assume VISA not available
                         hasVisa = false
+                    }
+
+                    // We are checking before VISA, checking VISA installation may take some time
+                    // if cancellation happened during that time, we should return early
+                    if (token.isCancellationRequested) {
+                        return undefined
                     }
 
                     if (!hasVisa) {

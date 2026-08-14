@@ -260,6 +260,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         const login_required = await this.checkLogin()
+
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+
         if (login_required.type === "NotPrompted") {
             Log.debug("No login required", LOGLOC)
         } else if (login_required.type === "InUse") {
@@ -281,7 +287,17 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 })
                 const login_details = await this.promptDetails(login_required)
 
+                if (cancel.isCancellationRequested) {
+                    this.status = orig_status
+                    return false
+                }
+
                 this._keyring = await this.login(login_details)
+
+                if (cancel.isCancellationRequested) {
+                    this.status = orig_status
+                    return false
+                }
 
                 if (this._keyring) {
                     break
@@ -332,6 +348,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         const info = await this.ping()
 
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+
         if (!info) {
             vscode.window.showErrorMessage(
                 `Unable to connect to instrument at ${this.addr}: could not get instrument information`,
@@ -346,7 +367,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
         await InstrumentProvider.instance.saveInstrument(this._parent)
-        this.status = ConnectionStatus.Connected
+        
+        if (cancel.isCancellationRequested) {
+            this.status = orig_status
+            return false
+        }
+        //this.status = ConnectionStatus.Connected
 
         const additional_terminal_args: string[] = []
 
@@ -428,6 +454,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         })
 
         this._terminal?.show(false)
+
+        // Handle cancellation after terminal is created
+        if (cancel.isCancellationRequested) {
+            this._terminal?.dispose()
+            this._terminal = undefined
+            this.status = orig_status
+            return false
+        }
 
         this.status = ConnectionStatus.Connected
 
@@ -896,7 +930,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     ): Promise<boolean> {
         const LOGLOC = { file: "instruments.ts", func: "Connection.connect()" }
         const orig_status = this.status
-        this.status = ConnectionStatus.Connected
+        //this.status = ConnectionStatus.Connected
         if (this._parent) {
             this._parent.savingTspOutput = false
         }
