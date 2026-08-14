@@ -215,6 +215,25 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
+    private terminateBackgroundProcessOnCancel() {
+        if (!this._background_process) {
+            return
+        }
+
+        if (os.platform() === "win32" && this._background_process.pid) {
+            child.spawnSync("TaskKill", [
+                "/PID",
+                this._background_process.pid.toString(),
+                "/T",
+                "/F",
+            ])
+        } else {
+            this._background_process.kill("SIGINT")
+        }
+
+        this._background_process = undefined
+    }
+
     private async runConnectFlow(
         name: string | undefined,
         progress: vscode.Progress<{ message?: string; increment?: number }>,
@@ -222,17 +241,25 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         orig_status: ConnectionStatus | undefined,
         LOGLOC: { file: string; func: string },
     ): Promise<boolean> {
+        const cancelIfRequested = (): boolean => {
+            if (!cancel.isCancellationRequested) {
+                return false
+            }
+
+            // Cancellation can happen while awaited operations are in flight.
+            // Re-checking here prevents follow-up side effects after cancellation.
+            this.status = orig_status
+            return true
+        }
+
         this.status = ConnectionStatus.Connecting
 
         cancel.onCancellationRequested(() => {
             Log.info("Connection cancelled by user", LOGLOC)
-            if (this._background_process) {
-                this._background_process?.kill("SIGTERM")
-            }
+            this.terminateBackgroundProcessOnCancel()
             this.status = orig_status
         })
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        if (cancelIfRequested()) {
             return false
         }
         //Dump output queue if enabled
@@ -254,15 +281,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             message: "Checking if instrument requires authentication",
         })
 
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        if (cancelIfRequested()) {
             return false
         }
 
         const login_required = await this.checkLogin()
 
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        // check after await: cancellation might occur while checkLogin is running
+        if (cancelIfRequested()) {
             return false
         }
 
@@ -285,17 +311,23 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 progress.report({
                     message: `Attempt ${i} of 3: Prompting for instrument authentication details`,
                 })
+
+                // check before prompt: avoid opening/continuing interactive UI after cancel
+                if (cancelIfRequested()) {
+                    return false
+                }
+
                 const login_details = await this.promptDetails(login_required)
 
-                if (cancel.isCancellationRequested) {
-                    this.status = orig_status
+                // check after await: user may cancel while input box is open
+                if (cancelIfRequested()) {
                     return false
                 }
 
                 this._keyring = await this.login(login_details)
 
-                if (cancel.isCancellationRequested) {
-                    this.status = orig_status
+                // check after await: login process may still complete after cancellation
+                if (cancelIfRequested()) {
                     return false
                 }
 
@@ -341,15 +373,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         progress.report({
             message: "Getting instrument information",
         })
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        if (cancelIfRequested()) {
             return false
         }
 
         const info = await this.ping()
 
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        // check after await: ping can return after cancellation was requested
+        if (cancelIfRequested()) {
             return false
         }
 
@@ -365,11 +396,17 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             this._parent = new Instrument(info, name !== "" ? name : undefined)
             this._parent.addConnection(this)
         }
+
+        // check before persistence to avoid saving cancelled connection attempts
+        if (cancelIfRequested()) {
+            return false
+        }
+
         InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
         await InstrumentProvider.instance.saveInstrument(this._parent)
         
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        // check after await: save operation may complete after cancellation
+        if (cancelIfRequested()) {
             return false
         }
         //this.status = ConnectionStatus.Connected
@@ -389,8 +426,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         })
 
         //Connect terminal
-        if (cancel.isCancellationRequested) {
-            this.status = orig_status
+        if (cancelIfRequested()) {
             return false
         }
 
@@ -456,10 +492,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._terminal?.show(false)
 
         // Handle cancellation after terminal is created
-        if (cancel.isCancellationRequested) {
+        if (cancelIfRequested()) {
             this._terminal?.dispose()
             this._terminal = undefined
-            this.status = orig_status
             return false
         }
 
