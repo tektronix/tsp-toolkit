@@ -61,6 +61,11 @@ export function connectionStatusIcon(
                 "vm-active",
                 new vscode.ThemeColor("progressBar.background"),
             )
+        case ConnectionStatus.Connecting:
+            return new vscode.ThemeIcon(
+                "sync~spin",
+                new vscode.ThemeColor("progressBar.background"),
+            )
         case ConnectionStatus.Connected:
             return new vscode.ThemeIcon(
                 "vm-running",
@@ -90,9 +95,9 @@ export function contextValueStatus(
     contextValue: string,
     status: ConnectionStatus | undefined,
 ): string {
-    if (contextValue.match(/Connected|Active|Inactive/)) {
+    if (contextValue.match(/Connected|Connecting|Active|Inactive/)) {
         return contextValue.replace(
-            /Connected|Active|Inactive/,
+            /Connected|Connecting|Active|Inactive/,
             statusToString(status ?? ConnectionStatus.Inactive),
         )
     } else {
@@ -253,6 +258,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         this.status = ConnectionStatus.Connecting
+
+        // temporary added delay for testing
+        //await new Promise((resolve) => setTimeout(resolve, 3000))
 
         cancel.onCancellationRequested(() => {
             Log.info("Connection cancelled by user", LOGLOC)
