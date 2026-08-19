@@ -349,7 +349,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     vscode.window.showWarningMessage(
                         `Credentials incorrect for instrument at ${this._addr}, please try again.`,
                     )
-                    Log.error("Credentials are incorrect, please try again.", LOGLOC)
+                    Log.error(
+                        "Credentials are incorrect, please try again.",
+                        LOGLOC,
+                    )
                 }
                 if (
                     (this._keyring === undefined || this._keyring === null) &&
@@ -412,7 +415,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
         await InstrumentProvider.instance.saveInstrument(this._parent)
-        
+
         // check after await: save operation may complete after cancellation
         if (cancelIfRequested()) {
             return false
@@ -513,14 +516,18 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             if (
                 t.creationOptions.iconPath !== undefined &&
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                t.creationOptions.iconPath.toString().search("tsp-terminal-icon") &&
+                t.creationOptions.iconPath
+                    .toString()
+                    .search("tsp-terminal-icon") &&
                 t.name === this._parent?.name &&
                 t.processId === this._terminal?.processId
             ) {
                 this.status = ConnectionStatus.Active
                 this._terminal = undefined
 
-                if (t.exitStatus?.reason !== vscode.TerminalExitReason.Process) {
+                if (
+                    t.exitStatus?.reason !== vscode.TerminalExitReason.Process
+                ) {
                     setTimeout(() => {
                         Log.debug("Resetting closed instrument", LOGLOC)
                         this.reset().catch(() => {})
@@ -546,7 +553,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         Log.debug("Checking if instrument requires login", LOGLOC)
 
-        this._background_process = child.spawn(
+        const backgroundProcess = child.spawn(
             EXECUTABLE,
             [
                 "--log-file",
@@ -561,6 +568,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
             },
         )
+        this._background_process = backgroundProcess
         if (timeout_ms) {
             setTimeout(() => {
                 if (
@@ -583,13 +591,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         const requirements = await new Promise<LoginStatus>((resolve) => {
             let data = ""
-            this._background_process?.stderr?.on("data", (chunk) => {
+            backgroundProcess.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
             })
-            this._background_process?.stdout?.on("data", (chunk) => {
+            backgroundProcess.stdout?.on("data", (chunk) => {
                 data += chunk
             })
-            this._background_process?.on("exit", (code) => {
+            backgroundProcess.on("exit", (code) => {
                 if (code === 0) {
                     resolve({ type: "NotPrompted" })
                     return
@@ -635,9 +643,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             })
         })
 
-        const exit_code = this._background_process.exitCode
+        const exit_code = backgroundProcess.exitCode
 
-        this._background_process = undefined
+        if (this._background_process === backgroundProcess) {
+            this._background_process = undefined
+        }
 
         Log.trace(
             `Info process exited with code: ${exit_code}, requirements: ${JSON.stringify(requirements)}`,
@@ -733,26 +743,29 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             }
         }
 
-        this._background_process = child.spawn(EXECUTABLE, args, {
+        const backgroundProcess = child.spawn(EXECUTABLE, args, {
             env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
         })
+        this._background_process = backgroundProcess
 
         const keyring_id = await new Promise<string>((resolve) => {
             let data = ""
-            this._background_process?.stderr?.on("data", (chunk) => {
+            backgroundProcess.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
             })
-            this._background_process?.stdout?.on("data", (chunk) => {
+            backgroundProcess.stdout?.on("data", (chunk) => {
                 data += chunk
             })
-            this._background_process?.on("close", () => {
+            backgroundProcess.on("close", () => {
                 resolve(data.trim())
             })
         })
 
-        const exit_code = this._background_process.exitCode
+        const exit_code = backgroundProcess.exitCode
 
-        this._background_process = undefined
+        if (this._background_process === backgroundProcess) {
+            this._background_process = undefined
+        }
 
         Log.trace(
             `Login process exited with code: ${exit_code}, information: ${keyring_id.trim()}`,
@@ -789,9 +802,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             args.push("--keyring", this._keyring)
         }
 
-        this._background_process = child.spawn(EXECUTABLE, args, {
+        const backgroundProcess = child.spawn(EXECUTABLE, args, {
             env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
         })
+        this._background_process = backgroundProcess
         if (timeout_ms) {
             setTimeout(() => {
                 if (
@@ -814,13 +828,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
         const info_string = await new Promise<string | null>((resolve) => {
             let data = ""
-            this._background_process?.stderr?.on("data", (chunk) => {
+            backgroundProcess.stderr?.on("data", (chunk) => {
                 Log.trace(`Info stderr: ${chunk}`, LOGLOC)
             })
-            this._background_process?.stdout?.on("data", (chunk) => {
+            backgroundProcess.stdout?.on("data", (chunk) => {
                 data += chunk
             })
-            this._background_process?.on("close", (code) => {
+            backgroundProcess.on("close", (code) => {
                 if (code === 0) {
                     resolve(data)
                 }
@@ -832,9 +846,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return null
         }
 
-        const exit_code = this._background_process.exitCode
+        const exit_code = backgroundProcess.exitCode
 
-        this._background_process = undefined
+        if (this._background_process === backgroundProcess) {
+            this._background_process = undefined
+        }
 
         Log.trace(
             `Info process exited with code: ${exit_code}, information: ${info_string.trim()}`,
@@ -997,7 +1013,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     title: `Connecting to ${this.addr}`,
                 },
                 async (progress, cancel) =>
-                    this.runConnectFlow(name, progress, cancel, orig_status, LOGLOC),
+                    this.runConnectFlow(
+                        name,
+                        progress,
+                        cancel,
+                        orig_status,
+                        LOGLOC,
+                    ),
             )
             return result ?? false
         } else {
