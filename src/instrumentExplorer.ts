@@ -100,17 +100,29 @@ export class InstrumentsExplorer implements vscode.Disposable {
             StatusType.Progress,
         )
 
-        this.treeDataProvider
-            ?.refresh(async () => await this.startDiscovery())
-            .then(
-                () => {
-                    StatusBarManager.instance.hide()
-                },
-                (e: Error) => {
-                    StatusBarManager.instance.hide()
-                    Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
-                },
-            )
+        const interval = setInterval(() => {
+            this.treeDataProvider
+                ?.refresh(async () => await this.startDiscovery())
+                .then(
+                    () => {
+                        StatusBarManager.instance.hide()
+                        if (
+                            !(vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("autorefresh") as boolean)
+                        ) {
+                            clearInterval(interval)
+                        }
+                    },
+                    (e: Error) => {
+                        StatusBarManager.instance.hide()
+                        Log.error(
+                            `Unable to start Discovery ${e.message}`,
+                            LOGLOC,
+                        )
+                    },
+                )
+        }, 5000)
     }
     dispose() {
         this.treeDataProvider?.dispose()

@@ -479,6 +479,12 @@
                     "default": false,
                     "scope": "application",
                     "description": "Ignore the VISA installation check notification. VISA is optional and only required for VISA protocol instrument communication."
+                },
+                "tsp.autorefresh": {
+                    "type": "boolean",
+                    "default": true,
+                    "scope":"resource",
+                    "description": "Enable (true) or disable (false) the auto-refresh of the instrument explorer"
                 }
             }
         },
@@ -517,7 +523,7 @@
             "view/title": [
                 {
                     "command": "InstrumentsExplorer.refresh",
-                    "when": "view == InstrumentsExplorer",
+                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == false",
                     "group": "navigation"
                 },
                 {
