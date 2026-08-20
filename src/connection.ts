@@ -406,8 +406,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (!this._parent) {
             this._parent = new Instrument(info, name !== "" ? name : undefined)
             this._parent.addConnection(this)
+        } else {
+            this._parent.updateInfo(info)
         }
-
+        
         // check before persistence to avoid saving cancelled connection attempts
         if (cancelIfRequested()) {
             return false

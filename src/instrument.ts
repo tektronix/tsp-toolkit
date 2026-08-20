@@ -175,6 +175,20 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         return this._info
     }
 
+    updateInfo(info: IIDNInfo) {
+        this._info = info
+        this.description = idn_to_string(info)
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
+        this._onChanged.fire()
+    }
+
     get category(): string {
         return this._category
     }

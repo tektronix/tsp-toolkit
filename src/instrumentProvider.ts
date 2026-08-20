@@ -122,7 +122,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             for (const m of raw) {
                 if (
                     m.serial_number === instrument.info.serial_number &&
-                    m.instr_address === v.addr
+                    m.io_type === v.type &&
+                    (m.instr_address === v.addr ||
+                        (m.io_type === IoType.Lan && v.type === IoType.Lan))
                 ) {
                     return false
                 }
@@ -149,7 +151,14 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     r.friendly_name = instrument.name
                 }
                 if (r.firmware_revision !== instrument.info.firmware_rev) {
-                    r.firmware_revision = instrument.info.firmware_rev
+                    if (instrument.info.firmware_rev == "UNKNOWN") { //avoid writing UNKNOWN for firmware revision, instead keep the last known revision in the saved list
+                        Log.warn(`Firmware revision for ${instrument.name} is UNKNOWN, keeping the last known revision ${r.firmware_revision}`, {
+                            file: "instruments.ts",
+                            func: "InstrumentTreeDataProvider.updateSaved()",
+                        })
+                    } else {
+                        r.firmware_revision = instrument.info.firmware_rev
+                    }
                 }
                 // Update the address if it changed for this connection
                 const matchingConnection = instrument.connections.find(
@@ -164,9 +173,20 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             }
         }
 
+        const unique = raw.filter(
+            (entry, index, entries) =>
+                entries.findIndex(
+                    (candidate) =>
+                        candidate.serial_number === entry.serial_number &&
+                        candidate.model === entry.model &&
+                        candidate.io_type === entry.io_type &&
+                        candidate.instr_address === entry.instr_address,
+                ) === index,
+        )
+
         await vscode.workspace
             .getConfiguration("tsp")
-            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
+            .update("savedInstruments", unique, vscode.ConfigurationTarget.Global)
     }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
@@ -236,8 +256,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
         let changed = false
         if (found_idx > -1) {
+            this._instruments[found_idx].updateInfo(instrument.info)
             for (const c of instrument.connections) {
-                changed = this._instruments[found_idx].addConnection(c)
+                changed =
+                    this._instruments[found_idx].addConnection(c) || changed
                 if (
                     this._instruments[found_idx].name !== instrument.name &&
                     !this._instruments[found_idx].saved &&
@@ -246,9 +268,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     this._instruments[found_idx].name = instrument.name
                     changed = true
                 }
-                if (changed) {
-                    this._instruments[found_idx].updateStatus()
-                }
+            }
+            if (changed) {
+                this._instruments[found_idx].updateStatus()
             }
         } else {
             if (!instrument.name) {
@@ -552,35 +574,28 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             })
             rl.on("line", (line) => {
                 const discovered = JSON.parse(line) as InstrInfo
-                const existing = this._instruments.find(
-                    (i) => i.info.serial_number === discovered.serial_number,
-                )
-
-                if (existing) {
-                    const existingAddr = existing.connections[0]?.addr
-                    const discoveredAddr = discovered.instr_address
-
-                    if (existingAddr && existingAddr !== discoveredAddr) {
-                        // Update the saved instruments configuration if this instrument was saved
-                        if (existing.saved) {
-                            this.updateSaved(existing).catch((err) => {
-                                Log.error(
-                                    `Failed to update saved instrument: ${err}`,
-                                    {
-                                        file: "instruments.ts",
-                                        func: "InstrumentProvider.getContent()",
-                                    },
-                                )
-                            })
-                        }
-                    }
-                }
                 this.instruments_discovered = true
                 const inst = Instrument.from(discovered)
                 inst.connections[0].status = ConnectionStatus.Active
                 inst.updateStatus()
                 if (inst.info.serial_number && inst.info.model) {
                     this.addOrUpdateInstrument(inst)
+                    const updated = this._instruments.find(
+                        (i) =>
+                            i.info.model === inst.info.model &&
+                            i.info.serial_number === inst.info.serial_number,
+                    )
+                    if (updated?.saved) {
+                        this.updateSaved(updated).catch((err) => {
+                            Log.error(
+                                `Failed to update saved instrument: ${err}`,
+                                {
+                                    file: "instruments.ts",
+                                    func: "InstrumentProvider.getContent()",
+                                },
+                            )
+                        })
+                    }
                     this.reloadTreeData()
                 }
             })
