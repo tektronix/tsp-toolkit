@@ -158,7 +158,7 @@ jobs:
           # A PAT (not `secrets.GITHUB_TOKEN`) is required here, otherwise the
           # resulting pull request will not trigger this repository's CI.
           # This is an organization Secret.
-          token: ${{secrets.TSP_TOOLKIT_DEP_BUMP_PAT}}
+          token: ${{secrets.TSP_TOOLKIT_ADD_TO_PROJECT_PAT}}
           base: ${{steps.inputs.outputs.target}}
           branch: chore/bump-${{steps.inputs.outputs.name}}
           delete-branch: true
