@@ -785,6 +785,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                             name !== "" ? name : undefined,
                         )
                         this._parent.addConnection(this)
+                    } else {
+                        this._parent.updateInfo(info)
                     }
                     InstrumentProvider.instance.addOrUpdateInstrument(
                         this._parent,
