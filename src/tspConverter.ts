@@ -116,11 +116,16 @@ export async function convertTspToPython(
         return
     }
 
-    // Open generated Python in a new untitled editor tab
-    const doc = await vscode.workspace.openTextDocument({
-        language: "python",
-        content: result.code,
-    })
+    // Save generated Python to a file with .py extension
+    const outputPath = fileUri.fsPath.replace(/\.tsp$/, ".py")
+    const outputUri = vscode.Uri.file(outputPath)
+
+    // Write the file to disk
+    const encoder = new TextEncoder()
+    await vscode.workspace.fs.writeFile(outputUri, encoder.encode(result.code))
+
+    // Open the saved file in editor
+    const doc = await vscode.workspace.openTextDocument(outputUri)
     await vscode.window.showTextDocument(doc, {
         viewColumn: vscode.ViewColumn.Beside,
         preview: false,
