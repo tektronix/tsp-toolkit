@@ -344,6 +344,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     ...this._instruments.filter(
                         (x) =>
                             x.status === ConnectionStatus.Active ||
+                            x.status === ConnectionStatus.Connecting ||
                             x.status === ConnectionStatus.Connected,
                     ),
                     new InactiveInstrumentList(),

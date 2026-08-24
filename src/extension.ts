@@ -125,88 +125,120 @@ export async function createTerminal(
         func: "createTerminal()",
     }
 
-    let conn: Connection
-    let name = ""
+    return vscode.window.withProgress(
+        {
+            cancellable: true,
+            location: vscode.ProgressLocation.Notification,
+            title: `Connecting to ${typeof connection === "string" ? connection : connection.addr}`,
+        },
+        async (progress, token) => {
+            progress.report({
+                message: `Preparing connection to ${typeof connection === "string" ? connection : connection.addr}`,
+            })
 
-    if (typeof connection === "string") {
-        const connection_details =
-            ConnectionHelper.parseConnectionString(connection)
+            let conn: Connection
+            let name = ""
 
-        if (!connection_details) {
-            return Promise.reject(
-                new Error("Unable to parse connection string"),
-            )
-        }
+            if (typeof connection === "string") {
+                const connection_details =
+                    ConnectionHelper.parseConnectionString(connection)
 
-        Log.debug(
-            `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
-            LOGLOC,
-        )
+                if (!connection_details) {
+                    return Promise.reject(
+                        new Error("Unable to parse connection string"),
+                    )
+                }
 
-        const existing =
-            InstrumentProvider.instance.getConnection(connection_details)
-
-        conn =
-            existing ??
-            new Connection(connection_details.type, connection_details.addr)
-        name = connection_details.name
-    } else {
-        conn = connection
-    }
-
-    if (conn.type === IoType.Visa && isMacOS) {
-        const errorMsg = "VISA connection is not supported on macOS."
-        vscode.window.showErrorMessage(errorMsg)
-        Log.error(`Connection failed: ${errorMsg}`, LOGLOC)
-        return Promise.resolve(undefined)
-    }
-
-    // Check VISA availability if connecting via VISA protocol
-    if (conn.type === IoType.Visa) {
-        const ignoreMissingVisa = vscode.workspace
-            .getConfiguration("tsp")
-            .get<boolean>("ignoreMissingVisa", false)
-
-        if (!ignoreMissingVisa) {
-            let hasVisa = false
-            if (isWindows) {
-                hasVisa = await checkVisaInstallation()
-            } else if (isLinux) {
-                hasVisa = await checkVisaInstallationLinux()
-            } else {
-                // macOS or other platforms - assume VISA not available
-                hasVisa = false
-            }
-
-            if (!hasVisa) {
-                Log.error(
-                    "VISA not installed but required for this connection",
+                Log.debug(
+                    `Connection type was determined to be ${connection_details.type.toUpperCase()}`,
                     LOGLOC,
                 )
-                await vscode.window
-                    .showErrorMessage(
-                        "VISA is not installed on your system. Please install VISA to use this connection method, or use raw sockets to connect instead.",
-                        "Download VISA",
-                        "Close",
-                    )
-                    .then((selection) => {
-                        if (selection === "Download VISA") {
-                            vscode.env.openExternal(
-                                vscode.Uri.parse(
-                                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
-                                ),
-                            )
-                        }
-                    })
-                return
-            }
-        }
-    }
 
-    if (await conn.connect(name)) {
-        return conn
-    }
-    return Promise.resolve(undefined)
+                const existing =
+                    InstrumentProvider.instance.getConnection(connection_details)
+
+                conn =
+                    existing ??
+                    new Connection(connection_details.type, connection_details.addr)
+                name = connection_details.name
+            } else {
+                conn = connection
+            }
+
+            if (token.isCancellationRequested) {
+                return Promise.resolve(undefined)
+            }
+
+            if (conn.type === IoType.Visa && isMacOS) {
+                const errorMsg = "VISA connection is not supported on macOS."
+                vscode.window.showErrorMessage(errorMsg)
+                Log.error(`Connection failed: ${errorMsg}`, LOGLOC)
+                return Promise.resolve(undefined)
+            }
+
+            // Check VISA availability if connecting via VISA protocol
+            if (conn.type === IoType.Visa) {
+                const ignoreMissingVisa = vscode.workspace
+                    .getConfiguration("tsp")
+                    .get<boolean>("ignoreMissingVisa", false)
+
+                if (!ignoreMissingVisa) {
+                    progress.report({
+                        message: `Checking VISA prerequisites for ${typeof connection === "string" ? connection : connection.addr}`,
+                    })
+
+                    let hasVisa = false
+                    if (isWindows) {
+                        hasVisa = await checkVisaInstallation()
+                    } else if (isLinux) {
+                        hasVisa = await checkVisaInstallationLinux()
+                    } else {
+                        // macOS or other platforms - assume VISA not available
+                        hasVisa = false
+                    }
+
+                    // We are checking before VISA, checking VISA installation may take some time
+                    // if cancellation happened during that time, we should return early
+                    if (token.isCancellationRequested) {
+                        return undefined
+                    }
+
+                    if (!hasVisa) {
+                        Log.error(
+                            "VISA not installed but required for this connection",
+                            LOGLOC,
+                        )
+                        await vscode.window
+                            .showErrorMessage(
+                                "VISA is not installed on your system. Please install VISA to use this connection method, or use raw sockets to connect instead.",
+                                "Download VISA",
+                                "Close",
+                            )
+                            .then((selection) => {
+                                if (selection === "Download VISA") {
+                                    vscode.env.openExternal(
+                                        vscode.Uri.parse(
+                                            "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+                                        ),
+                                    )
+                                }
+                            })
+                        return
+                    }
+                }
+            }
+
+            if (
+                await conn.connect(name, {
+                    progress,
+                    token,
+                })
+            ) {
+                return conn
+            }
+            return Promise.resolve(undefined)
+        },
+    )
 }
 
 function registerCommands(
