@@ -9,7 +9,6 @@ import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
 import { StatusBarManager, StatusType } from "./statusBarManager"
-import { start } from "repl"
 
 const DISCOVERY_TIMEOUT = 4
 
