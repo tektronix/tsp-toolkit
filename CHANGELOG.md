@@ -18,10 +18,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.2]
 
+### Fixed 
+- Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
+
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
 - Update instrument explorer as new discovered instruments come in rather than after discovery completes
 - **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
+- Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
 
 ### Added
 - TSP language interop feature.

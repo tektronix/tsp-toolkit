@@ -175,6 +175,20 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         return this._info
     }
 
+    updateInfo(info: IIDNInfo) {
+        this._info = info
+        this.description = idn_to_string(info)
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
+        this._onChanged.fire()
+    }
+
     get category(): string {
         return this._category
     }
@@ -512,12 +526,14 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         })
 
         for (const c of this._connections) {
-            if (c.status === ConnectionStatus.Active) {
-                this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
-            } else if (c.status === ConnectionStatus.Connected) {
+            if (c.status === ConnectionStatus.Connected) {
                 this._status = ConnectionStatus.Connected
-
-                break //If any of the connections are connected, we show "Connected"
+                break
+            } else if (c.status === ConnectionStatus.Connecting) {
+                this._status = ConnectionStatus.Connecting
+                break
+            } else if (c.status === ConnectionStatus.Active) {
+                this._status = ConnectionStatus.Active
             }
         }
 
