@@ -220,6 +220,28 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
+    /**
+     * Combine multiple cancellation tokens into a single token.
+     *
+     * The returned token is cancelled as soon as any one of the input tokens
+     * is cancelled.
+     */
+    private static combineCancellationTokens(
+        ...tokens: vscode.CancellationToken[]
+    ): vscode.CancellationToken {
+        const combinedSource = new vscode.CancellationTokenSource()
+
+        for (const token of tokens) {
+            if (token.isCancellationRequested) {
+                combinedSource.cancel()
+            }
+
+            token.onCancellationRequested(() => combinedSource.cancel())
+        }
+
+        return combinedSource.token
+    }
+
     private terminateBackgroundProcessOnCancel() {
         if (!this._background_process) {
             return
@@ -237,6 +259,78 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         this._background_process = undefined
+    }
+
+    /**
+     * Wraps runConnectFlow with a user-configurable connection timeout.
+     *
+     * Cancellation can happen from either:
+     * - the user cancelling the VS Code progress notification, or
+     * - the configured connection timeout expiring.
+     *
+     * Both paths use the same cancellation handling inside runConnectFlow,
+     * which terminates the active background process and restores the
+     * original connection status.
+     */
+    private async runConnectFlowWithTimeout(
+        name: string | undefined,
+        progress: vscode.Progress<{ message?: string; increment?: number }>,
+        cancel: vscode.CancellationToken,
+        orig_status: ConnectionStatus | undefined,
+        LOGLOC: { file: string; func: string },
+    ): Promise<boolean> {
+        const timeoutSeconds = vscode.workspace
+            .getConfiguration("tsp")
+            .get<number>("connectionTimeout", 30)
+
+        // A timeout of 0 (or an invalid value) disables the timeout entirely
+        if (!timeoutSeconds || timeoutSeconds <= 0) {
+            return this.runConnectFlow(
+                name,
+                progress,
+                cancel,
+                orig_status,
+                LOGLOC,
+            )
+        }
+
+        const timeoutSource = new vscode.CancellationTokenSource()
+
+        const timeoutHandle = setTimeout(() => {
+            // If the user already cancelled, don't report a timeout.
+            if (cancel.isCancellationRequested) {
+                return
+            }
+
+            Log.warn(
+                `Connection to ${this.addr} timed out after ${timeoutSeconds} second(s)`,
+                LOGLOC,
+            )
+
+            vscode.window.showWarningMessage(
+                `Connecting to ${this.addr} timed out after ${timeoutSeconds} second(s). The connection attempt has been cancelled.`,
+            )
+
+            timeoutSource.cancel()
+        }, timeoutSeconds * 1000)
+
+        const combinedToken = Connection.combineCancellationTokens(
+            cancel,
+            timeoutSource.token,
+        )
+
+        try {
+            return await this.runConnectFlow(
+                name,
+                progress,
+                combinedToken,
+                orig_status,
+                LOGLOC,
+            )
+        } finally {
+            clearTimeout(timeoutHandle)
+            timeoutSource.dispose()
+        }
     }
 
     private async runConnectFlow(
@@ -409,7 +503,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         } else {
             this._parent.updateInfo(info)
         }
-        
+
         // check before persistence to avoid saving cancelled connection attempts
         if (cancelIfRequested()) {
             return false
@@ -999,7 +1093,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (!this._terminal) {
             Log.debug("Creating terminal", LOGLOC)
             if (progressContext) {
-                return this.runConnectFlow(
+                return this.runConnectFlowWithTimeout(
                     name,
                     progressContext.progress,
                     progressContext.token,
@@ -1015,7 +1109,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                     title: `Connecting to ${this.addr}`,
                 },
                 async (progress, cancel) =>
-                    this.runConnectFlow(
+                    this.runConnectFlowWithTimeout(
                         name,
                         progress,
                         cancel,
