@@ -546,6 +546,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentProvider.getContent()",
         }
         return new Promise((resolve) => {
+            for (const i of this._instruments) {
+                for (const c of i.connections) {
+                    // Set the connection to "not found last round"
+                    c.foundLastRound = false
+                    // This will be set to 'true' as connections are found
+                }
+            }
             const rl = readline.createInterface({
                 input: discovery_proc.stdout,
             })
@@ -587,6 +594,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             discovery_proc.on("exit", (code: number) => {
                 if (code) {
                     Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
+                }
+                for (const i of this._instruments) {
+                    for (const c of i.connections) {
+                        if (!c.foundLastRound) {
+                            c.status = ConnectionStatus.Inactive
+                        }
+                    }
                 }
                 resolve(this.instruments_discovered)
             })

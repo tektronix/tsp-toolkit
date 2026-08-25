@@ -98,6 +98,7 @@ export function contextValueStatus(
  * A tree item that holds the details of an instrument connection interface/protocol
  */
 export class Connection extends vscode.TreeItem implements vscode.Disposable {
+    private _foundLastRound = true
     private _type: IoType = IoType.Lan
     private _addr: string = ""
     private _keyring: string | null | undefined = undefined
@@ -125,6 +126,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._addr = addr
         this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
+        this._foundLastRound = true
         this.enable(true)
     }
     dispose() {
@@ -207,6 +209,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     get terminal() {
         return this._terminal
+    }
+
+    set foundLastRound(a: boolean) {
+        this._foundLastRound = a
+    }
+    get foundLastRound(): boolean {
+        return this._foundLastRound
     }
 
     async checkLogin(timeout_ms?: number): Promise<LoginStatus> {
