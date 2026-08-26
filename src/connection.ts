@@ -376,8 +376,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
             vscode.window.showWarningMessage(
                 `Connecting to ${this.addr} timed out after ${timeoutSeconds} second(s). ` +
-                        "Check that the instrument is reachable, or increase the " +
-                        '"tsp.connectionTimeout" setting, and try again.',
+                    "Check that the instrument is reachable, or increase the " +
+                    '"tsp.connectionTimeout" setting, and try again.',
             )
 
             timeoutSource.cancel()
