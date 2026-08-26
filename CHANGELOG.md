@@ -18,7 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.2]
 
-### Fixed 
+### Fixed
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with recall (after closing the session and recalling) and system configuration changes
 
@@ -30,6 +30,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - TSP language interop feature.
+- Added method to fetch the Keithley examples repository
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 
 
