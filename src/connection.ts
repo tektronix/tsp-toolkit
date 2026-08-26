@@ -46,6 +46,11 @@ export type LoginStatus =
     | { type: "NotPrompted" }
     | { type: "InUse" }
 
+/**
+ * Identifies who/what triggered a connection attempt's cancellation.
+ */
+type CancelReason = "user" | "timeout"
+
 export function connectionStatusIcon(
     status: ConnectionStatus | undefined,
 ): vscode.ThemeIcon {
@@ -330,10 +335,26 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 cancel,
                 orig_status,
                 LOGLOC,
+                () => "user",
             )
         }
 
         const timeoutSource = new vscode.CancellationTokenSource()
+
+        // Records which of the two tokens actually caused the cancellation, so
+        // runConnectFlow can report the real reason instead of guessing.
+        // Left undefined until the first of the two sources fires — whichever
+        // sets it first wins, so a near-simultaneous user-cancel/timeout race
+        // can't produce an ambiguous reason.
+        let cancelReason: CancelReason | undefined
+
+        // Registered before combineCancellationTokens() so it always runs
+        // before the forwarding listener that triggers runConnectFlow's
+        // cancellation handler — otherwise getCancelReason() could be read
+        // before "user" is recorded.
+        const userCancellationListener = cancel.onCancellationRequested(() => {
+            cancelReason ??= "user"
+        })
 
         const combined = Connection.combineCancellationTokens(
             cancel,
@@ -341,10 +362,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         )
 
         const timeoutHandle = setTimeout(() => {
-            // If the user already cancelled, don't report a timeout.
-            if (cancel.isCancellationRequested) {
+            // Someone else (the user) already claimed the cancellation.
+            if (cancelReason !== undefined) {
                 return
             }
+
+            cancelReason = "timeout"
 
             Log.warn(
                 `Connection to ${this.addr} timed out after ${timeoutSeconds} second(s)`,
@@ -352,7 +375,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             )
 
             vscode.window.showWarningMessage(
-                `Connecting to ${this.addr} timed out after ${timeoutSeconds} second(s). The connection attempt has been cancelled.`,
+                `Connecting to ${this.addr} timed out after ${timeoutSeconds} second(s). ` +
+                        "Check that the instrument is reachable, or increase the " +
+                        '"tsp.connectionTimeout" setting, and try again.',
             )
 
             timeoutSource.cancel()
@@ -365,10 +390,13 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 combined.token,
                 orig_status,
                 LOGLOC,
+                () => cancelReason ?? "user",
             )
         } finally {
             clearTimeout(timeoutHandle)
+            userCancellationListener.dispose()
             combined.dispose()
+            timeoutSource.dispose()
         }
     }
 
@@ -378,6 +406,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         cancel: vscode.CancellationToken,
         orig_status: ConnectionStatus | undefined,
         LOGLOC: { file: string; func: string },
+        getCancelReason: () => CancelReason,
     ): Promise<boolean> {
         const cancelIfRequested = (): boolean => {
             if (!cancel.isCancellationRequested) {
@@ -398,7 +427,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         // Disposed in the finally block below so this listener doesn't
         // outlive a single connect() attempt
         const cancellationListener = cancel.onCancellationRequested(() => {
-            Log.info("Connection attempt cancelled", LOGLOC)
+            const reason = getCancelReason()
+
+            if (reason === "timeout") {
+                Log.warn("Connection attempt cancelled due to timeout", LOGLOC)
+            } else {
+                Log.info("Connection attempt cancelled by user", LOGLOC)
+            }
+
             this.terminateBackgroundProcessOnCancel()
             this.status = orig_status
         })
