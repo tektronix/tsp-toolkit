@@ -20,6 +20,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed 
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
+- Fixed issues with recall (after closing the session and recalling) and system configuration changes
 
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
