@@ -151,11 +151,15 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     r.friendly_name = instrument.name
                 }
                 if (r.firmware_revision !== instrument.info.firmware_rev) {
-                    if (instrument.info.firmware_rev == "UNKNOWN") { //avoid writing UNKNOWN for firmware revision, instead keep the last known revision in the saved list
-                        Log.warn(`Firmware revision for ${instrument.name} is UNKNOWN, keeping the last known revision ${r.firmware_revision}`, {
-                            file: "instruments.ts",
-                            func: "InstrumentTreeDataProvider.updateSaved()",
-                        })
+                    if (instrument.info.firmware_rev == "UNKNOWN") {
+                        //avoid writing UNKNOWN for firmware revision, instead keep the last known revision in the saved list
+                        Log.warn(
+                            `Firmware revision for ${instrument.name} is UNKNOWN, keeping the last known revision ${r.firmware_revision}`,
+                            {
+                                file: "instruments.ts",
+                                func: "InstrumentTreeDataProvider.updateSaved()",
+                            },
+                        )
                     } else {
                         r.firmware_revision = instrument.info.firmware_rev
                     }
@@ -186,7 +190,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
         await vscode.workspace
             .getConfiguration("tsp")
-            .update("savedInstruments", unique, vscode.ConfigurationTarget.Global)
+            .update(
+                "savedInstruments",
+                unique,
+                vscode.ConfigurationTarget.Global,
+            )
     }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
