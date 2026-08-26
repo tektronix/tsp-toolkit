@@ -23,6 +23,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
 > {
     private readonly storage: GenericSessionStorage
     private readonly validator: SessionNameValidator
+    private isTrigFlowColdRecall = false
 
     constructor(
         context: vscode.ExtensionContext,
@@ -99,6 +100,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
             treeItem?.contextValue === "SavedTriggerFlowTreeItem" ||
             !treeItem
         ) {
+            this.isTrigFlowColdRecall = false
             await this.createNewSession()
         }
         // If clicked on session instance, open existing session
@@ -118,12 +120,33 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
                 }
 
                 this.sessionName = treeItem.label
-                this.spawnChildProcess()
-                this.sendSessionData(this.sessionName)
+                if (
+                    !this.child ||
+                    this.child.killed ||
+                    this.child.exitCode !== null
+                ) {
+                    // cold recall: spawn child process only here if it is not already running
+                    this.isTrigFlowColdRecall = true
+                    this.spawnChildProcess()
+                } else {
+                    this.isTrigFlowColdRecall = false
+                    this.sendSessionData(this.sessionName)
+                }
+                // this.spawnChildProcess()
                 await this.openPanel()
                 this.setActiveStatus(this.sessionName)
             }
         }
+    }
+
+    protected sendInitialConfiguration(): void {
+        const name = this.sessionName || "default_session"
+        this.sendSessionPathData(name)
+        if (this.isTrigFlowColdRecall) {
+            this.sendSessionData(name)
+        }
+        this.sendConfigData()
+        this.lastSentData = name
     }
 
     /**
