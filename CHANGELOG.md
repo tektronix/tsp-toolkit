@@ -32,7 +32,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - TSP language interop feature.
 - Added method to fetch the Keithley examples repository
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
-
+- Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
 
 ## [1.5.1]

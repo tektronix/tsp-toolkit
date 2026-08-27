@@ -370,6 +370,13 @@
                     "description": "Clear error queue on connection.",
                     "scope": "application"
                 },
+                "tsp.connectionTimeout": {
+                    "type": "number",
+                    "default": 30,
+                    "minimum": 0,
+                    "description": "Maximum time, in seconds, to wait for an instrument connection to complete before it is cancelled and the user is notified. Set to 0 to disable the timeout.",
+                    "scope": "application"
+                },
                 "tsp.tspLinkSystemConfigurations": {
                     "type": "array",
                     "default": [],
