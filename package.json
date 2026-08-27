@@ -3,7 +3,7 @@
     "publisher": "Tektronix",
     "displayName": "Tektronix TSP Toolkit",
     "description": "VSCode extension for Tektronix and Keithley instruments that support Test Script Processor (TSP)",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "icon": "./resources/TSP_Toolkit_128x128.png",
     "galleryBanner": {
         "color": "#EEEEEE",
@@ -226,8 +226,8 @@
                 "icon": "$(circle-slash)"
             },
             {
-                "command": "InstrumentsExplorer.upgradeFirmware",
-                "title": "Upgrade Firmware",
+                "command": "InstrumentsExplorer.updateFirmware",
+                "title": "Update Firmware",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
@@ -335,6 +335,11 @@
                 "title": "Reset to Defaults",
                 "category": "TSP",
                 "icon": "$(trash)"
+            },
+            {
+                "command": "tsp.convertToPython",
+                "title": "Convert TSP to Python",
+                "category": "TSP"
             }
         ],
         "configuration": {
@@ -357,6 +362,13 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Clear error queue on connection.",
+                    "scope": "application"
+                },
+                "tsp.connectionTimeout": {
+                    "type": "number",
+                    "default": 30,
+                    "minimum": 0,
+                    "description": "Maximum time, in seconds, to wait for an instrument connection to complete before it is cancelled and the user is notified. Set to 0 to disable the timeout.",
                     "scope": "application"
                 },
                 "tsp.tspLinkSystemConfigurations": {
@@ -483,12 +495,22 @@
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .tsp",
+                    "command": "tsp.convertToPython",
+                    "group": "navigation"
                 }
             ],
             "explorer/context": [
                 {
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
+                    "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .tsp",
+                    "command": "tsp.convertToPython",
                     "group": "navigation"
                 }
             ],
@@ -527,7 +549,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "false"
                 },
                 {
@@ -610,7 +632,7 @@
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmware",
+                    "command": "InstrumentsExplorer.updateFirmware",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Connected.*/",
                     "group": "inline"
                 },
@@ -763,6 +785,7 @@
         "copy-static": "copyfiles -u 1 src/**/*.{js,css} out"
     },
     "devDependencies": {
+        "@tektronix/tsp-language-interop-types": "0.1.0-0",
         "@istanbuljs/nyc-config-typescript": "^1.0.0",
         "@types/chai": "4.3.18",
         "@types/mocha": "10.0.10",
@@ -803,15 +826,18 @@
         "xml-js": "1.6.11"
     },
     "optionalDependencies": {
-        "@tektronix/kic-cli-darwin-arm64": "0.22.0",
-        "@tektronix/kic-cli-linux-x64": "0.22.0",
-        "@tektronix/kic-cli-win32-x64": "0.22.0",
-        "@tektronix/script-gen-darwin-arm64": "0.1.4",
-        "@tektronix/script-gen-linux-x64": "0.1.4",
-        "@tektronix/script-gen-win32-x64": "0.1.4",
-        "@tektronix/trigger-flow-darwin-arm64": "0.2.1",
-        "@tektronix/trigger-flow-linux-x64": "0.2.1",
-        "@tektronix/trigger-flow-win32-x64": "0.2.1"
+        "@tektronix/tsp-language-interop-win32-x64": "0.1.0-0",
+        "@tektronix/tsp-language-interop-darwin-arm64": "0.1.0-0",
+        "@tektronix/tsp-language-interop-linux-x64": "0.1.0-0",
+        "@tektronix/kic-cli-darwin-arm64": "0.23.0-1",
+        "@tektronix/kic-cli-linux-x64": "0.23.0-1",
+        "@tektronix/kic-cli-win32-x64": "0.23.0-1",
+        "@tektronix/script-gen-darwin-arm64": "0.1.5-2",
+        "@tektronix/script-gen-linux-x64": "0.1.5-2",
+        "@tektronix/script-gen-win32-x64": "0.1.5-2",
+        "@tektronix/trigger-flow-darwin-arm64": "0.2.2-5",
+        "@tektronix/trigger-flow-linux-x64": "0.2.2-5",
+        "@tektronix/trigger-flow-win32-x64": "0.2.2-5"
     },
     "extensionDependencies": [
         "sumneko.lua"
