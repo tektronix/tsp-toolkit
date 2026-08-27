@@ -466,6 +466,21 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 ) {
                     this._connections[sameTypeIdx].status = connection.status
                 }
+
+                // Keep forwarding status as `connection` changes later (e.g.
+                // Connecting -> Connected -> Active); otherwise the tracked
+                // connection's icon freezes at whatever status it had here.
+                connection.onChangedStatus(() => {
+                    if (
+                        connection.status !== undefined &&
+                        this._connections[sameTypeIdx].status !==
+                            connection.status
+                    ) {
+                        this._connections[sameTypeIdx].status =
+                            connection.status
+                    }
+                }, this)
+
                 return false
             } else {
                 // Address changed: remove the old connection

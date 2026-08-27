@@ -31,7 +31,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - TSP language interop feature.
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
-
+- Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
 
 ## [1.5.1]
