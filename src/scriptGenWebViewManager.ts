@@ -282,4 +282,11 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
     protected setActiveStatus(name: string | undefined): void {
         this.dataProvider?.setActiveStatus(name)
     }
+
+    protected sendInitialConfiguration(): void {
+        const name = this.sessionName || "default_session"
+        this.sendSessionPathData(name)
+        this.sendConfigData()
+        this.lastSentData = name
+    }
 }
