@@ -16,6 +16,24 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.2]
+
+### Fixed 
+- Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
+- Fixed issues with recall (after closing the session and recalling) and system configuration changes
+
+### Changed
+- Rename 'Upgrade firmware' to 'Update firmware'.
+- Update instrument explorer as new discovered instruments come in rather than after discovery completes
+- **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
+- Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
+
+### Added
+- TSP language interop feature.
+- **tsp-toolkit-language-interop** - Implement tsp language interop feature
+- Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
+
+
 ## [1.5.1]
 
 ### Fixed
@@ -29,7 +47,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
-- (**tsp-toolkit-script-gen**) script generation feature support for MSMU200-2 
 - (**tsp-toolkit-webhelp-to-json**) language feature support for MSMU200-2
 - (**tsp-toolkit-webhelp**) latest webhelp manuals for MPSU50-2ST and MSMU60-2
 - (**tsp-toolkit-webhelp**) webhelp manuals for MSMU200-2
