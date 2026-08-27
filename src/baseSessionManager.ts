@@ -307,12 +307,6 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                 console.warn(`Unknown command from webview: ${message.command}`)
         }
     }
-    sendInitialConfiguration(): void {
-        const name = this.sessionName || "default_session"
-        this.sendSessionPathData(name)
-        this.sendConfigData()
-        this.lastSentData = name
-    }
 
     /**
      * Open the generated script file
@@ -540,4 +534,5 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected abstract setActiveStatus(name: string | undefined): void
     protected abstract listenToConfigChanges(): void
     protected abstract sendConfigData(): void
+    protected abstract sendInitialConfiguration(): void
 }
