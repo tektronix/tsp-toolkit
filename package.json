@@ -338,7 +338,7 @@
             },
             {
                 "command": "tsp.convertToPython",
-                "title": "Generate Python Wrapper from TSP",
+                "title": "Generate Python Wrapper from TSP script",
                 "category": "TSP",
                 "icon": "$(python)"
             }

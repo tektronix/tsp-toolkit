@@ -18,7 +18,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.2]
 
-### Fixed 
+### Fixed
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with recall (after closing the session and recalling) and system configuration changes
 
@@ -29,7 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
 
 ### Added
-- TSP language interop feature.
+- Generate Python wrapper from TSP script.
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
@@ -540,7 +540,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
