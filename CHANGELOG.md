@@ -30,6 +30,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
 
 ### Added
+- Generate Python Wrapper from a TSP Script.
 - **tsp-toolkit-trigger-flow** - Status banner to show information, warnings and errors that do not belong to a specific model.
 - TSP language interop feature.
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
@@ -542,7 +543,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2

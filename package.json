@@ -338,8 +338,9 @@
             },
             {
                 "command": "tsp.convertToPython",
-                "title": "Convert TSP to Python",
-                "category": "TSP"
+                "title": "Generate Python Wrapper from a TSP Script",
+                "category": "TSP",
+                "icon": "$(python)"
             }
         ],
         "configuration": {
@@ -519,6 +520,11 @@
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
                     "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .tsp",
+                    "command": "tsp.convertToPython",
+                    "group": "navigation"
                 }
             ],
             "view/title": [
@@ -665,6 +671,13 @@
                     "command": "tsp.deleteTriggerFlowSession",
                     "when": "viewItem == SavedTriggerFlowInstance",
                     "group": "inline"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "tsp.convertToPython",
+                    "when": "resourceExtname == .tsp",
+                    "group": "navigation"
                 }
             ],
             "editor/title/run": [
