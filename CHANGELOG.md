@@ -18,7 +18,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.2]
 
-### Fixed
+### Fixed 
+- **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with recall (after closing the session and recalling) and system configuration changes
 
@@ -30,6 +31,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Generate Python Wrapper from a TSP Script.
+- **tsp-toolkit-trigger-flow** - Status banner to show information, warnings and errors that do not belong to a specific model.
+- TSP language interop feature.
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
