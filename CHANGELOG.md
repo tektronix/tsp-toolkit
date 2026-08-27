@@ -29,7 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
 
 ### Added
-- Generate Python wrapper from TSP script.
+- Generate Python Wrapper from a TSP Script.
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
