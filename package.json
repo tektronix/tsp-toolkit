@@ -343,7 +343,7 @@
             },
             {
                 "command": "tsp.fetchExampleScripts",
-                "title": "Fetch TSP Example Scripts",
+                "title": "Import TSP Example Scripts",
                 "category": "TSP"
             }
 

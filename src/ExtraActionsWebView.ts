@@ -61,7 +61,7 @@ export class ExtraActionsWebView implements WebviewViewProvider {
 <body>
   <div id="action-container"></div>
     <script type="module" nonce="${nonce}" src="${webviewScriptUri.toString()}"></script>
-    <button class="vscode-style-button" data-id="fetchExamples" id="fetchExamples" type="button">Fetch TSP Examples</button>
+    <button class="vscode-style-button" data-id="fetchExamples" id="fetchExamples" type="button">Import TSP Examples</button>
   </div>
 </body>
 </html>
