@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { ProgressLocation } from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
@@ -33,7 +34,6 @@ import {
     isWindows,
 } from "./dependencyChecker"
 import { ExtraActionsWebView } from "./ExtraActionsWebView"
-import { ProgressLocation } from "vscode"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
