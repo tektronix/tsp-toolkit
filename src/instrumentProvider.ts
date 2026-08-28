@@ -255,6 +255,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
         // }
+        console.error("addOrUpdateInstrument start")
 
         const found_idx = this._instruments.findIndex(
             (v) =>
@@ -291,6 +292,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             this._instruments.push(instrument)
             changed = true
         }
+        console.error("addOrUpdateInstrument end")
 
         this.reloadTreeData()
     }
@@ -511,6 +513,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         this._instruments.find(
                             (i) => i.info.serial_number === v.serial_number,
                         ) ?? Instrument.from(v)
+                    i.connections.forEach((c) => (c.foundLastRound = false))
                     i.saved = true
                     return i
                 }),
@@ -591,7 +594,10 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 const discovered = JSON.parse(line) as InstrInfo
                 this.instruments_discovered = true
                 const inst = Instrument.from(discovered)
-                inst.connections[0].status = ConnectionStatus.Active
+                inst.connections.forEach((c) => {
+                    c.foundLastRound = true
+                    c.status = ConnectionStatus.Active
+                })
                 inst.updateStatus()
                 if (inst.info.serial_number && inst.info.model) {
                     this.addOrUpdateInstrument(inst)
@@ -621,7 +627,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 }
                 for (const i of this._instruments) {
                     for (const c of i.connections) {
-                        if (!c.foundLastRound) {
+                        if (
+                            !c.foundLastRound &&
+                            c.status == ConnectionStatus.Active
+                        ) {
+                            console.error(
+                                "getContent(disc_proc_on_exit()): set status inactive",
+                            )
                             c.status = ConnectionStatus.Inactive
                         }
                     }
