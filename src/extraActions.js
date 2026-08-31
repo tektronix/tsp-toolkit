@@ -20,7 +20,7 @@ async function waitForEventWith(predicate) {
 async function fetchExamples() {
     return new Promise(async (resolve, reject) => {
         vscode.postMessage({command: "fetchExamples"})
-        await waitForEventWith((data) => {data.command === "fetchComplete"})
+        await waitForEventWith((data) => {return data.command === "fetchComplete"})
         resolve()
     })
 }
