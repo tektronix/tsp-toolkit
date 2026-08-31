@@ -255,7 +255,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
         // }
-        console.error("addOrUpdateInstrument start")
 
         const found_idx = this._instruments.findIndex(
             (v) =>
@@ -292,7 +291,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             this._instruments.push(instrument)
             changed = true
         }
-        console.error("addOrUpdateInstrument end")
 
         this.reloadTreeData()
     }
@@ -631,9 +629,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                             !c.foundLastRound &&
                             c.status == ConnectionStatus.Active
                         ) {
-                            console.error(
-                                "getContent(disc_proc_on_exit()): set status inactive",
-                            )
                             c.status = ConnectionStatus.Inactive
                         }
                     }

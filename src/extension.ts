@@ -578,7 +578,6 @@ export async function activate(context: vscode.ExtensionContext) {
                     },
                     async (progress) => {
                         progress.report({ message: "Fetching script examples" })
-                        console.error("Fetching example scripts")
                         if (!uri) {
                             const user_uri = await vscode.window.showOpenDialog(
                                 {
@@ -597,22 +596,27 @@ export async function activate(context: vscode.ExtensionContext) {
                             }
                         }
 
-                        const resp = await fetch(
-                            "https://github.com/tektronix/keithley/archive/refs/heads/main.tar.gz",
-                            {
-                                method: "GET",
-                                mode: "cors",
-                            },
-                        )
-                        if (!resp.ok) {
-                            console.error("Unable to fetch example scripts")
-                            return
+                        try {
+                            const resp = await fetch(
+                                "https://github.com/tektronix/keithley/archive/refs/heads/main.tar.gz",
+                                {
+                                    method: "GET",
+                                    mode: "cors",
+                                },
+                            )
+                            if (!resp.ok) {
+                                return
+                            }
+                            const buffer = await resp.arrayBuffer()
+                            progress.report({
+                                message: `Extracting example scripts to ${uri.fsPath}`,
+                            })
+                            await extractTarGzToDisk(buffer, uri.fsPath)
+                        } catch (e) {
+                            vscode.window.showErrorMessage(
+                                `Unable to get the example scripts: ${e instanceof Error ? e.message : String(e)}`,
+                            )
                         }
-                        const buffer = await resp.arrayBuffer()
-                        progress.report({
-                            message: `Extracting example scripts to ${uri.fsPath}`,
-                        })
-                        await extractTarGzToDisk(buffer, uri.fsPath)
                     },
                 )
             },
