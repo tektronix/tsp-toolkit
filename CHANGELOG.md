@@ -33,6 +33,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Generate Python Wrapper from a TSP Script.
 - **tsp-toolkit-trigger-flow** - Status banner to show information, warnings and errors that do not belong to a specific model.
 - TSP language interop feature.
+- Continuously discover instruments by default (disable by setting the `tsp.autorefresh` setting to `false`)
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 
