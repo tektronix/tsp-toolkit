@@ -1,4 +1,5 @@
 import { ChildProcessWithoutNullStreams } from "node:child_process"
+import * as readline from "node:readline"
 import * as vscode from "vscode"
 import { JSONRPCClient, JSONRPCResponse } from "json-rpc-2.0"
 import { plainToInstance } from "class-transformer"
@@ -121,7 +122,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             for (const m of raw) {
                 if (
                     m.serial_number === instrument.info.serial_number &&
-                    m.instr_address === v.addr
+                    m.io_type === v.type &&
+                    (m.instr_address === v.addr ||
+                        (m.io_type === IoType.Lan && v.type === IoType.Lan))
                 ) {
                     return false
                 }
@@ -148,7 +151,18 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     r.friendly_name = instrument.name
                 }
                 if (r.firmware_revision !== instrument.info.firmware_rev) {
-                    r.firmware_revision = instrument.info.firmware_rev
+                    if (instrument.info.firmware_rev == "UNKNOWN") {
+                        //avoid writing UNKNOWN for firmware revision, instead keep the last known revision in the saved list
+                        Log.warn(
+                            `Firmware revision for ${instrument.name} is UNKNOWN, keeping the last known revision ${r.firmware_revision}`,
+                            {
+                                file: "instruments.ts",
+                                func: "InstrumentTreeDataProvider.updateSaved()",
+                            },
+                        )
+                    } else {
+                        r.firmware_revision = instrument.info.firmware_rev
+                    }
                 }
                 // Update the address if it changed for this connection
                 const matchingConnection = instrument.connections.find(
@@ -163,9 +177,24 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             }
         }
 
+        const unique = raw.filter(
+            (entry, index, entries) =>
+                entries.findIndex(
+                    (candidate) =>
+                        candidate.serial_number === entry.serial_number &&
+                        candidate.model === entry.model &&
+                        candidate.io_type === entry.io_type &&
+                        candidate.instr_address === entry.instr_address,
+                ) === index,
+        )
+
         await vscode.workspace
             .getConfiguration("tsp")
-            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
+            .update(
+                "savedInstruments",
+                unique,
+                vscode.ConfigurationTarget.Global,
+            )
     }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
@@ -226,6 +255,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
         // }
+        console.error("addOrUpdateInstrument start")
 
         const found_idx = this._instruments.findIndex(
             (v) =>
@@ -235,26 +265,34 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
         let changed = false
         if (found_idx > -1) {
+            this._instruments[found_idx].updateInfo(instrument.info)
             for (const c of instrument.connections) {
-                changed = this._instruments[found_idx].addConnection(c)
+                changed =
+                    this._instruments[found_idx].addConnection(c) || changed
                 if (
                     this._instruments[found_idx].name !== instrument.name &&
-                    !this._instruments[found_idx].saved
+                    !this._instruments[found_idx].saved &&
+                    instrument.name
                 ) {
                     this._instruments[found_idx].name = instrument.name
                     changed = true
                 }
-                if (changed) {
-                    this._instruments[found_idx].updateStatus()
-                }
+            }
+            if (changed) {
+                this._instruments[found_idx].updateStatus()
             }
         } else {
+            if (!instrument.name) {
+                instrument.name = `${instrument.info.model}#${instrument.info.serial_number}`
+                instrument.label = instrument.name
+            }
             instrument.onChanged(() => {
                 this.reloadTreeData()
             })
             this._instruments.push(instrument)
             changed = true
         }
+        console.error("addOrUpdateInstrument end")
 
         this.reloadTreeData()
     }
@@ -316,6 +354,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     ...this._instruments.filter(
                         (x) =>
                             x.status === ConnectionStatus.Active ||
+                            x.status === ConnectionStatus.Connecting ||
                             x.status === ConnectionStatus.Connected,
                     ),
                     new InactiveInstrumentList(),
@@ -474,6 +513,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         this._instruments.find(
                             (i) => i.info.serial_number === v.serial_number,
                         ) ?? Instrument.from(v)
+                    i.connections.forEach((c) => (c.foundLastRound = false))
                     i.saved = true
                     return i
                 }),
@@ -540,61 +580,63 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentProvider.getContent()",
         }
         return new Promise((resolve) => {
-            let discover_raw: string = ""
-            let discoveredInstrInfos: InstrInfo[] = []
-
-            discovery_proc.stdout.on("data", (chunk: Buffer | string) => {
-                discover_raw += chunk.toString()
+            for (const i of this._instruments) {
+                for (const c of i.connections) {
+                    // Set the connection to "not found last round"
+                    c.foundLastRound = false
+                    // This will be set to 'true' as connections are found
+                }
+            }
+            const rl = readline.createInterface({
+                input: discovery_proc.stdout,
+            })
+            rl.on("line", (line) => {
+                const discovered = JSON.parse(line) as InstrInfo
+                this.instruments_discovered = true
+                const inst = Instrument.from(discovered)
+                inst.connections.forEach((c) => {
+                    c.foundLastRound = true
+                    c.status = ConnectionStatus.Active
+                })
+                inst.updateStatus()
+                if (inst.info.serial_number && inst.info.model) {
+                    this.addOrUpdateInstrument(inst)
+                    const updated = this._instruments.find(
+                        (i) =>
+                            i.info.model === inst.info.model &&
+                            i.info.serial_number === inst.info.serial_number,
+                    )
+                    if (updated?.saved) {
+                        this.updateSaved(updated).catch((err) => {
+                            Log.error(
+                                `Failed to update saved instrument: ${err}`,
+                                {
+                                    file: "instruments.ts",
+                                    func: "InstrumentProvider.getContent()",
+                                },
+                            )
+                        })
+                    }
+                    this.reloadTreeData()
+                }
             })
 
             discovery_proc.on("exit", (code: number) => {
                 if (code) {
                     Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
                 }
-
-                discoveredInstrInfos =
-                    InstrumentProvider.parseDiscoveredInstruments(discover_raw)
-
-                // Compare with existing instruments to detect IP address changes
-                for (const discovered of discoveredInstrInfos) {
-                    const existing = this._instruments.find(
-                        (i) =>
-                            i.info.serial_number === discovered.serial_number,
-                    )
-
-                    if (existing) {
-                        const existingAddr = existing.connections[0]?.addr
-                        const discoveredAddr = discovered.instr_address
-
-                        if (existingAddr && existingAddr !== discoveredAddr) {
-                            // Update the saved instruments configuration if this instrument was saved
-                            if (existing.saved) {
-                                this.updateSaved(existing).catch((err) => {
-                                    Log.error(
-                                        `Failed to update saved instrument: ${err}`,
-                                        {
-                                            file: "instruments.ts",
-                                            func: "InstrumentProvider.getContent()",
-                                        },
-                                    )
-                                })
-                            }
+                for (const i of this._instruments) {
+                    for (const c of i.connections) {
+                        if (
+                            !c.foundLastRound &&
+                            c.status == ConnectionStatus.Active
+                        ) {
+                            console.error(
+                                "getContent(disc_proc_on_exit()): set status inactive",
+                            )
+                            c.status = ConnectionStatus.Inactive
                         }
                     }
-                }
-
-                this.addOrUpdateInstruments(
-                    discoveredInstrInfos.map((v: InstrInfo) => {
-                        this.instruments_discovered = true
-                        const i = Instrument.from(v)
-                        i.connections[0].status = ConnectionStatus.Active
-                        i.updateStatus()
-                        return i
-                    }),
-                )
-
-                if (this.instruments_discovered) {
-                    this.reloadTreeData()
                 }
                 resolve(this.instruments_discovered)
             })
@@ -754,4 +796,3 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
     }
 }
-
