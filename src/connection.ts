@@ -115,6 +115,7 @@ export function contextValueStatus(
  * A tree item that holds the details of an instrument connection interface/protocol
  */
 export class Connection extends vscode.TreeItem implements vscode.Disposable {
+    private _foundLastRound = true
     private _type: IoType = IoType.Lan
     private _addr: string = ""
     private _keyring: string | null | undefined = undefined
@@ -142,6 +143,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._addr = addr
         this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
+        this._foundLastRound = true
         this.enable(true)
     }
 
@@ -200,6 +202,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (this._status !== status) {
             this._status = status
+            console.error(`[${this._addr}]: status = ${status}`)
             this._onChangedStatus.fire(this._status)
         }
     }
@@ -214,6 +217,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     get terminal() {
         return this._terminal
+    }
+
+    set foundLastRound(a: boolean) {
+        console.error(`[${this.addr}: foundLastRound = ${a}]`)
+        this._foundLastRound = a
+    }
+    get foundLastRound(): boolean {
+        return this._foundLastRound
     }
 
     /**
@@ -1564,6 +1575,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     async getUpdatedStatus(): Promise<void> {
         const info = await this.ping(1000)
 
+        if (this.foundLastRound) {
+            this.status = ConnectionStatus.Active
+            return
+        }
+
         let new_status = ConnectionStatus.Inactive
 
         if (info?.serial_number === this._parent?.info.serial_number) {
@@ -1571,7 +1587,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         if (this.status !== new_status) {
+            console.error("getUpdatedStatus: Updating status")
             this.status = new_status
+            this.foundLastRound = true
             this._onChangedStatus.fire(this.status)
         }
     }
