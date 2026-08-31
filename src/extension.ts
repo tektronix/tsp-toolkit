@@ -605,6 +605,9 @@ export async function activate(context: vscode.ExtensionContext) {
                                 },
                             )
                             if (!resp.ok) {
+                                vscode.window.showErrorMessage(
+                                    `Unable to get the example scripts: ${resp.statusText}`,
+                                )
                                 return
                             }
                             const buffer = await resp.arrayBuffer()
