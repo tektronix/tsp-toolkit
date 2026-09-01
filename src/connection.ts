@@ -202,7 +202,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (this._status !== status) {
             this._status = status
-            console.error(`[${this._addr}]: status = ${status}`)
             this._onChangedStatus.fire(this._status)
         }
     }
@@ -220,7 +219,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     }
 
     set foundLastRound(a: boolean) {
-        console.error(`[${this.addr}: foundLastRound = ${a}]`)
         this._foundLastRound = a
     }
     get foundLastRound(): boolean {
@@ -1587,7 +1585,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         if (this.status !== new_status) {
-            console.error("getUpdatedStatus: Updating status")
             this.status = new_status
             this.foundLastRound = true
             this._onChangedStatus.fire(this.status)

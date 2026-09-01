@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { ProgressLocation } from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { Instrument } from "./instrument"
 import { HelpDocumentWebView } from "./helpDocumentWebView"
@@ -23,7 +24,7 @@ import { TriggerFlowDataProvider } from "./triggerFlowDataProvider"
 import { CombinedScriptGenDataProvider } from "./combinedScriptGenDataProvider"
 import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
 import { GenericSessionStorage } from "./genericSessionStorage"
-import { isMacOS } from "./utility"
+import { extractTarGzToDisk, isMacOS } from "./utility"
 import { convertTspToPython } from "./tspConverter"
 import {
     checkSystemDependencies,
@@ -32,6 +33,7 @@ import {
     isLinux,
     isWindows,
 } from "./dependencyChecker"
+import { ExtraActionsWebView } from "./ExtraActionsWebView"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
@@ -155,11 +157,16 @@ export async function createTerminal(
                 )
 
                 const existing =
-                    InstrumentProvider.instance.getConnection(connection_details)
+                    InstrumentProvider.instance.getConnection(
+                        connection_details,
+                    )
 
                 conn =
                     existing ??
-                    new Connection(connection_details.type, connection_details.addr)
+                    new Connection(
+                        connection_details.type,
+                        connection_details.addr,
+                    )
                 name = connection_details.name
             } else {
                 conn = connection
@@ -562,6 +569,61 @@ export async function activate(context: vscode.ExtensionContext) {
                 await convertTspToPython(e, _tspConverterDiagnostics)
             },
         },
+        {
+            name: "tsp.fetchExampleScripts",
+            cb: async (uri: vscode.Uri | undefined) => {
+                await vscode.window.withProgress(
+                    {
+                        location: ProgressLocation.Notification,
+                    },
+                    async (progress) => {
+                        progress.report({ message: "Fetching script examples" })
+                        if (!uri) {
+                            const user_uri = await vscode.window.showOpenDialog(
+                                {
+                                    title: "Select Folder to Save Example Scripts",
+                                    openLabel: "Save",
+                                    canSelectFiles: false,
+                                    canSelectFolders: true,
+                                    canSelectMany: false,
+                                },
+                            )
+                            if (user_uri) {
+                                // The user can only select 1 based on the options above
+                                uri = user_uri[0]
+                            } else {
+                                return
+                            }
+                        }
+
+                        try {
+                            const resp = await fetch(
+                                "https://github.com/tektronix/keithley/archive/refs/heads/main.tar.gz",
+                                {
+                                    method: "GET",
+                                    mode: "cors",
+                                },
+                            )
+                            if (!resp.ok) {
+                                vscode.window.showErrorMessage(
+                                    `Unable to get the example scripts: ${resp.statusText}`,
+                                )
+                                return
+                            }
+                            const buffer = await resp.arrayBuffer()
+                            progress.report({
+                                message: `Extracting example scripts to ${uri.fsPath}`,
+                            })
+                            await extractTarGzToDisk(buffer, uri.fsPath)
+                        } catch (e) {
+                            vscode.window.showErrorMessage(
+                                `Unable to get the example scripts: ${e instanceof Error ? e.message : String(e)}`,
+                            )
+                        }
+                    },
+                )
+            },
+        },
     ])
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)
@@ -583,6 +645,17 @@ export async function activate(context: vscode.ExtensionContext) {
     void systemConfigWebViewprovider.deprecateOldSystemConfigurations()
 
     context.subscriptions.push(systemConfigViewDisposable)
+
+    const extraActionsWebViewProvider = new ExtraActionsWebView(
+        context.extensionUri,
+    )
+    const extraActionsViewDisposable =
+        vscode.window.registerWebviewViewProvider(
+            ExtraActionsWebView.viewType,
+            extraActionsWebViewProvider,
+        )
+
+    context.subscriptions.push(extraActionsViewDisposable)
 
     Log.debug(
         "Checking to see if workspace folder contains `*.tsp` files",
@@ -1049,7 +1122,7 @@ async function resetToolkitDefaults() {
     //     await vscode.window.showInformationMessage("Nothing to reset.")
     //     return
     // }
-    
+
     const resetSummary = previewResults
         .map((result, index) => {
             const warningLine = result.preview.warningNote
@@ -1075,7 +1148,7 @@ async function resetToolkitDefaults() {
     for (const result of executableItems) {
         await result.item.action.execute()
     }
-    
+
     vscode.window.showInformationMessage("Reset completed successfully.")
 }
 

@@ -341,7 +341,14 @@
                 "title": "Generate Python Wrapper from a TSP Script",
                 "category": "TSP",
                 "icon": "$(python)"
+            },
+            {
+                "command": "tsp.fetchExampleScripts",
+                "title": "Import TSP Example Scripts",
+                "category": "TSP"
+
             }
+
         ],
         "configuration": {
             "type": "object",
@@ -513,12 +520,16 @@
                 {
                     "when": "activeEditor && ( resourceExtname == .tsp || resourceExtname == .tspa )",
                     "command": "tsp.sendFile",
-                    "group": "navigation"
+                    "group": "tsp"
                 },
                 {
                     "when": "resourceExtname == .tsp",
                     "command": "tsp.convertToPython",
-                    "group": "navigation"
+                    "group": "tsp"
+                },
+                {
+                    "command": "tsp.fetchExampleScripts",
+                    "group": "tsp"
                 }
             ],
             "editor/title/context": [
@@ -728,6 +739,11 @@
                     "id": "ToolsView",
                     "name": "Tools",
                     "icon": "resources/dark/script-gen-pane-icon.svg"
+                },
+                {
+                    "id": "extraActions",
+                    "name": "Extra Actions",
+                    "type": "webview"
                 }
             ]
         },
