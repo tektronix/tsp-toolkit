@@ -17,10 +17,13 @@ import {
  * Trigger Flow specific session manager
  * Extends BaseSessionManager with Trigger Flow specific logic
  */
-export class TriggerFlowWebViewManager extends BaseSessionManager<
-    TriggerFlowDataProvider,
-    SessionTypeTreeItem | SessionInstanceTreeItem
-> {
+export class TriggerFlowWebViewManager
+    extends BaseSessionManager<
+        TriggerFlowDataProvider,
+        SessionTypeTreeItem | SessionInstanceTreeItem
+    >
+    implements vscode.Disposable
+{
     private readonly storage: GenericSessionStorage
     private readonly validator: SessionNameValidator
     private isTrigFlowColdRecall = false
@@ -63,6 +66,9 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
             "triggerFlowSessions",
         )
         this.validator = new SessionNameValidator(this.storage)
+    }
+    dispose() {
+        this.child?.kill()
     }
 
     /**

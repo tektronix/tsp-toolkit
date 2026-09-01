@@ -37,6 +37,8 @@ import { ExtraActionsWebView } from "./ExtraActionsWebView"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
+let _triggerFlowWebViewManager: TriggerFlowWebViewManager
+let _scriptGenWebViewManager: ScriptGenWebViewManager
 
 /**
  * Represents a contributed TSP Toolkit configuration setting.
@@ -702,8 +704,14 @@ export async function activate(context: vscode.ExtensionContext) {
     triggerFlowDataProvider.setTreeView(treeView)
 
     // Managers use their specific data providers
-    new ScriptGenWebViewManager(context, scriptGenDataProvider)
-    new TriggerFlowWebViewManager(context, triggerFlowDataProvider)
+    _scriptGenWebViewManager = new ScriptGenWebViewManager(
+        context,
+        scriptGenDataProvider,
+    )
+    _triggerFlowWebViewManager = new TriggerFlowWebViewManager(
+        context,
+        triggerFlowDataProvider,
+    )
 
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
@@ -715,6 +723,8 @@ export function deactivate() {
     const LOGLOC = { file: "extensions.ts", func: "deactivate()" }
     Log.info("Deactivating TSP Toolkit", LOGLOC)
     _instrExplorer.dispose()
+    _scriptGenWebViewManager.dispose()
+    _triggerFlowWebViewManager.dispose()
     Log.info("Deactivation complete", LOGLOC)
 }
 
