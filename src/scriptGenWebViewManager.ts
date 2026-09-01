@@ -17,10 +17,13 @@ import {
  * Script Generation specific session manager
  * Extends BaseSessionManager with Script Generation specific logic
  */
-export class ScriptGenWebViewManager extends BaseSessionManager<
-    ScriptGenDataProvider,
-    SessionTypeTreeItem | SessionInstanceTreeItem
-> {
+export class ScriptGenWebViewManager
+    extends BaseSessionManager<
+        ScriptGenDataProvider,
+        SessionTypeTreeItem | SessionInstanceTreeItem
+    >
+    implements vscode.Disposable
+{
     private readonly storage: GenericSessionStorage
     private readonly validator: SessionNameValidator
 
@@ -62,6 +65,9 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
             "scriptGenSessions",
         )
         this.validator = new SessionNameValidator(this.storage)
+    }
+    dispose() {
+        this.child?.kill()
     }
 
     /**
@@ -281,5 +287,12 @@ export class ScriptGenWebViewManager extends BaseSessionManager<
      */
     protected setActiveStatus(name: string | undefined): void {
         this.dataProvider?.setActiveStatus(name)
+    }
+
+    protected sendInitialConfiguration(): void {
+        const name = this.sessionName || "default_session"
+        this.sendSessionPathData(name)
+        this.sendConfigData()
+        this.lastSentData = name
     }
 }
