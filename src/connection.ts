@@ -899,14 +899,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return credentials
         }
 
-        // if (reqs.username) {
-        //     credentials.username = await vscode.window.showInputBox({
-        //         title: "Enter Username",
-        //         placeHolder: "username",
-        //         prompt: "Enter the username for the instrument to which you are trying to connect.",
-        //         ignoreFocusOut: true,
-        //     })
-        // }
+        if (reqs.username) {
+            credentials.username = await vscode.window.showInputBox({
+                title: "Enter Username",
+                placeHolder: "Username -- Leave blank for default user",
+                prompt: "Enter the username for the instrument to which you are trying to connect.",
+                ignoreFocusOut: true,
+            })
+        }
 
         if (reqs.password) {
             credentials.password = await vscode.window.showInputBox({
@@ -956,7 +956,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 return null
             }
 
-            if (credentials.username) {
+            if (
+                credentials.username &&
+                credentials.username.trim().length > 0
+            ) {
                 args.push("--username", credentials.username)
             }
 

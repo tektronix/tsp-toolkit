@@ -38,6 +38,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Continuously discover instruments by default (disable by setting the `tsp.autorefresh` setting to `false`)
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
+- Allow username input when authenticating with MP5000 instruments
 
 
 ## [1.5.1]
