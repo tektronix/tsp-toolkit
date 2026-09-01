@@ -118,9 +118,12 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                 serial_number: info.serial_number,
                 vendor: info.manufacturer,
             },
-            info.friendly_name.length === 0 ? undefined : info.friendly_name,
+            info.friendly_name && info.friendly_name.length > 0
+                ? info.friendly_name
+                : undefined,
         )
-        n._category = info.instr_categ
+        n._category =
+            info.instr_categ ?? instr_map.get(info.model) ?? "versatest"
         n.addConnection(Connection.from(info))
 
         return n
@@ -170,6 +173,20 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
 
     get info(): IIDNInfo {
         return this._info
+    }
+
+    updateInfo(info: IIDNInfo) {
+        this._info = info
+        this.description = idn_to_string(info)
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
+        this._onChanged.fire()
     }
 
     get category(): string {
@@ -350,7 +367,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         )
     }
 
-    async upgrade(): Promise<void> {
+    async update(): Promise<void> {
         let connection = this._connections.find(
             (c) => c.status === ConnectionStatus.Connected,
         )
@@ -394,7 +411,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
                         .slice(1)
                         .map((n) => `Slot ${n}`),
                 ],
-                { canPickMany: false, title: "What do you want to upgrade?" },
+                { canPickMany: false, title: "What do you want to update?" },
             )
             if (!slot_str) {
                 return
@@ -412,13 +429,13 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             filters: {
                 "Firmware Files": ["x", "upg"],
             },
-            openLabel: "Upgrade",
+            openLabel: "Update",
         })
         if (!file) {
             return
         }
 
-        await connection.upgrade(file[0].fsPath, slot)
+        await connection.update(file[0].fsPath, slot)
     }
 
     /**
@@ -443,12 +460,28 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (sameTypeIdx > -1) {
             // If the address is the same, just update status if needed
             if (this._connections[sameTypeIdx].addr === connection.addr) {
+                this._connections[sameTypeIdx].foundLastRound = true
                 if (
                     connection.status !== undefined &&
                     this._connections[sameTypeIdx].status !== connection.status
                 ) {
                     this._connections[sameTypeIdx].status = connection.status
                 }
+
+                // Keep forwarding status as `connection` changes later (e.g.
+                // Connecting -> Connected -> Active); otherwise the tracked
+                // connection's icon freezes at whatever status it had here.
+                connection.onChangedStatus(() => {
+                    if (
+                        connection.status !== undefined &&
+                        this._connections[sameTypeIdx].status !==
+                            connection.status
+                    ) {
+                        this._connections[sameTypeIdx].status =
+                            connection.status
+                    }
+                }, this)
+
                 return false
             } else {
                 // Address changed: remove the old connection
@@ -508,12 +541,14 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         })
 
         for (const c of this._connections) {
-            if (c.status === ConnectionStatus.Active) {
-                this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
-            } else if (c.status === ConnectionStatus.Connected) {
+            if (c.status === ConnectionStatus.Connected) {
                 this._status = ConnectionStatus.Connected
-
-                break //If any of the connections are connected, we show "Connected"
+                break
+            } else if (c.status === ConnectionStatus.Connecting) {
+                this._status = ConnectionStatus.Connecting
+                break
+            } else if (c.status === ConnectionStatus.Active) {
+                this._status = ConnectionStatus.Active
             }
         }
 
