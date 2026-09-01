@@ -18,10 +18,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 -->
 ## [1.5.2]
 
-### Fixed 
+### Fixed
 - **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with recall (after closing the session and recalling) and system configuration changes
+- Fix issue on macOS where closing vscode will make webview tools not work
 
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
