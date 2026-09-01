@@ -16,6 +16,29 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+## [1.5.2]
+
+### Fixed 
+- **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
+- Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
+- Fixed issues with recall (after closing the session and recalling) and system configuration changes
+
+### Changed
+- Rename 'Upgrade firmware' to 'Update firmware'.
+- Update instrument explorer as new discovered instruments come in rather than after discovery completes
+- **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
+- Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
+
+### Added
+- Generate Python Wrapper from a TSP Script.
+- **tsp-toolkit-trigger-flow** - Status banner to show information, warnings and errors that do not belong to a specific model.
+- TSP language interop feature.
+- Added method to fetch the Keithley examples repository
+- Continuously discover instruments by default (disable by setting the `tsp.autorefresh` setting to `false`)
+- **tsp-toolkit-language-interop** - Implement tsp language interop feature
+- Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
+
+
 ## [1.5.1]
 
 ### Fixed
@@ -29,7 +52,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Fix how IDN information is displayed to the user when starting terminal
 
 ### Added
-- (**tsp-toolkit-script-gen**) script generation feature support for MSMU200-2 
 - (**tsp-toolkit-webhelp-to-json**) language feature support for MSMU200-2
 - (**tsp-toolkit-webhelp**) latest webhelp manuals for MPSU50-2ST and MSMU60-2
 - (**tsp-toolkit-webhelp**) webhelp manuals for MSMU200-2
@@ -523,7 +545,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2
