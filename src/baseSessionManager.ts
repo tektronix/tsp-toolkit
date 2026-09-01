@@ -198,6 +198,8 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
             this.setupWebviewMessageListener()
             this.setupThemeChangeListener()
             this.setupPanelDisposal()
+        } else {
+            this.panel.reveal()
         }
     }
 
