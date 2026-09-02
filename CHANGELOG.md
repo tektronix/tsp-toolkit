@@ -23,6 +23,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with recall (after closing the session and recalling) and system configuration changes
 - Fix issue on macOS where closing vscode will make webview tools not work
+- Allow user to select Script Gen or Trigger Flow session from tools view and show existing webview
 
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
