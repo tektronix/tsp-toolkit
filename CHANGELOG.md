@@ -39,7 +39,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 - Allow username input when authenticating with MP5000 instruments
-- Allow user to select to either overwrite existing file or create a new file when generating python wrapper from TSP script.
+- Allow users to choose whether to overwrite an existing file or create a new file when generating a Python wrapper from a TSP script.
 
 
 ## [1.5.1]
