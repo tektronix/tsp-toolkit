@@ -121,7 +121,7 @@ export async function convertTspToPython(
     const target = outputUri ?? vscode.Uri.file(fileUri.fsPath.replace(/\.tsp$/, ".py"))
     
     await vscode.workspace.fs.createDirectory(
-    vscode.Uri.file(path.dirname(target.fsPath)),
+        vscode.Uri.file(path.dirname(target.fsPath)),
     )
     // Write the file to disk
     const encoder = new TextEncoder()

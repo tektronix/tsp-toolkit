@@ -569,7 +569,7 @@ export async function activate(context: vscode.ExtensionContext) {
             name: "tsp.convertToPython",
             cb: async (e: vscode.Uri) => {
                 let outputUri: vscode.Uri | undefined = undefined
-                let fileChoice = await vscode.window.showQuickPick(["Overwrite existing file", "Create new file"], {
+                const fileChoice = await vscode.window.showQuickPick(["Overwrite existing file", "Create new file"], {
                     placeHolder: "Select an option before conversion",
                 });
                 if (!fileChoice) {
