@@ -565,7 +565,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (this._status === ConnectionStatus.Connected) {
             this._connections
                 .filter((c) => c.status !== ConnectionStatus.Connected)
-                .map((c) => c.enable(false))
+                .forEach((c) => c.enable(false))
         } else {
             for (const c of this._connections) {
                 c.enable(true)

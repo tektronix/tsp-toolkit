@@ -268,16 +268,18 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         let changed = false
         if (found_idx > -1) {
             this._instruments[found_idx].updateInfo(instrument.info)
-            for (const c of instrument.connections) {
-                changed =
-                    this._instruments[found_idx].addConnection(c) || changed
-                if (
-                    this._instruments[found_idx].name !== instrument.name &&
-                    !this._instruments[found_idx].saved &&
-                    instrument.name
-                ) {
-                    this._instruments[found_idx].name = instrument.name
-                    changed = true
+            if (this._instruments[found_idx] !== instrument) {
+                for (const c of instrument.connections) {
+                    changed =
+                        this._instruments[found_idx].addConnection(c) || changed
+                    if (
+                        this._instruments[found_idx].name !== instrument.name &&
+                        !this._instruments[found_idx].saved &&
+                        instrument.name
+                    ) {
+                        this._instruments[found_idx].name = instrument.name
+                        changed = true
+                    }
                 }
             }
             if (changed) {
