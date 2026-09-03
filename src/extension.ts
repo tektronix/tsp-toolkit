@@ -568,7 +568,24 @@ export async function activate(context: vscode.ExtensionContext) {
         {
             name: "tsp.convertToPython",
             cb: async (e: vscode.Uri) => {
-                await convertTspToPython(e, _tspConverterDiagnostics)
+                let outputUri: vscode.Uri | undefined = undefined
+                let fileChoice = await vscode.window.showQuickPick(["Overwrite existing file", "Create new file"], {
+                    placeHolder: "Select an option before conversion",
+                });
+                if (!fileChoice) {
+                    return
+                }
+                if (fileChoice === "Create new file") {
+                    const newFileName = await vscode.window.showInputBox({
+                        prompt: "Enter the new file name or path",
+                        value: e.fsPath.replace(/\.tsp$/, ".py"),
+                    })
+                    if (!newFileName) {
+                        return
+                    }
+                    outputUri = vscode.Uri.file(newFileName)
+                }
+                await convertTspToPython(e, _tspConverterDiagnostics, outputUri)
             },
         },
         {
