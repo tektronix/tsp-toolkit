@@ -10,7 +10,7 @@ import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
 import { StatusBarManager, StatusType } from "./statusBarManager"
 
-const DISCOVERY_TIMEOUT = 4
+export const DISCOVERY_TIMEOUT = 2
 
 export class InstrumentsExplorer implements vscode.Disposable {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
@@ -112,7 +112,10 @@ export class InstrumentsExplorer implements vscode.Disposable {
                                 .getConfiguration("tsp")
                                 .get("autorefresh") as boolean
                         ) {
-                            this.timeoutID = setTimeout(start_discovery, 5000)
+                            this.timeoutID = setTimeout(
+                                start_discovery,
+                                DISCOVERY_TIMEOUT * 1000,
+                            )
                         }
                     },
                     (e: Error) => {

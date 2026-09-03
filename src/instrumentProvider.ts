@@ -22,9 +22,12 @@ import {
     InstrInfo,
     IoType,
 } from "./resourceManager"
+import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
 
 let nextID = 0
 const createID = () => nextID++
+
+export const CULL_THRESHOLD_MS: number = DISCOVERY_TIMEOUT * 3 * 1000
 
 const rpcClient: JSONRPCClient = new JSONRPCClient(
     (jsonRPCRequest) =>
@@ -511,7 +514,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                         this._instruments.find(
                             (i) => i.info.serial_number === v.serial_number,
                         ) ?? Instrument.from(v)
-                    i.connections.forEach((c) => (c.foundLastRound = false))
+                    i.connections.forEach((c) => {
+                        c.lastFound = new Date(0)
+                    })
                     i.saved = true
                     return i
                 }),
@@ -578,13 +583,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentProvider.getContent()",
         }
         return new Promise((resolve) => {
-            for (const i of this._instruments) {
-                for (const c of i.connections) {
-                    // Set the connection to "not found last round"
-                    c.foundLastRound = false
-                    // This will be set to 'true' as connections are found
-                }
-            }
             const rl = readline.createInterface({
                 input: discovery_proc.stdout,
             })
@@ -593,7 +591,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 this.instruments_discovered = true
                 const inst = Instrument.from(discovered)
                 inst.connections.forEach((c) => {
-                    c.foundLastRound = true
+                    c.lastFound = new Date()
                     c.status = ConnectionStatus.Active
                 })
                 inst.updateStatus()
@@ -626,8 +624,12 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                 for (const i of this._instruments) {
                     for (const c of i.connections) {
                         if (
-                            !c.foundLastRound &&
-                            c.status == ConnectionStatus.Active
+                            Date.now() - c.lastFound.getTime() <
+                                CULL_THRESHOLD_MS &&
+                            !(
+                                c.status === ConnectionStatus.Connected ||
+                                c.status === ConnectionStatus.Connecting
+                            )
                         ) {
                             c.status = ConnectionStatus.Inactive
                         }
