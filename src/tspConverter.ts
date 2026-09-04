@@ -22,6 +22,7 @@ function loadTspInterop(): TspInterop {
 export async function convertTspToPython(
     uri: vscode.Uri | undefined,
     diagnosticCollection: vscode.DiagnosticCollection,
+    outputUri: vscode.Uri | undefined,
 ): Promise<void> {
     // Allow invocation from command palette (no URI) by falling back to the
     // active editor.
@@ -117,15 +118,17 @@ export async function convertTspToPython(
     }
 
     // Save generated Python to a file with .py extension
-    const outputPath = fileUri.fsPath.replace(/\.tsp$/, ".py")
-    const outputUri = vscode.Uri.file(outputPath)
-
+    const target = outputUri ?? vscode.Uri.file(fileUri.fsPath.replace(/\.tsp$/, ".py"))
+    
+    await vscode.workspace.fs.createDirectory(
+        vscode.Uri.file(path.dirname(target.fsPath)),
+    )
     // Write the file to disk
     const encoder = new TextEncoder()
-    await vscode.workspace.fs.writeFile(outputUri, encoder.encode(result.code))
+    await vscode.workspace.fs.writeFile(target, encoder.encode(result.code))
 
     // Open the saved file in editor
-    const doc = await vscode.workspace.openTextDocument(outputUri)
+    const doc = await vscode.workspace.openTextDocument(target)
     await vscode.window.showTextDocument(doc, {
         viewColumn: vscode.ViewColumn.Beside,
         preview: false,
