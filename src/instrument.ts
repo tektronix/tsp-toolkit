@@ -460,7 +460,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (sameTypeIdx > -1) {
             // If the address is the same, just update status if needed
             if (this._connections[sameTypeIdx].addr === connection.addr) {
-                this._connections[sameTypeIdx].foundLastRound = true
+                this._connections[sameTypeIdx].lastFound = new Date()
                 if (
                     connection.status !== undefined &&
                     this._connections[sameTypeIdx].status !== connection.status
@@ -565,7 +565,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (this._status === ConnectionStatus.Connected) {
             this._connections
                 .filter((c) => c.status !== ConnectionStatus.Connected)
-                .map((c) => c.enable(false))
+                .forEach((c) => c.enable(false))
         } else {
             for (const c of this._connections) {
                 c.enable(true)

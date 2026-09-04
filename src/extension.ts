@@ -168,6 +168,7 @@ export async function createTerminal(
                     new Connection(
                         connection_details.type,
                         connection_details.addr,
+                        undefined,
                     )
                 name = connection_details.name
             } else {
