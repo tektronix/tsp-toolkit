@@ -8,7 +8,7 @@ import { IIDNInfo, InstrInfo, IoType } from "./resourceManager"
 import { LOG_DIR } from "./utility"
 import { Log } from "./logging"
 import { Instrument } from "./instrument"
-import { InstrumentProvider } from "./instrumentProvider"
+import { CULL_THRESHOLD_MS, InstrumentProvider } from "./instrumentProvider"
 
 /**
  * The possible statuses of a connection interface/protocol
@@ -115,7 +115,7 @@ export function contextValueStatus(
  * A tree item that holds the details of an instrument connection interface/protocol
  */
 export class Connection extends vscode.TreeItem implements vscode.Disposable {
-    private _foundLastRound = true
+    private _lastFound = new Date(0)
     private _type: IoType = IoType.Lan
     private _addr: string = ""
     private _keyring: string | null | undefined = undefined
@@ -134,16 +134,16 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         this._onChangedStatus.event
 
     static from(info: InstrInfo) {
-        return new Connection(info.io_type, info.instr_address)
+        return new Connection(info.io_type, info.instr_address, undefined)
     }
 
-    constructor(conn_type: IoType, addr: string) {
+    constructor(conn_type: IoType, addr: string, found: Date | undefined) {
         super(addr, vscode.TreeItemCollapsibleState.None)
         this._type = conn_type
         this._addr = addr
         this.contextValue = "CONN"
         this.status = ConnectionStatus.Inactive
-        this._foundLastRound = true
+        this._lastFound = found ?? new Date(0)
         this.enable(true)
     }
 
@@ -218,11 +218,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         return this._terminal
     }
 
-    set foundLastRound(a: boolean) {
-        this._foundLastRound = a
+    set lastFound(a: Date) {
+        this._lastFound = a
     }
-    get foundLastRound(): boolean {
-        return this._foundLastRound
+    get lastFound(): Date {
+        return this._lastFound
     }
 
     /**
@@ -1576,7 +1576,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     async getUpdatedStatus(): Promise<void> {
         const info = await this.ping(1000)
 
-        if (this.foundLastRound) {
+        if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
             this.status = ConnectionStatus.Active
             return
         }
@@ -1589,7 +1589,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         if (this.status !== new_status) {
             this.status = new_status
-            this.foundLastRound = true
+            this.lastFound = new Date()
             this._onChangedStatus.fire(this.status)
         }
     }
