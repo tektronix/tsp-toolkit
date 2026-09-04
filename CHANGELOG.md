@@ -20,6 +20,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
+- **tsp-toolkit-script-gen** - Fix issue where backend server can become unresponsive and use too much RAM
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with save/recall session and system configuration changes
 - Fix issue on macOS where closing vscode will make webview tools not work
