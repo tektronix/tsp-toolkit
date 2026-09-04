@@ -135,8 +135,8 @@ export class TriggerFlowWebViewManager
                     this.isTrigFlowColdRecall = true
                     this.spawnChildProcess()
                 } else {
-                    this.isTrigFlowColdRecall = false
-                    this.sendSessionData(this.sessionName)
+                    this.isTrigFlowColdRecall = true
+                    this.sendResetSignal()
                 }
                 // this.spawnChildProcess()
                 await this.openPanel()
