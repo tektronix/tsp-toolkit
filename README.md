@@ -13,7 +13,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
   accepted parameters, and usage examples.
 * **Command Interface** - Send commands and interact directly with your instruments
   through the integrated terminal.
-* **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface.
+* **Instrument Firmware Update** - Remotely update the instrument firmware directly from the VS Code interface.
 * **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection.
 * **Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
 * **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups.
@@ -60,7 +60,7 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
 - **Instruments**: Displays discovered and saved instruments on your network.
   - Connect to instruments.
   - Manage instrument connections.
-  - Perform instrument operations (reset, abort, firmware upgrade).
+  - Perform instrument operations (reset, abort, firmware update).
 
 - **System Configurations**: Configure your TSP-Link instrument network.
   - Create new system configurations.
@@ -87,7 +87,7 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 - **Auto-Discovery**: Automatically find TSP instruments on your local network.
 - **Manual Connection**: Connect to instruments via IP address or VISA resource string.
 - **Instrument Management**: Save, rename, and remove instruments from your list.
-- **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface.
+- **Firmware Update**: Update instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
 - **Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
