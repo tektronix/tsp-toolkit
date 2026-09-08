@@ -135,6 +135,18 @@
                         ]
                     },
                     {
+                        "id": "generate-python-wrapper",
+                        "title": "Generate a Python Wrapper",
+                        "description": "Open a `.tsp` file, then select **Generate Python Wrapper from a TSP Script** from the editor or Explorer context menu. TSP Toolkit saves the generated `.py` file beside the TSP script and opens it in an editor.",
+                        "media": {
+                            "image": "./resources/walkthrough/PythonInterop.png",
+                            "altText": "Generate Python Wrapper from a TSP script"
+                        },
+                        "completionEvents": [
+                            "onCommand:tsp.convertToPython"
+                        ]
+                    },
+                    {
                         "id": "using-terminal",
                         "title": "Using the Terminal",
                         "description": "While connected to an instrument, you can use ``.help`` to view more terminal commands and ``.exit`` to close the connection.",
@@ -346,9 +358,7 @@
                 "command": "tsp.fetchExampleScripts",
                 "title": "Import TSP Example Scripts",
                 "category": "TSP"
-
             }
-
         ],
         "configuration": {
             "type": "object",
@@ -498,7 +508,7 @@
                 "tsp.autorefresh": {
                     "type": "boolean",
                     "default": true,
-                    "scope":"resource",
+                    "scope": "resource",
                     "description": "Enable (true) or disable (false) the auto-refresh of the instrument explorer"
                 }
             }
