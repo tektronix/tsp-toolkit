@@ -34,6 +34,7 @@ import {
     isWindows,
 } from "./dependencyChecker"
 import { ExtraActionsWebView } from "./ExtraActionsWebView"
+import path from "path"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
@@ -569,24 +570,16 @@ export async function activate(context: vscode.ExtensionContext) {
         {
             name: "tsp.convertToPython",
             cb: async (e: vscode.Uri) => {
-                let outputUri: vscode.Uri | undefined = undefined
-                const fileChoice = await vscode.window.showQuickPick(["Overwrite existing file", "Create new file"], {
-                    placeHolder: "Select an option before conversion",
-                });
-                if (!fileChoice) {
+                const outputUri = await pickPythonOutputFile(e)
+                if (!outputUri) {
                     return
                 }
-                if (fileChoice === "Create new file") {
-                    const newFileName = await vscode.window.showInputBox({
-                        prompt: "Enter the new file name or path",
-                        value: e.fsPath.replace(/\.tsp$/, ".py"),
-                    })
-                    if (!newFileName) {
-                        return
-                    }
-                    outputUri = vscode.Uri.file(newFileName)
-                }
-                await convertTspToPython(e, _tspConverterDiagnostics, outputUri)
+
+                await convertTspToPython(
+                    e,
+                    _tspConverterDiagnostics,
+                    outputUri,
+                )
             },
         },
         {
@@ -1178,6 +1171,45 @@ async function resetToolkitDefaults() {
     }
 
     vscode.window.showInformationMessage("Reset completed successfully.")
+}
+
+// Prompt for the Python output file, confirming before overwriting an existing
+// one and returning to the file dialog if the user declines.
+async function pickPythonOutputFile(
+    defaultUri: vscode.Uri,
+): Promise<vscode.Uri | undefined >{
+        const target = await vscode.window.showSaveDialog({
+            title: "Select Python Output File",
+            defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
+            saveLabel: "Convert",
+            filters: { Python: ["py"] },
+        })
+
+        if (!target) {
+            return undefined
+        }
+
+        let exists = true
+        try {
+            await vscode.workspace.fs.stat(target)
+        } catch {
+            exists = false
+        }
+
+        if (!exists) {
+            return target
+        }
+
+        const confirmation = await vscode.window.showWarningMessage(
+            `"${path.basename(target.fsPath)}" already exists. This file will be overwritten.`,
+            { modal: true },
+            "Overwrite",
+        )
+
+        if (confirmation === "Overwrite") {
+            return target
+        }
+    
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
