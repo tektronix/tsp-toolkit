@@ -1196,15 +1196,11 @@ async function pickPythonOutputFile(
         return target
     }
 
-    const confirmation = await vscode.window.showWarningMessage(
-        `"${path.basename(target.fsPath)}" already exists. This file will be overwritten.`,
-        { modal: true },
-        "Overwrite",
+    const confirmation = await vscode.window.showInformationMessage(
+        `"${path.basename(target.fsPath)}" already exists. This file was overwritten.`,
     )
 
-    if (confirmation === "Overwrite") {
-        return target
-    }
+    return target
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
