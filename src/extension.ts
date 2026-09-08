@@ -1196,7 +1196,7 @@ async function pickPythonOutputFile(
         return target
     }
 
-    const confirmation = await vscode.window.showInformationMessage(
+    await vscode.window.showInformationMessage(
         `"${path.basename(target.fsPath)}" already exists. This file was overwritten.`,
     )
 
