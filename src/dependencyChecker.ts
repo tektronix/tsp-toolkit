@@ -1,5 +1,5 @@
 import { promisify } from "util"
-import { platform } from "node:os"
+import { platform, arch, release, cpus } from "node:os"
 import fs from "node:fs"
 import { execFile } from "child_process"
 import * as vscode from "vscode"
@@ -27,9 +27,16 @@ export const isLinux = platform() === "linux"
  * @returns Promise<boolean> - true if installed, false otherwise
  */
 export async function checkVisualCppRedistributable(): Promise<boolean> {
+    const logloc = { ...LOGLOC, func: "checkVisualCppRedistributable()" }
     if (!isWindows) {
         return true // skip for non-Windows platforms
     }
+
+    // Log environment details relevant to why detection may differ across machines
+    Log.debug(
+        `System info for VC++ redist check: process.arch=${process.arch}, os.arch=${arch()}, os.release=${release()}`,
+        logloc,
+    )
 
     try {
         // Check registry for Visual C++ Redistributable installations
@@ -45,22 +52,35 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
                     ["query", path, "/v", "Installed"],
                     { timeout: 3000 },
                 )
+                Log.debug(
+                    `Registry query result for "${path}": ${stdout.trim().replace(/\r?\n/g, " | ")}`,
+                    logloc,
+                )
                 if (stdout.includes("0x1")) {
+                    Log.debug(
+                        `Visual C++ Redistributable detected via registry path "${path}"`,
+                        logloc,
+                    )
                     return true
                 }
-            } catch {
+            } catch (err) {
                 // Continue checking other paths
+                Log.debug(
+                    `Registry query failed for "${path}": ${String(err)}`,
+                    logloc,
+                )
             }
         }
 
+        Log.warn(
+            `Visual C++ Redistributable not detected in any checked registry path: ${registryPaths.join(", ")}`,
+            logloc,
+        )
         return false
     } catch (error) {
         Log.error(
             `Error checking Visual C++ Redistributable: ${String(error)}`,
-            {
-                ...LOGLOC,
-                func: "checkVisualCppRedistributable()",
-            },
+            logloc,
         )
         return false
     }
@@ -78,6 +98,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
  * @note Only x64 DLL is checked since VS Code is x64-only
  */
 export async function checkVisaInstallation(): Promise<boolean> {
+    const logloc = { ...LOGLOC, func: "checkVisaInstallation()" }
     if (!isWindows) {
         return true // skip for non-Windows platforms
     }
@@ -89,32 +110,31 @@ export async function checkVisaInstallation(): Promise<boolean> {
         const visaDllPath = "C:\\Windows\\System32\\visa64.dll"
 
         if (!fs.existsSync(visaDllPath)) {
-            Log.debug("VISA not installed: visa64.dll not found", {
-                ...LOGLOC,
-                func: "checkVisaInstallation()",
-            })
+            Log.debug(
+                `VISA not installed: visa64.dll not found at expected path "${visaDllPath}"`,
+                logloc,
+            )
             return false
         }
 
-        Log.debug("VISA DLL found", {
-            ...LOGLOC,
-            func: "checkVisaInstallation()",
-        })
+        Log.debug(`VISA DLL found at "${visaDllPath}"`, logloc)
 
         // -------------------------------------------------
         // 2. Check for IVI Shared VISA (multi-vendor mode)
         // -------------------------------------------------
         const iviVisaKey = "HKLM\\SOFTWARE\\IVI\\VISA"
 
-        if (await registryKeyExists(iviVisaKey)) {
+        const iviKeyExists = await registryKeyExists(iviVisaKey)
+        Log.debug(
+            `IVI VISA registry key "${iviVisaKey}" exists: ${iviKeyExists}`,
+            logloc,
+        )
+        if (iviKeyExists) {
             const hasVendor = await hasEnabledIviVisaVendor(iviVisaKey)
             if (hasVendor) {
                 Log.debug(
                     "VISA installed in shared mode (IVI VISA with enabled vendor)",
-                    {
-                        ...LOGLOC,
-                        func: "checkVisaInstallation()",
-                    },
+                    logloc,
                 )
                 return true
             }
@@ -125,23 +145,17 @@ export async function checkVisaInstallation(): Promise<boolean> {
         // -------------------------------------------------
         const hasSingleVendor = await hasSingleVendorVisa()
         if (hasSingleVendor) {
-            Log.debug("VISA installed in single-vendor mode", {
-                ...LOGLOC,
-                func: "checkVisaInstallation()",
-            })
+            Log.debug("VISA installed in single-vendor mode", logloc)
             return true
         }
 
-        Log.warn("VISA DLL found but no vendor configuration detected", {
-            ...LOGLOC,
-            func: "checkVisaInstallation()",
-        })
+        Log.warn(
+            `VISA DLL found at "${visaDllPath}" but no vendor configuration detected (IVI key exists: ${iviKeyExists}, no enabled IVI vendor or single-vendor install found)`,
+            logloc,
+        )
         return false
     } catch (error) {
-        Log.error(`Error checking VISA installation: ${String(error)}`, {
-            ...LOGLOC,
-            func: "checkVisaInstallation()",
-        })
+        Log.error(`Error checking VISA installation: ${String(error)}`, logloc)
         return false
     }
 }
@@ -156,7 +170,11 @@ async function registryKeyExists(key: string): Promise<boolean> {
     try {
         await execFileAsync("reg", ["query", key], { timeout: 3000 })
         return true
-    } catch {
+    } catch (err) {
+        Log.debug(`Registry key "${key}" not found: ${String(err)}`, {
+            ...LOGLOC,
+            func: "registryKeyExists()",
+        })
         return false
     }
 }
@@ -176,6 +194,7 @@ async function registryKeyExists(key: string): Promise<boolean> {
  * @returns Promise<boolean> - true if enabled vendor found with valid DLL, false otherwise
  */
 async function hasEnabledIviVisaVendor(iviVisaKey: string): Promise<boolean> {
+    const logloc = { ...LOGLOC, func: "hasEnabledIviVisaVendor()" }
     try {
         const { stdout } = await execFileAsync("reg", ["query", iviVisaKey], {
             timeout: 3000,
@@ -184,19 +203,33 @@ async function hasEnabledIviVisaVendor(iviVisaKey: string): Promise<boolean> {
         const vendorKeys = stdout
             .split(/\r?\n/)
             .filter((line) => line.startsWith("HKEY"))
+        Log.debug(
+            `IVI VISA vendor keys found under "${iviVisaKey}": ${vendorKeys.length ? vendorKeys.join(", ") : "(none)"}`,
+            logloc,
+        )
 
         for (const vendorKey of vendorKeys) {
-            if (!(await isVendorEnabled(vendorKey))) {
+            const enabled = await isVendorEnabled(vendorKey)
+            if (!enabled) {
+                Log.debug(`Vendor "${vendorKey}" is not enabled`, logloc)
                 continue
             }
 
             const vendorPath = await getVendorPath(vendorKey)
-            if (vendorPath && fs.existsSync(vendorPath)) {
+            const pathExists = !!vendorPath && fs.existsSync(vendorPath)
+            Log.debug(
+                `Vendor "${vendorKey}" enabled=${enabled}, path="${vendorPath}", pathExists=${pathExists}`,
+                logloc,
+            )
+            if (pathExists) {
                 return true
             }
         }
-    } catch {
-        /* ignore */
+    } catch (err) {
+        Log.debug(
+            `Failed to query IVI VISA key "${iviVisaKey}": ${String(err)}`,
+            logloc,
+        )
     }
 
     return false
@@ -217,7 +250,11 @@ async function isVendorEnabled(vendorKey: string): Promise<boolean> {
             { timeout: 3000 },
         )
         return stdout.includes("REG_DWORD") && stdout.includes("0x1")
-    } catch {
+    } catch (err) {
+        Log.debug(
+            `"Enabled" value not found for vendor key "${vendorKey}": ${String(err)}`,
+            { ...LOGLOC, func: "isVendorEnabled()" },
+        )
         return false
     }
 }
@@ -240,7 +277,11 @@ async function getVendorPath(vendorKey: string): Promise<string | null> {
 
         const match = stdout.match(/Path\s+REG_SZ\s+(.*)/i)
         return match ? match[1].trim() : null
-    } catch {
+    } catch (err) {
+        Log.debug(
+            `"Path" value not found for vendor key "${vendorKey}": ${String(err)}`,
+            { ...LOGLOC, func: "getVendorPath()" },
+        )
         return null
     }
 }
@@ -266,28 +307,38 @@ async function getVendorPath(vendorKey: string): Promise<string | null> {
  * @returns Promise<boolean> - true if any single-vendor VISA found, false otherwise
  */
 async function hasSingleVendorVisa(): Promise<boolean> {
+    const logloc = { ...LOGLOC, func: "hasSingleVendorVisa()" }
+
     // --- NI-VISA ---
     // The most common single-vendor case
     // The only vendor that frequently installs without IVI Shared VISA
     // So NI DLL is explicitly checked in addition to registry
-    if (
-        (await registryKeyExists(
-            "HKLM\\SOFTWARE\\National Instruments\\NI-VISA",
-        )) ||
-        fs.existsSync(
-            "C:\\Program Files\\National Instruments\\VISA\\nivisa.dll",
-        )
-    ) {
+    const niRegistryFound = await registryKeyExists(
+        "HKLM\\SOFTWARE\\National Instruments\\NI-VISA",
+    )
+    const niDllPath =
+        "C:\\Program Files\\National Instruments\\VISA\\nivisa.dll"
+    const niDllFound = fs.existsSync(niDllPath)
+    Log.debug(
+        `NI-VISA check: registryFound=${niRegistryFound}, dllPath="${niDllPath}", dllFound=${niDllFound}`,
+        logloc,
+    )
+    if (niRegistryFound || niDllFound) {
         return true
     }
 
     // --- Keysight / Agilent ---
-    if (
-        (await registryKeyExists(
-            "HKLM\\SOFTWARE\\Keysight\\IO Libraries Suite",
-        )) ||
-        (await registryKeyExists("HKLM\\SOFTWARE\\Agilent\\IO Libraries Suite"))
-    ) {
+    const keysightFound = await registryKeyExists(
+        "HKLM\\SOFTWARE\\Keysight\\IO Libraries Suite",
+    )
+    const agilentFound = await registryKeyExists(
+        "HKLM\\SOFTWARE\\Agilent\\IO Libraries Suite",
+    )
+    Log.debug(
+        `Keysight/Agilent check: keysightFound=${keysightFound}, agilentFound=${agilentFound}`,
+        logloc,
+    )
+    if (keysightFound || agilentFound) {
         return true
     }
 
@@ -295,13 +346,21 @@ async function hasSingleVendorVisa(): Promise<boolean> {
     // Unlike NI or Keysight, R&S does not consistently create a top-level …\VISA key.
     // R&S VISA is installed system-wide, but its main vendor key is not under HKLM\SOFTWARE\Rohde-Schwarz\VISA on many systems.
     // HKCU\Software\Rohde-Schwarz\RsVisa may exist for user-specific settings, but not for system-wide detection.
-    if (
-        (await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA")) ||
-        (await registryKeyExists("HKLM\\SOFTWARE\\Rohde-Schwarz\\RsVisa"))
-    ) {
+    const rsVisaFound = await registryKeyExists(
+        "HKLM\\SOFTWARE\\Rohde-Schwarz\\VISA",
+    )
+    const rsRsVisaFound = await registryKeyExists(
+        "HKLM\\SOFTWARE\\Rohde-Schwarz\\RsVisa",
+    )
+    Log.debug(
+        `Rohde-Schwarz check: rsVisaFound=${rsVisaFound}, rsRsVisaFound=${rsRsVisaFound}`,
+        logloc,
+    )
+    if (rsVisaFound || rsRsVisaFound) {
         return true
     }
 
+    Log.debug("No single-vendor VISA installation detected", logloc)
     return false
 }
 
@@ -662,6 +721,13 @@ async function showMissingDependenciesNotification(
 export async function checkSystemDependencies(): Promise<void> {
     const logloc = { ...LOGLOC, func: "checkSystemDependencies()" }
     const missingDependencies: MissingDependency[] = []
+
+    // Log processor and OS details up front to aid in debugging detection issues
+    const cpuModel = cpus()[0]?.model ?? "unknown"
+    Log.debug(
+        `System diagnostics: platform=${platform()}, processArch=${process.arch}, osArch=${arch()}, osRelease=${release()}, cpuModel="${cpuModel}", cpuCount=${cpus().length}`,
+        logloc,
+    )
 
     if (isWindows) {
         Log.debug("Checking Windows dependencies", logloc)
