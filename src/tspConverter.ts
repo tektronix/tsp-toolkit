@@ -118,8 +118,9 @@ export async function convertTspToPython(
     }
 
     // Save generated Python to a file with .py extension
-    const target = outputUri ?? vscode.Uri.file(fileUri.fsPath.replace(/\.tsp$/, ".py"))
-    
+    const target =
+        outputUri ?? vscode.Uri.file(fileUri.fsPath.replace(/\.tsp$/, ".py"))
+
     await vscode.workspace.fs.createDirectory(
         vscode.Uri.file(path.dirname(target.fsPath)),
     )

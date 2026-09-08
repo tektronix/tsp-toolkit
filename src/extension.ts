@@ -1,3 +1,4 @@
+import path from "path"
 import * as vscode from "vscode"
 
 import { ProgressLocation } from "vscode"
@@ -34,7 +35,6 @@ import {
     isWindows,
 } from "./dependencyChecker"
 import { ExtraActionsWebView } from "./ExtraActionsWebView"
-import path from "path"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
@@ -575,11 +575,7 @@ export async function activate(context: vscode.ExtensionContext) {
                     return
                 }
 
-                await convertTspToPython(
-                    e,
-                    _tspConverterDiagnostics,
-                    outputUri,
-                )
+                await convertTspToPython(e, _tspConverterDiagnostics, outputUri)
             },
         },
         {
@@ -1177,39 +1173,38 @@ async function resetToolkitDefaults() {
 // one and returning to the file dialog if the user declines.
 async function pickPythonOutputFile(
     defaultUri: vscode.Uri,
-): Promise<vscode.Uri | undefined >{
-        const target = await vscode.window.showSaveDialog({
-            title: "Select Python Output File",
-            defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
-            saveLabel: "Convert",
-            filters: { Python: ["py"] },
-        })
+): Promise<vscode.Uri | undefined> {
+    const target = await vscode.window.showSaveDialog({
+        title: "Select Python Output File",
+        defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
+        saveLabel: "Convert",
+        filters: { Python: ["py"] },
+    })
 
-        if (!target) {
-            return undefined
-        }
+    if (!target) {
+        return undefined
+    }
 
-        let exists = true
-        try {
-            await vscode.workspace.fs.stat(target)
-        } catch {
-            exists = false
-        }
+    let exists = true
+    try {
+        await vscode.workspace.fs.stat(target)
+    } catch {
+        exists = false
+    }
 
-        if (!exists) {
-            return target
-        }
+    if (!exists) {
+        return target
+    }
 
-        const confirmation = await vscode.window.showWarningMessage(
-            `"${path.basename(target.fsPath)}" already exists. This file will be overwritten.`,
-            { modal: true },
-            "Overwrite",
-        )
+    const confirmation = await vscode.window.showWarningMessage(
+        `"${path.basename(target.fsPath)}" already exists. This file will be overwritten.`,
+        { modal: true },
+        "Overwrite",
+    )
 
-        if (confirmation === "Overwrite") {
-            return target
-        }
-    
+    if (confirmation === "Overwrite") {
+        return target
+    }
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
