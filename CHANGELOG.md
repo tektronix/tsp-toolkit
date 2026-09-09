@@ -72,7 +72,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
 - **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
 - **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
-- **tsp-toolkit-kic-cli** - Add connection support for 2601C-PULSE and 2605C-PULSE
+- **tsp-toolkit-kic-cli** - Add connection support for new SMUs
 
 ### Removed
 - **tsp-toolkit-trigger-flow** - Removed Apply and Cancel buttons from delay list popup.
