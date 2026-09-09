@@ -39,6 +39,21 @@ let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
 let _triggerFlowWebViewManager: TriggerFlowWebViewManager
 let _scriptGenWebViewManager: ScriptGenWebViewManager
+import {
+    buildBulkUpgradeSelectionItems,
+    BulkUpgradeSelectionItem,
+    getEligibleConnectedMP5103Candidates,
+    getMP5103SlotOptions,
+    parseMP5103SlotSelection,
+    resolveSelectedCandidates,
+    runConcurrentBulkFirmwareUpgrade,
+} from "./bulkFirmwareUpgrade"
+
+let _bulkFirmwareOutput: vscode.OutputChannel
+
+interface BulkUpgradeQuickPickItem extends vscode.QuickPickItem {
+    id: string
+}
 
 /**
  * Represents a contributed TSP Toolkit configuration setting.
@@ -361,6 +376,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
+    _bulkFirmwareOutput = vscode.window.createOutputChannel(
+        "TSP Bulk Firmware Upgrade",
+    )
+    context.subscriptions.push(_bulkFirmwareOutput)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
@@ -469,6 +488,12 @@ export async function activate(context: vscode.ExtensionContext) {
             name: "InstrumentsExplorer.updateFirmware",
             cb: async (e: Instrument) => {
                 await e.update()
+            },
+        },
+        {
+            name: "InstrumentsExplorer.upgradeFirmwareBulkMp5103",
+            cb: async () => {
+                await startBulkMP5103FirmwareUpgrade()
             },
         },
         // {
@@ -717,6 +742,154 @@ export async function activate(context: vscode.ExtensionContext) {
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
     return base_api
+}
+
+async function startBulkMP5103FirmwareUpgrade(): Promise<void> {
+    const candidates = getEligibleConnectedMP5103Candidates(
+        InstrumentProvider.instance.instruments,
+    )
+
+    if (candidates.length <= 1) {
+        vscode.window.showWarningMessage(
+            "Bulk MP5103 firmware upgrade requires at least two connected MP5103 instruments.",
+        )
+        return
+    }
+
+    const selectionItems: BulkUpgradeQuickPickItem[] =
+        buildBulkUpgradeSelectionItems(candidates).map(
+            (item: BulkUpgradeSelectionItem) => ({
+                id: item.id,
+                label: item.label,
+                description: item.description,
+            }),
+        )
+
+    const selected = await vscode.window.showQuickPick(selectionItems, {
+        canPickMany: true,
+        title: "Select MP5103 instruments",
+        placeHolder: "Choose one or more instruments, or select all",
+        ignoreFocusOut: true,
+    })
+
+    if (!selected) {
+        return
+    }
+
+    const selectedCandidates = resolveSelectedCandidates(
+        selected.map((item) => item.id),
+        candidates,
+    )
+
+    if (selectedCandidates.length === 0) {
+        vscode.window.showWarningMessage(
+            "No MP5103 instruments selected. Bulk firmware upgrade canceled.",
+        )
+        return
+    }
+
+    const slotSelection = await vscode.window.showQuickPick(
+        getMP5103SlotOptions(),
+        {
+            canPickMany: false,
+            title: "What do you want to upgrade?",
+            ignoreFocusOut: true,
+        },
+    )
+
+    if (!slotSelection) {
+        return
+    }
+
+    const slot = parseMP5103SlotSelection(slotSelection)
+    if (slot === null) {
+        vscode.window.showErrorMessage("Invalid slot selection")
+        return
+    }
+
+    const firmwareSelection = await vscode.window.showOpenDialog({
+        title: "Select Firmware File",
+        filters: {
+            "Firmware Files": ["x", "upg"],
+        },
+        openLabel: "Upgrade",
+    })
+
+    if (!firmwareSelection || firmwareSelection.length === 0) {
+        return
+    }
+
+    const firmwarePath = firmwareSelection[0].fsPath
+    const firmwareName = firmwareSelection[0].fsPath.split(/[/\\]/).pop() ?? ""
+    const slotLabel = slot === undefined ? "Mainframe" : `Slot ${slot}`
+
+    const confirmation = await vscode.window.showWarningMessage(
+        `Upgrade ${selectedCandidates.length} MP5103 instruments using ${slotLabel} and firmware '${firmwareName}'?`,
+        { modal: true },
+        "Start Upgrade",
+        "Cancel",
+    )
+
+    if (confirmation !== "Start Upgrade") {
+        return
+    }
+
+    _bulkFirmwareOutput.clear()
+    _bulkFirmwareOutput.appendLine("Starting bulk MP5103 firmware upgrade")
+    _bulkFirmwareOutput.appendLine(
+        `Targets: ${selectedCandidates.length}, Slot: ${slotLabel}, Firmware: ${firmwarePath}`,
+    )
+
+    const progressIncrement = 100 / selectedCandidates.length
+    const results = await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: "Bulk MP5103 firmware upgrade in progress",
+            cancellable: false,
+        },
+        async (progress) => {
+            progress.report({
+                message: `0/${selectedCandidates.length} complete`,
+            })
+
+            return runConcurrentBulkFirmwareUpgrade(
+                selectedCandidates,
+                firmwarePath,
+                slot,
+                (completed, total, result) => {
+                    progress.report({
+                        increment: progressIncrement,
+                        message: `${completed}/${total} complete`,
+                    })
+
+                    if (result.success) {
+                        _bulkFirmwareOutput.appendLine(
+                            `[SUCCESS] ${result.instrumentName} (${result.serialNumber}) @ ${result.address}`,
+                        )
+                    } else {
+                        _bulkFirmwareOutput.appendLine(
+                            `[FAILED] ${result.instrumentName} (${result.serialNumber}) @ ${result.address}: ${result.error ?? "Unknown error"}`,
+                        )
+                    }
+                },
+            )
+        },
+    )
+
+    const successCount = results.filter((result) => result.success).length
+    const failureCount = results.length - successCount
+    _bulkFirmwareOutput.appendLine(
+        `Completed. Success: ${successCount}, Failed: ${failureCount}`,
+    )
+
+    const action = await vscode.window.showInformationMessage(
+        `Bulk MP5103 firmware upgrade complete: ${successCount} succeeded, ${failureCount} failed.`,
+        "View Details",
+    )
+
+    if (action === "View Details") {
+        _bulkFirmwareOutput.show(true)
+    }
 }
 
 // Called when the extension is deactivated.
