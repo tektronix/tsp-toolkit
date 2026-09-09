@@ -139,11 +139,10 @@
                         "title": "Generate a Python Wrapper",
                         "description": "Open a `.tsp` file, then select **Generate Python Wrapper from a TSP Script** from the editor or Explorer context menu. TSP Toolkit saves the generated `.py` file beside the TSP script and opens it in an editor.",
                         "media": {
-                            "image": "./resources/walkthrough/PythonInterop.png",
-                            "altText": "Generate Python Wrapper from a TSP script"
+                            "markdown": "./resources/walkthrough/PythonInterop.md"
                         },
                         "completionEvents": [
-                            "onCommand:tsp.convertToPython"
+                            "onCommand:tsp.wrapTspForPython"
                         ]
                     },
                     {
@@ -349,7 +348,7 @@
                 "icon": "$(trash)"
             },
             {
-                "command": "tsp.convertToPython",
+                "command": "tsp.wrapTspForPython",
                 "title": "Generate Python Wrapper from a TSP Script",
                 "category": "TSP",
                 "icon": "$(python)"
@@ -522,7 +521,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "navigation"
                 }
             ],
@@ -534,7 +533,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "tsp"
                 },
                 {
@@ -550,7 +549,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "navigation"
                 }
             ],
@@ -702,7 +701,7 @@
             ],
             "editor/title": [
                 {
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "when": "resourceExtname == .tsp",
                     "group": "navigation"
                 }

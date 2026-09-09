@@ -567,7 +567,7 @@ export async function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "tsp.convertToPython",
+            name: "tsp.wrapTspForPython",
             cb: async (e: vscode.Uri) => {
                 await convertTspToPython(e, _tspConverterDiagnostics)
             },

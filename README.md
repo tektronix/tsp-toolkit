@@ -176,7 +176,7 @@ The TSP Toolkit includes a powerful on-instrument debugging capability that allo
 
 Generate a Python wrapper for any `.tsp` file by selecting **Generate Python Wrapper from a TSP Script** from the editor, editor-tab, or Explorer context menu. The command creates a `.py` file beside the TSP source and opens it in VS Code. The wrapper loads the script on the instrument and makes its top-level functions and supported literal globals available through Python methods.
 
-Conversion diagnostics, including syntax errors and unsupported constructs, appear in the VS Code **Problems** panel. See [Generate a Python Wrapper](resources/walkthrough/PythonInterop.md) for requirements, usage, and supported TSP constructs.
+Wrapper-generation diagnostics, including syntax errors and unsupported constructs, appear in the VS Code **Problems** panel. The TSP script remains the source of instrument behavior; the generated Python class provides access to its public functions and supported globals. See [Generate a Python Wrapper](resources/walkthrough/PythonInterop.md) for requirements, usage, and supported TSP constructs.
 
 ## System Configuration
 

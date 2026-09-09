@@ -1,6 +1,24 @@
 # Generate a Python Wrapper
 
-TSP Toolkit can convert a `.tsp` script into a Python wrapper class. The wrapper loads the same TSP script onto the instrument and exposes its public functions and supported global variables to your Python application.
+### 1. Editor Toolbar
+
+<img src="./PythonInterop_EditorToolbar_Icon.png" alt="Python wrapper command in the editor toolbar">
+
+<br>
+
+### 2. Right-Click Menu
+
+<img src="./PythonInterop_RightClick.png" alt="Python wrapper command in the right-click menu">
+
+<br>
+
+### 3. Command Palette
+
+<img src="./PythonInterop_CommandPalette.png" alt="Python wrapper command in the Command Palette">
+
+<br>
+
+TSP Toolkit can wrap a `.tsp` script with a Python class. The wrapper loads the original TSP script onto the instrument and exposes its public functions and supported global variables to your Python application. The TSP script remains the source of instrument behavior; it is not translated into Python.
 
 ## How to generate the Python wrapper
 
@@ -45,9 +63,9 @@ measurements.set_voltage(10.0)
 
 The wrapper loads the TSP source on first use. It avoids loading it again when the copy on the instrument has the same checksum. You may pass a `parent_loadscript` function when your instrument library already provides the script-loading operation.
 
-Function calls and global reads return the raw response received from the instrument. Convert the value in your application when a Python numeric or other type is required.
+Function calls and global reads return the raw response received from the instrument. Cast the value in your application when a Python numeric or other type is required.
 
-## What is converted
+## What the wrapper exposes
 
 * Top-level TSP functions become Python instance methods with matching parameters.
 * Top-level globals assigned literal numbers, strings, booleans, `nil`, or tables receive `get_<name>()` and `set_<name>(value)` methods.
@@ -55,6 +73,6 @@ Function calls and global reads return the raw response received from the instru
 
 ## Diagnostics and limitations
 
-TSP Toolkit adds conversion diagnostics to the VS Code **Problems** panel for the source TSP file. Syntax errors prevent output from being generated. Warnings allow partial output, but the affected element is omitted from the wrapper.
+TSP Toolkit adds wrapper-generation diagnostics to the VS Code **Problems** panel for the source TSP file. Syntax errors prevent the wrapper from being generated. Warnings allow a partial wrapper, but the affected element is omitted.
 
-The converter does not expose local or nested functions, member-function declarations such as `function smua.measure()`, functions using varargs (`...`), or globals assigned complex expressions such as function-call results. Refactor the desired API into a top-level function or use a literal global assignment, then generate the wrapper again.
+The wrapper does not expose local or nested functions, member-function declarations such as `function smua.measure()`, functions using varargs (`...`), or globals assigned complex expressions such as function-call results. Refactor the desired API into a top-level function or use a literal global assignment, then generate the wrapper again.
