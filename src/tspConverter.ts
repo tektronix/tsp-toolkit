@@ -71,7 +71,7 @@ export async function convertTspToPython(
     try {
         result = converter.convertTspToPython(source, {
             className,
-            scriptPath: fileUri.fsPath,
+            // scriptPath: fileUri.fsPath, // Commented out for now, will re-enable once the setting is available
         })
     } catch (err) {
         vscode.window.showErrorMessage(
