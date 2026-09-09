@@ -212,16 +212,22 @@ export class GenericSessionStorage {
             // either migrated in this run, or already present in the new keys, or
             // there were no sessions to migrate for that type.
             const scriptGenAccountedFor =
-                migratedScriptGen || scriptGenHasSessions || ivSessions.length === 0
+                migratedScriptGen ||
+                scriptGenHasSessions ||
+                ivSessions.length === 0
             const triggerFlowAccountedFor =
-                migratedTriggerFlow || triggerFlowHasSessions || triggerFlowSessions.length === 0
+                migratedTriggerFlow ||
+                triggerFlowHasSessions ||
+                triggerFlowSessions.length === 0
 
             if (scriptGenAccountedFor && triggerFlowAccountedFor) {
-                await vscode.workspace.getConfiguration("tsp").update(
-                    GenericSessionStorage.LEGACY_SETTINGS_KEY,
-                    undefined,
-                    false,
-                )
+                await vscode.workspace
+                    .getConfiguration("tsp")
+                    .update(
+                        GenericSessionStorage.LEGACY_SETTINGS_KEY,
+                        undefined,
+                        false,
+                    )
             }
         } catch (error) {
             console.error("Failed to migrate legacy sessions:", error)
