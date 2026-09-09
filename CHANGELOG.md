@@ -16,11 +16,16 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+
 ## [1.5.2]
+
+### Highlights
+- \[Beta\] Python wrapper feature
 
 ### Fixed
 - **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
 - **tsp-toolkit-script-gen** - Fix issue where backend server can become unresponsive and use too much RAM
+- **tsp-toolkit-kic-cli** - Fix issue with fetching nodes config from a large system of instruments that produces a configuration longer than 1013 bytes
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with save/recall session and system configuration changes
 - Fix issue on macOS where closing vscode will make webview tools not work
@@ -41,6 +46,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Implement tsp language interop feature
 - Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
 - Allow username input when authenticating with MP5000 instruments
+- Allow users to choose whether to overwrite an existing file or create a new file when generating a Python wrapper from a TSP script.
 
 
 ## [1.5.1]
@@ -66,7 +72,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
 - **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
 - **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
-- **tsp-toolkit-kic-cli** - Add connection support for 2601C-PULSE and 2605C-PULSE
+- **tsp-toolkit-kic-cli** - Add connection support for new SMUs
 
 ### Removed
 - **tsp-toolkit-trigger-flow** - Removed Apply and Cancel buttons from delay list popup.
