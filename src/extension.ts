@@ -1,4 +1,3 @@
-import path from "path"
 import * as vscode from "vscode"
 
 import { ProgressLocation } from "vscode"
@@ -1195,10 +1194,6 @@ async function pickPythonOutputFile(
     if (!exists) {
         return target
     }
-
-    await vscode.window.showInformationMessage(
-        `"${path.basename(target.fsPath)}" already exists. This file was overwritten.`,
-    )
 
     return target
 }
