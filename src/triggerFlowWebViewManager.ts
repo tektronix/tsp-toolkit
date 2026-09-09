@@ -17,12 +17,16 @@ import {
  * Trigger Flow specific session manager
  * Extends BaseSessionManager with Trigger Flow specific logic
  */
-export class TriggerFlowWebViewManager extends BaseSessionManager<
-    TriggerFlowDataProvider,
-    SessionTypeTreeItem | SessionInstanceTreeItem
-> {
+export class TriggerFlowWebViewManager
+    extends BaseSessionManager<
+        TriggerFlowDataProvider,
+        SessionTypeTreeItem | SessionInstanceTreeItem
+    >
+    implements vscode.Disposable
+{
     private readonly storage: GenericSessionStorage
     private readonly validator: SessionNameValidator
+    private isTrigFlowColdRecall = false
 
     constructor(
         context: vscode.ExtensionContext,
@@ -63,6 +67,9 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
         )
         this.validator = new SessionNameValidator(this.storage)
     }
+    dispose() {
+        this.child?.kill()
+    }
 
     /**
      * Listen to workspace configuration changes
@@ -99,6 +106,7 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
             treeItem?.contextValue === "SavedTriggerFlowTreeItem" ||
             !treeItem
         ) {
+            this.isTrigFlowColdRecall = false
             await this.createNewSession()
         }
         // If clicked on session instance, open existing session
@@ -118,12 +126,33 @@ export class TriggerFlowWebViewManager extends BaseSessionManager<
                 }
 
                 this.sessionName = treeItem.label
-                this.spawnChildProcess()
-                this.sendSessionData(this.sessionName)
+                if (
+                    !this.child ||
+                    this.child.killed ||
+                    this.child.exitCode !== null
+                ) {
+                    // cold recall: spawn child process only here if it is not already running
+                    this.isTrigFlowColdRecall = true
+                    this.spawnChildProcess()
+                } else {
+                    this.isTrigFlowColdRecall = true
+                    this.sendResetSignal()
+                }
+                // this.spawnChildProcess()
                 await this.openPanel()
                 this.setActiveStatus(this.sessionName)
             }
         }
+    }
+
+    protected sendInitialConfiguration(): void {
+        const name = this.sessionName || "default_session"
+        this.sendSessionPathData(name)
+        if (this.isTrigFlowColdRecall) {
+            this.sendSessionData(name)
+        }
+        this.sendConfigData()
+        this.lastSentData = name
     }
 
     /**
