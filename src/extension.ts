@@ -569,7 +569,12 @@ export async function activate(context: vscode.ExtensionContext) {
         {
             name: "tsp.wrapTspForPython",
             cb: async (e: vscode.Uri) => {
-                await convertTspToPython(e, _tspConverterDiagnostics)
+                const outputUri = await pickPythonOutputFile(e)
+                if (!outputUri) {
+                    return
+                }
+
+                await convertTspToPython(e, _tspConverterDiagnostics, outputUri)
             },
         },
         {
@@ -1161,6 +1166,25 @@ async function resetToolkitDefaults() {
     }
 
     vscode.window.showInformationMessage("Reset completed successfully.")
+}
+
+// Prompt for the Python output file, confirming before overwriting an existing
+// one and returning to the file dialog if the user declines.
+async function pickPythonOutputFile(
+    defaultUri: vscode.Uri,
+): Promise<vscode.Uri | undefined> {
+    const target = await vscode.window.showSaveDialog({
+        title: "Select Python Output File",
+        defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
+        saveLabel: "Convert",
+        filters: { Python: ["py"] },
+    })
+
+    if (!target) {
+        return undefined
+    }
+
+    return target
 }
 
 export async function pickConnection(): Promise<Connection | undefined> {
