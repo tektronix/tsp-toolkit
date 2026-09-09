@@ -135,6 +135,17 @@
                         ]
                     },
                     {
+                        "id": "generate-python-wrapper",
+                        "title": "Generate a Python Wrapper",
+                        "description": "Open a `.tsp` file, then select **Generate Python Wrapper from a TSP Script** from the editor or Explorer context menu. Choose an existing Python file or a location and name for a new `.py` file. TSP Toolkit asks for confirmation before overwriting an existing file.",
+                        "media": {
+                            "markdown": "./resources/walkthrough/PythonInterop.md"
+                        },
+                        "completionEvents": [
+                            "onCommand:tsp.wrapTspForPython"
+                        ]
+                    },
+                    {
                         "id": "using-terminal",
                         "title": "Using the Terminal",
                         "description": "While connected to an instrument, you can use ``.help`` to view more terminal commands and ``.exit`` to close the connection.",
@@ -337,7 +348,7 @@
                 "icon": "$(trash)"
             },
             {
-                "command": "tsp.convertToPython",
+                "command": "tsp.wrapTspForPython",
                 "title": "Generate Python Wrapper from a TSP Script",
                 "category": "TSP",
                 "icon": "$(python)"
@@ -346,9 +357,7 @@
                 "command": "tsp.fetchExampleScripts",
                 "title": "Import TSP Example Scripts",
                 "category": "TSP"
-
             }
-
         ],
         "configuration": {
             "type": "object",
@@ -498,7 +507,7 @@
                 "tsp.autorefresh": {
                     "type": "boolean",
                     "default": true,
-                    "scope":"resource",
+                    "scope": "resource",
                     "description": "Enable (true) or disable (false) the auto-refresh of the instrument explorer"
                 }
             }
@@ -512,7 +521,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "navigation"
                 }
             ],
@@ -524,7 +533,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "tsp"
                 },
                 {
@@ -540,7 +549,7 @@
                 },
                 {
                     "when": "resourceExtname == .tsp",
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "group": "navigation"
                 }
             ],
@@ -692,7 +701,7 @@
             ],
             "editor/title": [
                 {
-                    "command": "tsp.convertToPython",
+                    "command": "tsp.wrapTspForPython",
                     "when": "resourceExtname == .tsp",
                     "group": "navigation"
                 }
