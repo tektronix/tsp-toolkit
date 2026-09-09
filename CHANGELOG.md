@@ -16,7 +16,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+
 ## [1.5.2]
+
+### Highlights
+- \[Beta\] Python wrapper feature
 
 ### Fixed
 - **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
