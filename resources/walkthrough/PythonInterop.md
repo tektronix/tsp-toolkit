@@ -29,7 +29,7 @@ Use any of the following entry points:
 3. **Command Palette** — Press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS), search for
    **TSP: Generate Python Wrapper from a TSP Script**, and run it. If no file is right-clicked, the command uses the currently active `.tsp` editor.
 
-The generated `.py` file is written next to the source script (`script.tsp` → `script.py`) and opened automatically in a new editor tab beside the original.
+After the wrapper is generated, a save dialog opens. Choose an existing Python file to replace or enter a new `.py` file name and choose its location. If the selected file already exists, TSP Toolkit asks you to confirm before overwriting its contents. The saved wrapper then opens in a new editor tab.
 
 ## Use the wrapper
 

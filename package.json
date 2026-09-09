@@ -137,7 +137,7 @@
                     {
                         "id": "generate-python-wrapper",
                         "title": "Generate a Python Wrapper",
-                        "description": "Open a `.tsp` file, then select **Generate Python Wrapper from a TSP Script** from the editor or Explorer context menu. TSP Toolkit saves the generated `.py` file beside the TSP script and opens it in an editor.",
+                        "description": "Open a `.tsp` file, then select **Generate Python Wrapper from a TSP Script** from the editor or Explorer context menu. Choose an existing Python file or a location and name for a new `.py` file. TSP Toolkit asks for confirmation before overwriting an existing file.",
                         "media": {
                             "markdown": "./resources/walkthrough/PythonInterop.md"
                         },
