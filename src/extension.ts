@@ -1184,17 +1184,6 @@ async function pickPythonOutputFile(
         return undefined
     }
 
-    let exists = true
-    try {
-        await vscode.workspace.fs.stat(target)
-    } catch {
-        exists = false
-    }
-
-    if (!exists) {
-        return target
-    }
-
     return target
 }
 
