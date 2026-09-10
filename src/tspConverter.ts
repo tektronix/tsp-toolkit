@@ -22,7 +22,6 @@ function loadTspInterop(): TspInterop {
 export async function convertTspToPython(
     uri: vscode.Uri | undefined,
     diagnosticCollection: vscode.DiagnosticCollection,
-    outputUri: vscode.Uri | undefined,
 ): Promise<void> {
     // Allow invocation from command palette (no URI) by falling back to the
     // active editor.
@@ -36,6 +35,11 @@ export async function convertTspToPython(
         vscode.window.showErrorMessage(
             "No TSP file selected. Open a .tsp file or right-click it in the Explorer.",
         )
+        return
+    }
+
+    const outputUri = await pickPythonOutputFile(fileUri)
+    if (!outputUri) {
         return
     }
 
@@ -134,4 +138,23 @@ export async function convertTspToPython(
         viewColumn: vscode.ViewColumn.Beside,
         preview: false,
     })
+}
+
+// Prompt for the Python output file, confirming before overwriting an existing
+// one and returning to the file dialog if the user declines.
+async function pickPythonOutputFile(
+    defaultUri: vscode.Uri,
+): Promise<vscode.Uri | undefined> {
+    const target = await vscode.window.showSaveDialog({
+        title: "Select Python Output File",
+        defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
+        saveLabel: "Convert",
+        filters: { Python: ["py"] },
+    })
+
+    if (!target) {
+        return undefined
+    }
+
+    return target
 }
