@@ -1,0 +1,167 @@
+import * as path from "path"
+import * as vscode from "vscode"
+import type {
+    Diagnostic,
+    TspInterop,
+} from "@tektronix/tsp-language-interop-types"
+
+function loadTspInterop(): TspInterop {
+    const packageName = `@tektronix/tsp-language-interop-${process.platform}-${process.arch}`
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const converter = require(packageName) as TspInterop
+
+    return converter
+}
+
+/**
+ * Read a .tsp file, convert it to Python via the native Rust addon, and open
+ * the result in a new editor tab.  Any converter diagnostics are surfaced in
+ * the VS Code Problems panel.
+ */
+export async function wrapTspToPython(
+    uri: vscode.Uri | undefined,
+    diagnosticCollection: vscode.DiagnosticCollection,
+): Promise<void> {
+    if (!uri) {
+        uri = vscode.window.activeTextEditor?.document.uri.fsPath.endsWith(
+            ".tsp",
+        )
+            ? vscode.window.activeTextEditor.document.uri
+            : undefined
+        if (!uri) {
+            const user_selected = await vscode.window.showOpenDialog({
+                title: "Select a TSP file to generate Python wrapper",
+                filters: { "TSP Files": ["tsp"] },
+            })
+            if (user_selected && user_selected[0]) {
+                uri = user_selected[0]
+            } else {
+                vscode.window.showErrorMessage(
+                    "Unable to generate Python file: no TSP file selected",
+                )
+                return
+            }
+        }
+    }
+
+    const outputUri = await pickPythonOutputFile(uri)
+    if (!outputUri) {
+        return
+    }
+
+    const converter = loadTspInterop()
+    if (!converter) {
+        vscode.window.showErrorMessage(
+            "tsp-converter native addon could not be loaded. " +
+                "Please ensure the extension was built correctly.",
+        )
+        return
+    }
+
+    // Read source
+    let source: string
+    try {
+        source = (await vscode.workspace.fs.readFile(uri)).toString()
+    } catch (err) {
+        vscode.window.showErrorMessage(
+            `Could not read file: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        return
+    }
+
+    // Derive a class name from the file name (e.g. "my_script.tsp" → "MyScript")
+    const baseName = path.basename(uri.fsPath, ".tsp")
+    const className = baseName
+        .split(/[_\-\s]+/)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join("")
+
+    // Run converter
+    let result: { ok: boolean; code?: string; diagnostics: Diagnostic[] }
+    try {
+        result = converter.convertTspToPython(source, {
+            className,
+            // scriptPath: fileUri.fsPath, // Commented out for now, will re-enable once the setting is available
+        })
+    } catch (err) {
+        vscode.window.showErrorMessage(
+            `Converter error: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        return
+    }
+
+    // Push diagnostics to the Problems panel
+    const vsDiagnostics = (result.diagnostics ?? []).map((d: Diagnostic) => {
+        const range = d.span
+            ? new vscode.Range(
+                d.span.startLine - 1,
+                d.span.startColumn,
+                d.span.endLine - 1,
+                d.span.endColumn,
+            )
+            : new vscode.Range(0, 0, 0, 0)
+
+        const severity =
+            d.severity === "error"
+                ? vscode.DiagnosticSeverity.Error
+                : d.severity === "warning"
+                    ? vscode.DiagnosticSeverity.Warning
+                    : vscode.DiagnosticSeverity.Information
+
+        const diag = new vscode.Diagnostic(range, d.message, severity)
+        diag.code = d.code
+        if (d.hint)
+            diag.relatedInformation = [
+                new vscode.DiagnosticRelatedInformation(
+                    new vscode.Location(uri, range),
+                    d.hint,
+                ),
+            ]
+        return diag
+    })
+    diagnosticCollection.set(uri, vsDiagnostics)
+
+    if (!result.ok || !result.code) {
+        const errMsg = result.diagnostics?.[0]?.message ?? "Unknown error"
+        vscode.window.showErrorMessage(`TSP conversion failed: ${errMsg}`)
+        return
+    }
+
+    // Save generated Python to a file with .py extension
+    const target =
+        outputUri ?? vscode.Uri.file(uri.fsPath.replace(/\.tsp$/, ".py"))
+
+    await vscode.workspace.fs.createDirectory(
+        vscode.Uri.file(path.dirname(target.fsPath)),
+    )
+    // Write the file to disk
+    const encoder = new TextEncoder()
+    await vscode.workspace.fs.writeFile(target, encoder.encode(result.code))
+
+    // Open the saved file in editor
+    const doc = await vscode.workspace.openTextDocument(target)
+    await vscode.window.showTextDocument(doc, {
+        viewColumn: vscode.ViewColumn.Beside,
+        preview: false,
+    })
+}
+
+// Prompt for the Python output file, confirming before overwriting an existing
+// one and returning to the file dialog if the user declines.
+async function pickPythonOutputFile(
+    defaultUri: vscode.Uri,
+): Promise<vscode.Uri | undefined> {
+    const target = await vscode.window.showSaveDialog({
+        title: "Select Python Output File",
+        defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
+        saveLabel: "Generate python wrapper file",
+        filters: { Python: ["py"] },
+    })
+
+    if (!target) {
+        return undefined
+    }
+
+    return target
+}

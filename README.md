@@ -13,7 +13,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
   accepted parameters, and usage examples.
 * **Command Interface** - Send commands and interact directly with your instruments
   through the integrated terminal.
-* **Instrument Firmware Upgrade** - Remotely upgrade the instrument firmware directly from the VS Code interface.
+* **Instrument Firmware Update** - Remotely update the instrument firmware directly from the VS Code interface.
 * **Script Debugging** - On-instrument debugging with breakpoints, step execution, and variable inspection.
 * **Automated Script Generation** - Configuration-driven interface to create TSP scripts without manual coding.
 * **System Configuration Management** - Support for TSP-Link™ networks and multi-instrument setups.
@@ -22,6 +22,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
     - Save buffer contents to a file
     - Start and stop saving commands and output to a file
 * **TriggerFlow® Visual Editor** - Generate trigger model code by moving trigger model block on a canvas.
+* **Python Interoperability** - Generate a Python wrapper from a TSP script to call its public functions and access supported globals from a Python application.
 
 ## Quick Start
 
@@ -60,7 +61,7 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
 - **Instruments**: Displays discovered and saved instruments on your network.
   - Connect to instruments.
   - Manage instrument connections.
-  - Perform instrument operations (reset, abort, firmware upgrade).
+  - Perform instrument operations (reset, abort, firmware update).
 
 - **System Configurations**: Configure your TSP-Link instrument network.
   - Create new system configurations.
@@ -87,12 +88,13 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 - **Auto-Discovery**: Automatically find TSP instruments on your local network.
 - **Manual Connection**: Connect to instruments via IP address or VISA resource string.
 - **Instrument Management**: Save, rename, and remove instruments from your list.
-- **Firmware Upgrade**: Upgrade instrument firmware directly from the explorer interface.
+- **Firmware Update**: Update instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
 - **Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
 - **Save Commands and Output to File**: Save any proceeding commands and their output to a file
-* **TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
+- **TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
+- **Python Interoperability**: Generate a Python wrapper from a TSP script to call its public functions and access supported globals from a Python application.
 
 ### Terminal Usage
 
@@ -170,6 +172,11 @@ The TSP Toolkit includes a powerful on-instrument debugging capability that allo
 - **Call Stack**: Navigate the execution call stack to understand the flow of your code.
 - **Step Controls**: Step into, step over, and step out of functions during debugging.
 
+## Python Interoperability
+
+Generate a Python wrapper for any `.tsp` file by selecting **Generate Python Wrapper from a TSP Script** from the editor, editor-tab, or Explorer context menu. Choose an existing Python file to replace or select a location and name for a new `.py` file. TSP Toolkit asks for confirmation before overwriting an existing file, then opens the saved wrapper in VS Code. The wrapper loads the script on the instrument and makes its top-level functions and supported literal globals available through Python methods.
+
+Wrapper-generation diagnostics, including syntax errors and unsupported constructs, appear in the VS Code **Problems** panel. The TSP script remains the source of instrument behavior; the generated Python class provides access to its public functions and supported globals. For requirements, usage, and supported TSP constructs, open the Command Palette with `Ctrl+Shift+P`, run **Welcome: Open Walkthrough...**, select **Getting Started with TSP Toolkit**, and then choose **Generate a Python Wrapper**.
 
 ## System Configuration
 
