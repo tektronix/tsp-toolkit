@@ -19,7 +19,7 @@ function loadTspInterop(): TspInterop {
  * the result in a new editor tab.  Any converter diagnostics are surfaced in
  * the VS Code Problems panel.
  */
-export async function convertTspToPython(
+export async function wrapTspToPython(
     uri: vscode.Uri | undefined,
     diagnosticCollection: vscode.DiagnosticCollection,
 ): Promise<void> {
