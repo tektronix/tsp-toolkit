@@ -23,22 +23,29 @@ export async function wrapTspToPython(
     uri: vscode.Uri | undefined,
     diagnosticCollection: vscode.DiagnosticCollection,
 ): Promise<void> {
-    // Allow invocation from command palette (no URI) by falling back to the
-    // active editor.
-    const fileUri =
-        uri ??
-        (vscode.window.activeTextEditor?.document.uri.fsPath.endsWith(".tsp")
-            ? vscode.window.activeTextEditor.document.uri
-            : undefined)
-
-    if (!fileUri) {
-        vscode.window.showErrorMessage(
-            "No TSP file selected. Open a .tsp file or right-click it in the Explorer.",
+    if (!uri) {
+        uri = vscode.window.activeTextEditor?.document.uri.fsPath.endsWith(
+            ".tsp",
         )
-        return
+            ? vscode.window.activeTextEditor.document.uri
+            : undefined
+        if (!uri) {
+            const user_selected = await vscode.window.showOpenDialog({
+                title: "Select a TSP file to generate Python wrapper",
+                filters: { "TSP Files": ["tsp"] },
+            })
+            if (user_selected && user_selected[0]) {
+                uri = user_selected[0]
+            } else {
+                vscode.window.showErrorMessage(
+                    "Unable to generate Python file: no TSP file selected",
+                )
+                return
+            }
+        }
     }
 
-    const outputUri = await pickPythonOutputFile(fileUri)
+    const outputUri = await pickPythonOutputFile(uri)
     if (!outputUri) {
         return
     }
@@ -55,7 +62,7 @@ export async function wrapTspToPython(
     // Read source
     let source: string
     try {
-        source = (await vscode.workspace.fs.readFile(fileUri)).toString()
+        source = (await vscode.workspace.fs.readFile(uri)).toString()
     } catch (err) {
         vscode.window.showErrorMessage(
             `Could not read file: ${err instanceof Error ? err.message : String(err)}`,
@@ -64,7 +71,7 @@ export async function wrapTspToPython(
     }
 
     // Derive a class name from the file name (e.g. "my_script.tsp" → "MyScript")
-    const baseName = path.basename(fileUri.fsPath, ".tsp")
+    const baseName = path.basename(uri.fsPath, ".tsp")
     const className = baseName
         .split(/[_\-\s]+/)
         .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -107,13 +114,13 @@ export async function wrapTspToPython(
         if (d.hint)
             diag.relatedInformation = [
                 new vscode.DiagnosticRelatedInformation(
-                    new vscode.Location(fileUri, range),
+                    new vscode.Location(uri, range),
                     d.hint,
                 ),
             ]
         return diag
     })
-    diagnosticCollection.set(fileUri, vsDiagnostics)
+    diagnosticCollection.set(uri, vsDiagnostics)
 
     if (!result.ok || !result.code) {
         const errMsg = result.diagnostics?.[0]?.message ?? "Unknown error"
@@ -123,7 +130,7 @@ export async function wrapTspToPython(
 
     // Save generated Python to a file with .py extension
     const target =
-        outputUri ?? vscode.Uri.file(fileUri.fsPath.replace(/\.tsp$/, ".py"))
+        outputUri ?? vscode.Uri.file(uri.fsPath.replace(/\.tsp$/, ".py"))
 
     await vscode.workspace.fs.createDirectory(
         vscode.Uri.file(path.dirname(target.fsPath)),
@@ -148,7 +155,7 @@ async function pickPythonOutputFile(
     const target = await vscode.window.showSaveDialog({
         title: "Select Python Output File",
         defaultUri: vscode.Uri.file(defaultUri.fsPath.replace(/\.tsp$/, ".py")),
-        saveLabel: "Convert",
+        saveLabel: "Generate python wrapper file",
         filters: { Python: ["py"] },
     })
 
