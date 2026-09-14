@@ -25,7 +25,7 @@ import { CombinedScriptGenDataProvider } from "./combinedScriptGenDataProvider"
 import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
 import { GenericSessionStorage } from "./genericSessionStorage"
 import { extractTarGzToDisk, isMacOS } from "./utility"
-import { convertTspToPython } from "./tspConverter"
+import { wrapTspToPython } from "./tspConverter"
 import {
     checkSystemDependencies,
     checkVisaInstallation,
@@ -592,9 +592,9 @@ export async function activate(context: vscode.ExtensionContext) {
             },
         },
         {
-            name: "tsp.convertToPython",
+            name: "tsp.wrapTspForPython",
             cb: async (e: vscode.Uri) => {
-                await convertTspToPython(e, _tspConverterDiagnostics)
+                await wrapTspToPython(e, _tspConverterDiagnostics)
             },
         },
         {
