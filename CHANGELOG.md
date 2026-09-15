@@ -26,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
 - **tsp-toolkit-script-gen** - Fix issue where backend server can become unresponsive and use too much RAM
 - **tsp-toolkit-kic-cli** - Fix issue with fetching nodes config from a large system of instruments that produces a configuration longer than 1013 bytes
+- **tsp-toolkit-kic-cli** - Fix issue in which visa executables for linux systems were not marked as executable
 - Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
 - Fixed issues with save/recall session and system configuration changes
 - Fix issue on macOS where closing vscode will make webview tools not work
