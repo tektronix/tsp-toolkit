@@ -325,8 +325,8 @@ export async function checkVisaInstallationLinux(): Promise<boolean> {
     // Pattern 1: Standard libvisa.so (possibly with version suffixes like libvisa.so.7)
     // Pattern 2: Variant VISA libraries (e.g., libniVisa, libAgVisa.so, libRsVisa.so, case-insensitive)
     const visaLibPatterns = [
-        /^libvisa\.so(\.\d+)*$/,
-        /^lib.*visa.*\.so(\.\d+)*$/i,
+        /^\s*libvisa\.so(\.\d+)*$/,
+        /^\s*lib.*visa.*\.so(\.\d+)*$/i,
     ]
 
     // -------------------------------------------------
