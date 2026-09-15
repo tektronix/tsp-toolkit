@@ -339,7 +339,7 @@ export async function checkVisaInstallationLinux(): Promise<boolean> {
 
         const lines = stdout.split(/\r?\n/)
         for (const line of lines) {
-            const libName = line.split(/\s+/)[0]
+            const libName = line.trim().split(/\s+/)[0]
             if (!libName) continue
 
             for (const pattern of visaLibPatterns) {
