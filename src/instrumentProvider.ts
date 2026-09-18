@@ -23,6 +23,10 @@ import {
     IoType,
 } from "./resourceManager"
 import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
+import {
+    BULK_MP5103_CONTEXT_KEY,
+    hasMultipleConnectedMP5103,
+} from "./bulkFirmwareUpgrade"
 
 let nextID = 0
 const createID = () => nextID++
@@ -79,12 +83,18 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
         this.getSavedInstruments().catch(() => {})
         this.configWatcherEnable(true)
+        this.updateBulkMp5103Context()
     }
 
     dispose() {
         for (const i of this._instruments) {
             i.dispose()
         }
+        void vscode.commands.executeCommand(
+            "setContext",
+            BULK_MP5103_CONTEXT_KEY,
+            false,
+        )
     }
 
     get instruments(): Instrument[] {
@@ -500,7 +510,16 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         // Sort the connections by status
         // (we want to show higher values first, so invert the result)
         // this._instruments.sort((a, b) => -(a.status - b.status))
+        this.updateBulkMp5103Context()
         this._onDidChangeTreeData.fire(undefined)
+    }
+
+    private updateBulkMp5103Context() {
+        void vscode.commands.executeCommand(
+            "setContext",
+            BULK_MP5103_CONTEXT_KEY,
+            hasMultipleConnectedMP5103(this._instruments),
+        )
     }
 
     private async getSavedInstruments(): Promise<Instrument[]> {
