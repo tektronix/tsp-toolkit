@@ -253,7 +253,9 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
           # install ovsx
           npm install
-          npx ovsx publish extension/*.vsix
+          for f in extension/*.vsix; do
+            npx ovsx publish "$f"
+          done
         env:
           OVSX_PAT: ${{secrets.OVSX_PAT}}
 
