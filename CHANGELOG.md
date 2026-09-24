@@ -17,6 +17,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Highlights -- Feature which needs to highlighted for the release.
 -->
 
+## [1.6.0]
+
+### Added
+- **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
+
+
 ## [1.5.2]
 
 ### Highlights
