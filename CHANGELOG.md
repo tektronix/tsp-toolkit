@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
 - **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
+- **tsp-toolkit-language-interop** - Print instrument errors (if any) when calling TSP functions
 
 ## [1.5.2]
 
@@ -562,7 +563,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.0
 [1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
