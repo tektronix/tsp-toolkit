@@ -21,7 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
-
+- **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
 
 ## [1.5.2]
 
