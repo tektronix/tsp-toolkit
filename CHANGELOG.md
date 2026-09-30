@@ -19,6 +19,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.6.0]
 
+### Fixed
+- Prevent creating TriggerFlow sessions until a valid system configuration is available.
+
 ### Added
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
 - **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
