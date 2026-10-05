@@ -68,10 +68,15 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
   - Fetch configurations from connected instruments.
   - Switch between different configurations.
 
-- **Script Generation**: Create and manage TSP scripts without manual coding.
-  - Create new script generation sessions.
-  - Access saved script configurations.
-  - Generate ready-to-use TSP scripts.
+- **Tools**: Create and manage TSP scripts without manual coding.
+  - **IV Characterization Script Generation**:
+    - Create new sessions.
+    - Access saved script configurations.
+    - Generate ready-to-use TSP scripts.
+  - **TriggerFlow® Script Generation**:
+    - Create new sessions.
+    - Access saved sessions
+    - Generate trigger model code that requires some setup code.
 
 ### Accessing the View
 
