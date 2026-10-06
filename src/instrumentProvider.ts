@@ -25,7 +25,7 @@ import {
 import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
 import {
     BULK_MP5103_CONTEXT_KEY,
-    hasMultipleConnectedMP5103,
+    hasMultipleAvailableMP5103,
 } from "./bulkFirmwareUpgrade"
 
 let nextID = 0
@@ -518,7 +518,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         void vscode.commands.executeCommand(
             "setContext",
             BULK_MP5103_CONTEXT_KEY,
-            hasMultipleConnectedMP5103(this._instruments),
+            hasMultipleAvailableMP5103(this._instruments),
         )
     }
 

@@ -572,7 +572,7 @@
                 },
                 {
                     "command": "InstrumentsExplorer.upgradeFirmwareBulkMp5103",
-                    "when": "view == InstrumentsExplorer && tsp.hasMultipleConnectedMp5103",
+                    "when": "view == InstrumentsExplorer && tsp.hasMultipleAvailableMp5103",
                     "group": "navigation"
                 },
                 {
