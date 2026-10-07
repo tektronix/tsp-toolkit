@@ -261,7 +261,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             }
         }
         const output = await vscode.window.showSaveDialog({
-            title: "Select Output File",
+            title: "Save commands and output to file",
         })
         if (!output) {
             this.savingTspOutput = false
@@ -354,7 +354,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             return
         }
         const output = await vscode.window.showSaveDialog({
-            title: "Select Output File",
+            title: "Save buffers to a file",
         })
         if (!output || !buffers || !delimiter || !fields) {
             return
