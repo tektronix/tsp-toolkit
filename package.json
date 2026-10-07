@@ -244,7 +244,7 @@
             },
             {
                 "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
-                "title": "Update MP5103 Firmware (Bulk)",
+                "title": "Update Firmware on Multiple MP5103 Instruments",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
