@@ -26,7 +26,7 @@ import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
 import {
     BULK_MP5103_CONTEXT_KEY,
     hasMultipleAvailableMP5103,
-} from "./bulkFirmwareUpgrade"
+} from "./bulkFirmwareUpdate"
 
 let nextID = 0
 const createID = () => nextID++

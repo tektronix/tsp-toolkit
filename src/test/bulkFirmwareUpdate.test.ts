@@ -1,15 +1,15 @@
 import { assert } from "chai"
 import { suite, test } from "mocha"
 import {
-    buildBulkUpgradeSelectionItems,
-    buildBulkUpgradeTargetItems,
-    enforceBulkUpgradeTargetExclusivity,
+    buildBulkUpdateSelectionItems,
+    buildBulkUpdateTargetItems,
+    enforceBulkUpdateTargetExclusivity,
     getEligibleMP5103Candidates,
     hasMultipleAvailableMP5103,
-    resolveBulkUpgradeTargets,
+    resolveBulkUpdateTargets,
     resolveSelectedCandidates,
-    runConcurrentBulkFirmwareUpgrade,
-} from "../bulkFirmwareUpgrade"
+    runConcurrentBulkFirmwareUpdate,
+} from "../bulkFirmwareUpdate"
 import { ConnectionStatus } from "../connectionStatus"
 
 const CONNECTED_STATUS = ConnectionStatus.Connected
@@ -37,7 +37,7 @@ function buildMockInstrument(
     }
 }
 
-suite("Bulk Firmware Upgrade Test Suite", function () {
+suite("Bulk Firmware Update Test Suite", function () {
     test("Visibility gating uses available MP5103 unique serial count", function () {
         const instruments = [
             buildMockInstrument(
@@ -104,7 +104,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
         assert.isTrue(hasMultipleAvailableMP5103(instruments))
     })
 
-    test("A single available MP5103 does not enable bulk upgrade", function () {
+    test("A single available MP5103 does not enable bulk update", function () {
         const instruments = [
             buildMockInstrument(
                 "MP5103",
@@ -171,7 +171,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
         ]
 
         const candidates = getEligibleMP5103Candidates(instruments)
-        const items = buildBulkUpgradeSelectionItems(candidates)
+        const items = buildBulkUpdateSelectionItems(candidates)
         const allIds = items.map((item) => item.id)
 
         const allSelection = resolveSelectedCandidates(allIds, candidates)
@@ -205,7 +205,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             ),
         ])
 
-        const items = buildBulkUpgradeTargetItems(candidates)
+        const items = buildBulkUpdateTargetItems(candidates)
 
         assert.deepEqual(
             items.map((item) => [item.serialNumber, item.slot, item.label]),
@@ -241,11 +241,11 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             ),
         ])
         const id = (serial: string, slot: number | undefined) =>
-            buildBulkUpgradeTargetItems(candidates).find(
+            buildBulkUpdateTargetItems(candidates).find(
                 (item) => item.serialNumber === serial && item.slot === slot,
             )!.id
 
-        const slots = resolveBulkUpgradeTargets(
+        const slots = resolveBulkUpdateTargets(
             [id("SN-1", 1), id("SN-1", 3), id("SN-2", 2)],
             candidates,
         )
@@ -258,7 +258,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             ],
         )
 
-        const mainframes = resolveBulkUpgradeTargets(
+        const mainframes = resolveBulkUpdateTargets(
             [id("SN-1", undefined), id("SN-2", undefined)],
             candidates,
         )
@@ -267,13 +267,13 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             [[undefined], [undefined]],
         )
 
-        const mixed = resolveBulkUpgradeTargets(
+        const mixed = resolveBulkUpdateTargets(
             [id("SN-1", undefined), id("SN-2", 1)],
             candidates,
         )
         assert.isString(mixed.error)
 
-        const missing = resolveBulkUpgradeTargets([id("SN-1", 2)], candidates)
+        const missing = resolveBulkUpdateTargets([id("SN-1", 2)], candidates)
         assert.include(missing.error, "B")
     })
 
@@ -284,7 +284,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
         const slotOf = (item: { slot: number | undefined }) => item.slot
 
         assert.deepEqual(
-            enforceBulkUpgradeTargetExclusivity(
+            enforceBulkUpdateTargetExclusivity(
                 [slot1, slot2],
                 [slot1, slot2, mainframe],
                 slotOf,
@@ -292,7 +292,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             [mainframe],
         )
         assert.deepEqual(
-            enforceBulkUpgradeTargetExclusivity(
+            enforceBulkUpdateTargetExclusivity(
                 [mainframe],
                 [mainframe, slot1],
                 slotOf,
@@ -300,20 +300,16 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
             [slot1],
         )
         assert.deepEqual(
-            enforceBulkUpgradeTargetExclusivity(
-                [slot1, slot2],
-                [slot2],
-                slotOf,
-            ),
+            enforceBulkUpdateTargetExclusivity([slot1, slot2], [slot2], slotOf),
             [slot2],
         )
     })
 
-    test("Slots on one instrument upgrade sequentially", async function () {
+    test("Slots on one instrument update sequentially", async function () {
         const order: string[] = []
         let running = 0
         let maxRunning = 0
-        const upgrade = async (_path: string, slot?: number) => {
+        const update = async (_path: string, slot?: number) => {
             running += 1
             maxRunning = Math.max(maxRunning, running)
             order.push(`start ${slot}`)
@@ -328,12 +324,12 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
                 "SN-1",
                 "A",
                 CONNECTED_STATUS,
-                upgrade,
+                update,
             ),
         ])
 
         const progress: [number, number][] = []
-        const results = await runConcurrentBulkFirmwareUpgrade(
+        const results = await runConcurrentBulkFirmwareUpdate(
             [{ candidate, slots: [1, 3] }],
             "firmware.upg",
             (completed, total) => progress.push([completed, total]),
@@ -356,7 +352,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
         let running = 0
         let maxRunning = 0
 
-        const createUpgrade = (serial: string, shouldFail: boolean) => {
+        const createUpdate = (serial: string, shouldFail: boolean) => {
             return async () => {
                 callCount.set(serial, (callCount.get(serial) ?? 0) + 1)
                 running += 1
@@ -366,7 +362,7 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
                     setTimeout(() => {
                         running -= 1
                         if (shouldFail) {
-                            reject(new Error("upgrade failed"))
+                            reject(new Error("update failed"))
                             return
                         }
                         resolve()
@@ -381,26 +377,26 @@ suite("Bulk Firmware Upgrade Test Suite", function () {
                 "SN-1",
                 "MP5103#SN-1",
                 CONNECTED_STATUS,
-                createUpgrade("SN-1", false),
+                createUpdate("SN-1", false),
             ),
             buildMockInstrument(
                 "MP5103",
                 "SN-2",
                 "MP5103#SN-2",
                 CONNECTED_STATUS,
-                createUpgrade("SN-2", true),
+                createUpdate("SN-2", true),
             ),
             buildMockInstrument(
                 "MP5103",
                 "SN-3",
                 "MP5103#SN-3",
                 CONNECTED_STATUS,
-                createUpgrade("SN-3", false),
+                createUpdate("SN-3", false),
             ),
         ]
 
         const candidates = getEligibleMP5103Candidates(instruments)
-        const results = await runConcurrentBulkFirmwareUpgrade(
+        const results = await runConcurrentBulkFirmwareUpdate(
             candidates.map((candidate) => ({ candidate, slots: [1] })),
             "firmware.upg",
         )

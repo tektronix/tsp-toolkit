@@ -4,7 +4,7 @@ export const MP5103_MODEL = "MP5103"
 export const BULK_MP5103_CONTEXT_KEY = "tsp.hasMultipleAvailableMp5103"
 
 /**
- * Connection statuses that make an instrument eligible for a bulk upgrade, in
+ * Connection statuses that make an instrument eligible for a bulk update, in
  * order of preference when an instrument has more than one eligible connection.
  */
 const ELIGIBLE_STATUSES: readonly ConnectionStatus[] = [
@@ -13,41 +13,41 @@ const ELIGIBLE_STATUSES: readonly ConnectionStatus[] = [
     ConnectionStatus.Active,
 ]
 
-export interface BulkUpgradeConnectionLike {
+export interface BulkUpdateConnectionLike {
     addr: string
     updateInBackground(filepath: string, slot?: number): Promise<void>
 }
 
-export interface BulkUpgradeInstrumentLike {
+export interface BulkUpdateInstrumentLike {
     name: string
     info: {
         model: string
         serial_number: string
     }
-    connections: (BulkUpgradeConnectionLike & {
+    connections: (BulkUpdateConnectionLike & {
         status: ConnectionStatus | undefined
     })[]
 }
 
-export interface BulkUpgradeCandidate {
+export interface BulkUpdateCandidate {
     serialNumber: string
     instrumentName: string
     label: string
     description: string
-    connection: BulkUpgradeConnectionLike
+    connection: BulkUpdateConnectionLike
 }
 
-export interface BulkUpgradeSelectionItem {
+export interface BulkUpdateSelectionItem {
     id: string
     label: string
     description: string
 }
 
-export interface BulkUpgradeResult {
+export interface BulkUpdateResult {
     serialNumber: string
     instrumentName: string
     address: string
-    /** The slot that was upgraded, or `undefined` for the mainframe. */
+    /** The slot that was updated, or `undefined` for the mainframe. */
     slot: number | undefined
     success: boolean
     error?: string
@@ -56,15 +56,15 @@ export interface BulkUpgradeResult {
 export const MP5103_SLOTS: readonly number[] = [1, 2, 3]
 
 /**
- * What to upgrade on a single instrument: either the mainframe (`[undefined]`)
+ * What to update on a single instrument: either the mainframe (`[undefined]`)
  * or one or more module slots.
  */
-export interface BulkUpgradeTarget {
-    candidate: BulkUpgradeCandidate
+export interface BulkUpdateTarget {
+    candidate: BulkUpdateCandidate
     slots: (number | undefined)[]
 }
 
-export interface BulkUpgradeTargetItem {
+export interface BulkUpdateTargetItem {
     id: string
     serialNumber: string
     instrumentLabel: string
@@ -74,14 +74,14 @@ export interface BulkUpgradeTargetItem {
     description: string
 }
 
-export type BulkUpgradeTargetResolution =
-    | { targets: BulkUpgradeTarget[]; error?: undefined }
+export type BulkUpdateTargetResolution =
+    | { targets: BulkUpdateTarget[]; error?: undefined }
     | { targets?: undefined; error: string }
 
 export function getEligibleMP5103Candidates(
-    instruments: BulkUpgradeInstrumentLike[],
-): BulkUpgradeCandidate[] {
-    const dedupedBySerial = new Map<string, BulkUpgradeCandidate>()
+    instruments: BulkUpdateInstrumentLike[],
+): BulkUpdateCandidate[] {
+    const dedupedBySerial = new Map<string, BulkUpdateCandidate>()
 
     for (const instrument of instruments) {
         if (instrument.info.model !== MP5103_MODEL) {
@@ -121,14 +121,14 @@ export function getEligibleMP5103Candidates(
 }
 
 export function hasMultipleAvailableMP5103(
-    instruments: BulkUpgradeInstrumentLike[],
+    instruments: BulkUpdateInstrumentLike[],
 ): boolean {
     return getEligibleMP5103Candidates(instruments).length > 1
 }
 
-export function buildBulkUpgradeSelectionItems(
-    candidates: BulkUpgradeCandidate[],
-): BulkUpgradeSelectionItem[] {
+export function buildBulkUpdateSelectionItems(
+    candidates: BulkUpdateCandidate[],
+): BulkUpdateSelectionItem[] {
     return candidates.map((candidate) => ({
         id: candidate.serialNumber,
         label: candidate.label,
@@ -138,8 +138,8 @@ export function buildBulkUpgradeSelectionItems(
 
 export function resolveSelectedCandidates(
     selectedIds: string[],
-    candidates: BulkUpgradeCandidate[],
-): BulkUpgradeCandidate[] {
+    candidates: BulkUpdateCandidate[],
+): BulkUpdateCandidate[] {
     const selected = new Set(selectedIds)
 
     return candidates.filter((candidate) =>
@@ -155,9 +155,9 @@ export function slotLabel(slot: number | undefined): string {
  * Build one item for the mainframe and one for each slot of every candidate,
  * in candidate order.
  */
-export function buildBulkUpgradeTargetItems(
-    candidates: BulkUpgradeCandidate[],
-): BulkUpgradeTargetItem[] {
+export function buildBulkUpdateTargetItems(
+    candidates: BulkUpdateCandidate[],
+): BulkUpdateTargetItem[] {
     return candidates.flatMap((candidate) =>
         [undefined, ...MP5103_SLOTS].map((slot) => ({
             id: `${candidate.serialNumber}:${slot ?? "mainframe"}`,
@@ -174,7 +174,7 @@ export function buildBulkUpgradeTargetItems(
  * Enforce that mainframe and slot items are never selected together. The most
  * recently added item decides which kind is kept.
  */
-export function enforceBulkUpgradeTargetExclusivity<T>(
+export function enforceBulkUpdateTargetExclusivity<T>(
     previous: readonly T[],
     current: readonly T[],
     slotOf: (item: T) => number | undefined,
@@ -198,12 +198,12 @@ export function enforceBulkUpgradeTargetExclusivity<T>(
  * mainframe and slot selections cannot be mixed since they need different
  * firmware files.
  */
-export function resolveBulkUpgradeTargets(
+export function resolveBulkUpdateTargets(
     selectedIds: string[],
-    candidates: BulkUpgradeCandidate[],
-): BulkUpgradeTargetResolution {
+    candidates: BulkUpdateCandidate[],
+): BulkUpdateTargetResolution {
     const selected = new Set(selectedIds)
-    const items = buildBulkUpgradeTargetItems(candidates).filter((item) =>
+    const items = buildBulkUpdateTargetItems(candidates).filter((item) =>
         selected.has(item.id),
     )
 
@@ -235,27 +235,27 @@ export function resolveBulkUpgradeTargets(
 }
 
 /**
- * Upgrade all targets. Instruments are upgraded concurrently, while the slots
- * of a single instrument are upgraded one at a time.
+ * Update all targets. Instruments are updated concurrently, while the slots
+ * of a single instrument are updated one at a time.
  */
-export async function runConcurrentBulkFirmwareUpgrade(
-    targets: BulkUpgradeTarget[],
+export async function runConcurrentBulkFirmwareUpdate(
+    targets: BulkUpdateTarget[],
     firmwarePath: string,
     onTargetDone?: (
         completed: number,
         total: number,
-        result: BulkUpgradeResult,
+        result: BulkUpdateResult,
     ) => void,
-): Promise<BulkUpgradeResult[]> {
+): Promise<BulkUpdateResult[]> {
     let completed = 0
     const total = targets.reduce((sum, t) => sum + t.slots.length, 0)
 
     const perInstrument = await Promise.all(
         targets.map(async ({ candidate, slots }) => {
-            const results: BulkUpgradeResult[] = []
+            const results: BulkUpdateResult[] = []
 
             for (const slot of slots) {
-                let result: BulkUpgradeResult
+                let result: BulkUpdateResult
 
                 try {
                     await candidate.connection.updateInBackground(

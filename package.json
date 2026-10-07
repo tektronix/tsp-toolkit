@@ -243,8 +243,8 @@
                 "icon": "$(chip)"
             },
             {
-                "command": "InstrumentsExplorer.upgradeFirmwareBulkMp5103",
-                "title": "Upgrade MP5103 Firmware (Bulk)",
+                "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
+                "title": "Update MP5103 Firmware (Bulk)",
                 "category": "TSP",
                 "icon": "$(chip)"
             },
@@ -571,7 +571,7 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmwareBulkMp5103",
+                    "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
                     "when": "view == InstrumentsExplorer && tsp.hasMultipleAvailableMp5103",
                     "group": "navigation"
                 },
@@ -596,7 +596,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.upgradeFirmwareBulkMp5103",
+                    "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
                     "when": "false"
                 },
                 {
