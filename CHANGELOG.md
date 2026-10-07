@@ -21,11 +21,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
+- Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
+- Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
 
 ### Added
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
 - **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
 - **tsp-toolkit-language-interop** - Print instrument errors (if any) when calling TSP functions
+- Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
 
 ## [1.5.2]
 
