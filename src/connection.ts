@@ -512,6 +512,15 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                         return false
                     }
 
+                    if (login_details.cancelled) {
+                        Log.info(
+                            "Login cancelled by user (Escape pressed)",
+                            LOGLOC,
+                        )
+                        this.status = orig_status
+                        return false
+                    }
+
                     this._keyring = await this.login(login_details)
 
                     // check after await: login process may still complete after cancellation
@@ -870,7 +879,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         username: boolean
         password: boolean
         keyring?: string
-    }): Promise<{ username?: string; password?: string; keyring?: string }> {
+    }): Promise<{
+        username?: string
+        password?: string
+        keyring?: string
+        cancelled?: boolean
+    }> {
         const LOGLOC = {
             file: "instruments.ts",
             func: "Connection.promptDetails()",
@@ -894,22 +908,40 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         }
 
         if (reqs.username) {
-            credentials.username = await vscode.window.showInputBox({
+            const username = await vscode.window.showInputBox({
                 title: "Enter Username",
                 placeHolder: "Username -- Leave blank for default user",
                 prompt: "Enter the username for the instrument to which you are trying to connect.",
                 ignoreFocusOut: true,
             })
+
+            // Escape was pressed: cancel the login attempt instead of treating it as a blank username
+            if (username === undefined) {
+                return { cancelled: true }
+            }
+
+            credentials.username = username
         }
 
         if (reqs.password) {
-            credentials.password = await vscode.window.showInputBox({
+            const password = await vscode.window.showInputBox({
                 title: "Enter Password",
                 placeHolder: "password",
                 password: true,
                 prompt: "Enter the password for the instrument to which you are trying to connect.",
                 ignoreFocusOut: true,
+                validateInput: (value: string) =>
+                    value.length === 0
+                        ? "Password field cannot be empty"
+                        : null,
             })
+
+            // Escape was pressed: cancel the login attempt instead of treating it as incorrect credentials
+            if (password === undefined) {
+                return { cancelled: true }
+            }
+
+            credentials.password = password
         }
 
         return credentials
