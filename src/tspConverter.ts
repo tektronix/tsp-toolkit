@@ -80,9 +80,12 @@ export async function wrapTspToPython(
     // Run converter
     let result: { ok: boolean; code?: string; diagnostics: Diagnostic[] }
     try {
+        const embedTspSource = vscode.workspace
+            .getConfiguration("tsp")
+            .get<boolean>("embedTspSource", true)
         result = converter.convertTspToPython(source, {
             className,
-            // scriptPath: fileUri.fsPath, // Commented out for now, will re-enable once the setting is available
+            ...(embedTspSource ? {} : { scriptPath: uri.fsPath }),
         })
     } catch (err) {
         vscode.window.showErrorMessage(
