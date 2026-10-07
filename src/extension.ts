@@ -850,7 +850,6 @@ async function startBulkMP5103FirmwareUpdate(): Promise<void> {
             detail: `${targetSummary}\n\nOpen terminals for the selected instruments will be closed. Do NOT power off or disconnect the instruments until the update completes.`,
         },
         "Start Update",
-        "Cancel",
     )
 
     if (confirmation !== "Start Update") {
@@ -858,6 +857,7 @@ async function startBulkMP5103FirmwareUpdate(): Promise<void> {
     }
 
     _bulkFirmwareOutput.clear()
+    _bulkFirmwareOutput.show()
     _bulkFirmwareOutput.appendLine("Starting bulk MP5103 firmware update")
     _bulkFirmwareOutput.appendLine(
         `Instruments: ${targets.length}, Updates: ${jobCount}, Firmware: ${firmwarePath}`,
