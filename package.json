@@ -388,6 +388,12 @@
                     "description": "Maximum time, in seconds, to wait for an instrument connection to complete before it is cancelled and the user is notified. Set to 0 to disable the timeout.",
                     "scope": "application"
                 },
+                "tsp.embedTspSource": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Embed the source TSP script in generated Python wrappers. When disabled, the source TSP file must be provided alongside the generated Python file in order to use the generated Python file.",
+                    "scope": "application"
+                },
                 "tsp.tspLinkSystemConfigurations": {
                     "type": "array",
                     "default": [],
