@@ -1,3 +1,4 @@
+import { statSync } from "fs"
 import * as vscode from "vscode"
 
 import { ProgressLocation } from "vscode"
@@ -39,6 +40,30 @@ let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
 let _triggerFlowWebViewManager: TriggerFlowWebViewManager
 let _scriptGenWebViewManager: ScriptGenWebViewManager
+import {
+    buildBulkUpdateSelectionItems,
+    buildBulkUpdateTargetItems,
+    BulkUpdateCandidate,
+    BulkUpdateSelectionItem,
+    BulkUpdateTarget,
+    BulkUpdateTargetItem,
+    enforceBulkUpdateTargetExclusivity,
+    getEligibleMP5103Candidates,
+    resolveBulkUpdateTargets,
+    resolveSelectedCandidates,
+    runConcurrentBulkFirmwareUpdate,
+    slotLabel,
+} from "./bulkFirmwareUpdate"
+
+let _bulkFirmwareOutput: vscode.OutputChannel
+
+interface BulkUpdateQuickPickItem extends vscode.QuickPickItem {
+    id: string
+}
+
+interface BulkUpdateTargetQuickPickItem extends vscode.QuickPickItem {
+    target?: BulkUpdateTargetItem
+}
 
 /**
  * Represents a contributed TSP Toolkit configuration setting.
@@ -361,6 +386,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     Log.debug("Creating new InstrumentExplorer", LOGLOC)
     _instrExplorer = new InstrumentsExplorer(context)
+    _bulkFirmwareOutput = vscode.window.createOutputChannel(
+        "TSP Bulk Firmware Update",
+    )
+    context.subscriptions.push(_bulkFirmwareOutput)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
@@ -469,6 +498,12 @@ export async function activate(context: vscode.ExtensionContext) {
             name: "InstrumentsExplorer.updateFirmware",
             cb: async (e: Instrument) => {
                 await e.update()
+            },
+        },
+        {
+            name: "InstrumentsExplorer.updateFirmwareBulkMp5103",
+            cb: async () => {
+                await startBulkMP5103FirmwareUpdate()
             },
         },
         // {
@@ -717,6 +752,250 @@ export async function activate(context: vscode.ExtensionContext) {
     Log.info("TSP Toolkit activation complete", LOGLOC)
 
     return base_api
+}
+
+async function startBulkMP5103FirmwareUpdate(): Promise<void> {
+    const candidates = getEligibleMP5103Candidates(
+        InstrumentProvider.instance.instruments,
+    )
+
+    if (candidates.length <= 1) {
+        vscode.window.showWarningMessage(
+            "Bulk MP5103 firmware update requires at least two available (Active, Connecting, or Connected) MP5103 instruments.",
+        )
+        return
+    }
+
+    const selectionItems: BulkUpdateQuickPickItem[] =
+        buildBulkUpdateSelectionItems(candidates).map(
+            (item: BulkUpdateSelectionItem) => ({
+                id: item.id,
+                label: item.label,
+                description: item.description,
+            }),
+        )
+
+    const selected = await vscode.window.showQuickPick(selectionItems, {
+        canPickMany: true,
+        title: "Select MP5103 instruments",
+        placeHolder: "Choose one or more instruments, or select all",
+        ignoreFocusOut: true,
+    })
+
+    if (!selected) {
+        return
+    }
+
+    const selectedCandidates = resolveSelectedCandidates(
+        selected.map((item) => item.id),
+        candidates,
+    )
+
+    if (selectedCandidates.length === 0) {
+        vscode.window.showWarningMessage(
+            "No MP5103 instruments selected. Bulk firmware update canceled.",
+        )
+        return
+    }
+
+    const targets = await pickBulkUpdateTargets(selectedCandidates)
+    if (!targets) {
+        return
+    }
+
+    const firmwareSelection = await vscode.window.showOpenDialog({
+        title: "Select Firmware File",
+        filters: {
+            "Firmware Files": ["x", "upg"],
+        },
+        openLabel: "Update",
+    })
+
+    if (!firmwareSelection || firmwareSelection.length === 0) {
+        return
+    }
+
+    const firmwarePath = firmwareSelection[0].fsPath
+    const firmwareName = firmwareSelection[0].fsPath.split(/[/\\]/).pop() ?? ""
+    const updatesMainframes = targets[0].slots[0] === undefined
+    const jobCount = targets.reduce((sum, t) => sum + t.slots.length, 0)
+    const targetSummary = targets
+        .map(
+            (t) =>
+                `${t.candidate.label}: ${t.slots.map((slot) => slotLabel(slot)).join(", ")}`,
+        )
+        .join("\n")
+
+    let firmwareSize: number
+    try {
+        firmwareSize = statSync(firmwarePath).size
+    } catch (error) {
+        vscode.window.showErrorMessage(
+            `Unable to read firmware file '${firmwareName}': ${error instanceof Error ? error.message : String(error)}`,
+        )
+        return
+    }
+
+    if (firmwareSize === 0) {
+        vscode.window.showErrorMessage("Firmware file is empty (0 bytes)")
+        return
+    }
+
+    const confirmation = await vscode.window.showWarningMessage(
+        updatesMainframes
+            ? `Update ${targets.length} MP5103 mainframes using firmware '${firmwareName}'?`
+            : `Update ${jobCount} slots on ${targets.length} MP5103 instruments using firmware '${firmwareName}'?`,
+        {
+            modal: true,
+            detail: `${targetSummary}\n\nOpen terminals for the selected instruments will be closed. Do NOT power off or disconnect the instruments until the update completes.`,
+        },
+        "Start Update",
+    )
+
+    if (confirmation !== "Start Update") {
+        return
+    }
+
+    _bulkFirmwareOutput.clear()
+    _bulkFirmwareOutput.show()
+    _bulkFirmwareOutput.appendLine("Starting bulk MP5103 firmware update")
+    _bulkFirmwareOutput.appendLine(
+        `Instruments: ${targets.length}, Updates: ${jobCount}, Firmware: ${firmwarePath}`,
+    )
+    for (const line of targetSummary.split("\n")) {
+        _bulkFirmwareOutput.appendLine(`  ${line}`)
+    }
+
+    const progressIncrement = 100 / jobCount
+    const results = await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: "Bulk MP5103 firmware update in progress",
+            cancellable: false,
+        },
+        async (progress) => {
+            progress.report({
+                message: `0/${jobCount} complete`,
+            })
+
+            return runConcurrentBulkFirmwareUpdate(
+                targets,
+                firmwarePath,
+                (completed, total, result) => {
+                    progress.report({
+                        increment: progressIncrement,
+                        message: `${completed}/${total} complete`,
+                    })
+
+                    if (result.success) {
+                        _bulkFirmwareOutput.appendLine(
+                            `[SUCCESS] ${result.instrumentName} (${result.serialNumber}) @ ${result.address} [${slotLabel(result.slot)}]`,
+                        )
+                    } else {
+                        _bulkFirmwareOutput.appendLine(
+                            `[FAILED] ${result.instrumentName} (${result.serialNumber}) @ ${result.address} [${slotLabel(result.slot)}]: ${result.error ?? "Unknown error"}`,
+                        )
+                    }
+                },
+            )
+        },
+    )
+
+    const successCount = results.filter((result) => result.success).length
+    const failureCount = results.length - successCount
+    _bulkFirmwareOutput.appendLine(
+        `Completed. Success: ${successCount}, Failed: ${failureCount}`,
+    )
+
+    const action = await vscode.window.showInformationMessage(
+        `Bulk MP5103 firmware update complete: ${successCount} succeeded, ${failureCount} failed.`,
+        "View Details",
+    )
+
+    if (action === "View Details") {
+        _bulkFirmwareOutput.show(true)
+    }
+}
+
+/**
+ * Ask which part of each selected MP5103 to update: either the mainframes, or
+ * one or more slots per instrument (which can differ between instruments).
+ *
+ * @returns The per-instrument targets, or `undefined` if canceled.
+ */
+async function pickBulkUpdateTargets(
+    candidates: BulkUpdateCandidate[],
+): Promise<BulkUpdateTarget[] | undefined> {
+    const DEFAULT_TITLE = "Select the mainframes OR the slots to update"
+    const items: BulkUpdateTargetQuickPickItem[] = []
+    for (const target of buildBulkUpdateTargetItems(candidates)) {
+        if (target.slot === undefined) {
+            items.push({
+                label: target.instrumentLabel,
+                kind: vscode.QuickPickItemKind.Separator,
+            })
+        }
+        items.push({
+            label: target.label,
+            description: target.description,
+            target,
+        })
+    }
+
+    const quickPick =
+        vscode.window.createQuickPick<BulkUpdateTargetQuickPickItem>()
+    quickPick.items = items
+    quickPick.canSelectMany = true
+    quickPick.ignoreFocusOut = true
+    quickPick.title = DEFAULT_TITLE
+    quickPick.placeholder =
+        "Mainframe and slot selections are mutually exclusive; each instrument needs at least one"
+
+    return new Promise<BulkUpdateTarget[] | undefined>((resolve) => {
+        let previous: readonly BulkUpdateTargetQuickPickItem[] = []
+        let done = false
+
+        quickPick.onDidChangeSelection((selection) => {
+            const allowed = enforceBulkUpdateTargetExclusivity(
+                previous,
+                selection,
+                (item) => item.target?.slot,
+            )
+
+            previous = allowed
+            if (allowed.length !== selection.length) {
+                quickPick.selectedItems = allowed
+            }
+            quickPick.title = DEFAULT_TITLE
+        })
+
+        quickPick.onDidAccept(() => {
+            const resolution = resolveBulkUpdateTargets(
+                quickPick.selectedItems.flatMap((item) =>
+                    item.target ? [item.target.id] : [],
+                ),
+                candidates,
+            )
+
+            if (resolution.error !== undefined) {
+                quickPick.title = resolution.error
+                return
+            }
+
+            done = true
+            resolve(resolution.targets)
+            quickPick.hide()
+        })
+
+        quickPick.onDidHide(() => {
+            if (!done) {
+                resolve(undefined)
+            }
+            quickPick.dispose()
+        })
+
+        quickPick.show()
+    })
 }
 
 // Called when the extension is deactivated.
