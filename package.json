@@ -243,6 +243,12 @@
                 "icon": "$(chip)"
             },
             {
+                "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
+                "title": "Update Firmware on Multiple MP5103 Instruments",
+                "category": "TSP",
+                "icon": "$(chip)"
+            },
+            {
                 "command": "InstrumentsExplorer.save",
                 "title": "Save",
                 "category": "TSP",
@@ -571,6 +577,11 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
+                    "when": "view == InstrumentsExplorer && tsp.hasMultipleAvailableMp5103",
+                    "group": "navigation"
+                },
+                {
                     "command": "systemConfigurations.addSystem",
                     "when": "view == systemConfigurations",
                     "group": "navigation"
@@ -588,6 +599,10 @@
                 },
                 {
                     "command": "InstrumentsExplorer.updateFirmware",
+                    "when": "false"
+                },
+                {
+                    "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
                     "when": "false"
                 },
                 {

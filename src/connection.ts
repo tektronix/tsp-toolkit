@@ -9,32 +9,25 @@ import { LOG_DIR } from "./utility"
 import { Log } from "./logging"
 import { Instrument } from "./instrument"
 import { CULL_THRESHOLD_MS, InstrumentProvider } from "./instrumentProvider"
+import { ConnectionStatus } from "./connectionStatus"
+
+export { ConnectionStatus }
 
 /**
- * The possible statuses of a connection interface/protocol
+ * How long to wait for an instrument terminal to close after sending `.exit`
  */
-export enum ConnectionStatus {
-    /**
-     * This instrument is ignored. This variant should not be used for interfaces
-     */
-    Ignored,
-    /**
-     * This connection interface was deemed inactive and will not respond to connection attempts
-     */
-    Inactive,
-    /**
-     * This connection interface was deemed active and will respond to connection attempts
-     */
-    Active,
-    /**
-     * This connection interface is in the process of connecting to the instrument
-     */
-    Connecting,
-    /**
-     * This connection interface was deemed connected and already has a terminal associated with it
-     */
-    Connected,
-}
+const TERMINAL_EXIT_TIMEOUT_MS = 10_000
+
+/**
+ * How long to wait for an in-progress connection attempt to finish before
+ * updating. This is generous because connecting may prompt the user to log in.
+ */
+const CONNECTING_WAIT_TIMEOUT_MS = 120_000
+
+/**
+ * Matches the credential prompt that kic prints when it needs to log in
+ */
+const LOGIN_PROMPT_PATTERN = /Enter (Username|Password)/
 
 export type LoginStatus =
     | {
@@ -129,6 +122,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     private _terminal: vscode.Terminal | undefined = undefined
     private _background_process: child.ChildProcess | undefined = undefined
+    private _updateInProgress = false
 
     readonly onChangedStatus: vscode.Event<ConnectionStatus | undefined> =
         this._onChangedStatus.event
@@ -1487,6 +1481,216 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         )
     }
 
+    /**
+     * Update the instrument using a background `kic update` process and wait for
+     * the update to finish.
+     *
+     * If the connection is still connecting, this waits for the connection
+     * attempt to finish first so the update does not race the new terminal.
+     * Any open terminal for this connection is then closed, since the instrument
+     * cannot be updated while the terminal session holds the connection.
+     *
+     * @param filepath The path to the update file
+     * @param slot (optional) The slot of the mainframe to update
+     * @throws Error if the connection attempt or terminal did not finish in time,
+     * or the update failed
+     */
+    async updateInBackground(filepath: string, slot?: number): Promise<void> {
+        this._updateInProgress = true
+        try {
+            await this.runUpdateInBackground(filepath, slot)
+        } finally {
+            this._updateInProgress = false
+        }
+    }
+
+    /**
+     * Whether a background update started by `updateInBackground` is running.
+     */
+    get updateInProgress(): boolean {
+        return this._updateInProgress
+    }
+
+    private async runUpdateInBackground(
+        filepath: string,
+        slot?: number,
+    ): Promise<void> {
+        const LOGLOC = {
+            file: "connection.ts",
+            func: "Connection.updateInBackground()",
+        }
+
+        if (this.status === ConnectionStatus.Connecting) {
+            Log.debug("Waiting for connection attempt to finish", LOGLOC)
+
+            const finished = await new Promise<boolean>((resolve) => {
+                const started = Date.now()
+                const checkStatus = setInterval(() => {
+                    if (this.status !== ConnectionStatus.Connecting) {
+                        clearInterval(checkStatus)
+                        resolve(true)
+                    } else if (
+                        Date.now() - started >
+                        CONNECTING_WAIT_TIMEOUT_MS
+                    ) {
+                        clearInterval(checkStatus)
+                        resolve(false)
+                    }
+                }, 100) // Check every 100ms
+            })
+
+            if (!finished) {
+                throw new Error(
+                    "Timed out waiting for the instrument to finish connecting",
+                )
+            }
+
+            Log.debug(
+                `Connection attempt finished with status ${statusToString(this.status)}`,
+                LOGLOC,
+            )
+        }
+
+        if (this._terminal) {
+            Log.debug("Closing terminal before update", LOGLOC)
+            this._terminal.sendText(".exit")
+
+            const closed = await new Promise<boolean>((resolve) => {
+                const started = Date.now()
+                const checkTerminal = setInterval(() => {
+                    if (this._terminal === undefined) {
+                        clearInterval(checkTerminal)
+                        resolve(true)
+                    } else if (
+                        Date.now() - started >
+                        TERMINAL_EXIT_TIMEOUT_MS
+                    ) {
+                        clearInterval(checkTerminal)
+                        resolve(false)
+                    }
+                }, 100) // Check every 100ms
+            })
+
+            if (!closed) {
+                throw new Error(
+                    "Timed out waiting for the instrument terminal to close",
+                )
+            }
+        }
+
+        // Wait for any in-flight background work (such as a status ping) on this
+        // or any other connection to the same instrument to finish, so the update
+        // has the instrument to itself.
+        const busy = (this._parent?.connections ?? [this])
+            .map((c) => c._background_process)
+            .filter((p): p is child.ChildProcess => p !== undefined)
+
+        if (busy.length > 0) {
+            Log.debug("Background process is busy. Waiting...", LOGLOC)
+
+            await Promise.all(
+                busy.map(
+                    (p) =>
+                        new Promise<void>((resolve) => {
+                            if (p.exitCode !== null || p.signalCode !== null) {
+                                resolve()
+                                return
+                            }
+                            p.on("close", () => resolve())
+                        }),
+                ),
+            )
+        }
+
+        const args = [
+            "--log-file",
+            join(
+                LOG_DIR,
+                `${new Date().toISOString().substring(0, 10)}-kic.log`,
+            ),
+            "--no-color",
+            "update",
+            this.addr,
+            filepath,
+        ]
+
+        if (slot !== undefined) {
+            args.push("--slot", slot.toString())
+        }
+
+        if (this._keyring) {
+            args.push("--keyring", this._keyring)
+        }
+
+        // stdin is ignored, but kic reads credentials directly from the console,
+        // so a login prompt is detected below and treated as a failure.
+        const backgroundProcess = child.spawn(EXECUTABLE, args, {
+            stdio: ["ignore", "pipe", "pipe"],
+        })
+
+        this._background_process = backgroundProcess
+
+        try {
+            const { code, output, loginRequested } = await new Promise<{
+                code: number | null
+                output: string
+                loginRequested: boolean
+            }>((resolve, reject) => {
+                let output = ""
+                let loginRequested = false
+
+                backgroundProcess.stdout?.on("data", (chunk) => {
+                    output += chunk
+                })
+
+                backgroundProcess.stderr?.on("data", (chunk) => {
+                    Log.trace(`Update stderr: ${chunk}`, LOGLOC)
+                    output += chunk
+
+                    if (!loginRequested && LOGIN_PROMPT_PATTERN.test(output)) {
+                        loginRequested = true
+                        Log.warn(
+                            "Update requested login credentials, terminating",
+                            LOGLOC,
+                        )
+                        this.terminateBackgroundProcess(backgroundProcess)
+                    }
+                })
+
+                backgroundProcess.on("error", reject)
+
+                backgroundProcess.on("close", (code) => {
+                    resolve({ code, output, loginRequested })
+                })
+            })
+
+            Log.trace(`Update process exited with code: ${code}`, LOGLOC)
+
+            if (loginRequested) {
+                throw new Error(
+                    "The instrument requested login credentials. Connect to it once to save its credentials, then try again.",
+                )
+            }
+
+            if (code !== 0) {
+                const lastLine =
+                    output
+                        .split(/\r?\n/)
+                        .map((line) => line.trim())
+                        .filter((line) => line.length > 0)
+                        .pop() ?? ""
+
+                throw new Error(
+                    lastLine || `kic update exited with code ${code}`,
+                )
+            }
+        } finally {
+            if (this._background_process === backgroundProcess) {
+                this._background_process = undefined
+            }
+        }
+    }
+
     async startTspOutputSaving(output: string) {
         const LOGLOC = {
             file: "instruments.ts",
@@ -1606,6 +1810,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
      * still reachable.
      */
     async getUpdatedStatus(): Promise<void> {
+        // Polling an instrument while it is being updated competes with the
+        // update for the instrument's attention and can cause the update to fail.
+        if (this._parent?.connections.some((c) => c.updateInProgress)) {
+            return
+        }
+
         const info = await this.ping(1000)
 
         if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
