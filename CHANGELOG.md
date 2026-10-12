@@ -23,6 +23,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
 - Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
 - Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
+- Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
 
 ### Added
 - Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)

@@ -56,7 +56,12 @@ export async function configure_initial_workspace_configurations() {
         )
         await updateConfiguration(
             "Lua.workspace.ignoreDir",
-            [],
+            ["*.tsp", "*.tspa"],
+            vscode.ConfigurationTarget.Workspace,
+        )
+        await updateConfiguration(
+            "Lua.diagnostics.ignoredFiles",
+            "Opened",
             vscode.ConfigurationTarget.Workspace,
         )
         await updateConfiguration(
