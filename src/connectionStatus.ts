@@ -6,9 +6,9 @@
  */
 export enum ConnectionStatus {
     /**
-     * This instrument is ignored. This variant should not be used for interfaces
+     * This instrument is hidden. This variant should not be used for interfaces
      */
-    Ignored,
+    Hidden,
     /**
      * This connection interface was deemed inactive and will not respond to connection attempts
      */

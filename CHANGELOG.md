@@ -20,12 +20,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.6.0]
 
 ### Fixed
+- Connected status reverting to Active during discovery after a typed connection.
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
 - Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
 - Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
 - Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
 
 ### Added
+- Persistent Hidden Instruments and automatic Show before connecting.
 - Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
 - **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
@@ -33,6 +35,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Include documentation strings for functions and globals
 - **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
 - Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+
+### Changed
+- Replace Remove with Hide, using the crossed-eye icon.
+
 
 ## [1.5.2]
 
