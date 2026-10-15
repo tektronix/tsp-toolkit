@@ -6,7 +6,10 @@ import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
 import { TraceListener } from "./traceListener"
 import { appendTraceEvent } from "./traceOutputChannel"
-import { createTraceSessionId } from "./traceSession"
+import {
+    buildTraceCliArguments,
+    createTraceSessionId,
+} from "./traceSession"
 import { IIDNInfo, InstrInfo, IoType } from "./resourceManager"
 import { LOG_DIR } from "./utility"
 import { Log } from "./logging"
@@ -667,10 +670,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 ),
                 "connect",
                 this.addr,
-                "--trace-socket",
-                `${trace_address.address}:${trace_address.port}`,
-                "--trace-session-id",
-                trace_session_id,
+                ...buildTraceCliArguments(trace_address, trace_session_id),
             ]
 
             for (const a of additional_terminal_args) {

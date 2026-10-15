@@ -33,6 +33,40 @@ suite("TraceJsonlParser Test Suite", function () {
         assert.deepEqual(records[1], validEvent)
     })
 
+    test("preserves UTF-8 when a multibyte character is split", function () {
+        const event: TraceEvent = {
+            ...validEvent,
+            byte_length: 2,
+            data: "µ",
+        }
+        const records: TraceEvent[] = []
+        const parser = new TraceJsonlParser((record) => records.push(record))
+        const encoded = Buffer.from(`${JSON.stringify(event)}\n`)
+        const characterIndex = encoded.indexOf(Buffer.from("µ"))
+
+        parser.push(encoded.subarray(0, characterIndex + 1))
+        parser.push(encoded.subarray(characterIndex + 1))
+
+        assert.deepEqual(records, [event])
+    })
+
+    test("delivers Base64 payload events", function () {
+        const event: TraceEvent = {
+            ...validEvent,
+            direction: "read",
+            protocol: "visa",
+            encoding: "base64",
+            byte_length: 3,
+            data: "AP8Q",
+        }
+        const records: TraceEvent[] = []
+        const parser = new TraceJsonlParser((record) => records.push(record))
+
+        parser.push(`${JSON.stringify(event)}\n`)
+
+        assert.deepEqual(records, [event])
+    })
+
     test("isolates malformed lines and continues parsing", function () {
         const records: unknown[] = []
         const malformed: string[] = []
@@ -44,6 +78,29 @@ suite("TraceJsonlParser Test Suite", function () {
         parser.push(`{bad json}\n${JSON.stringify(validEvent)}\n`)
 
         assert.deepEqual(malformed, ["{bad json}"])
+        assert.deepEqual(records, [validEvent])
+    })
+
+    test("contains record callback failures and continues parsing", function () {
+        const records: TraceEvent[] = []
+        const malformed: string[] = []
+        let shouldFail = true
+        const parser = new TraceJsonlParser(
+            (record) => {
+                if (shouldFail) {
+                    shouldFail = false
+                    throw new Error("display failure")
+                }
+                records.push(record)
+            },
+            (line) => malformed.push(line),
+        )
+
+        parser.push(
+            `${JSON.stringify(validEvent)}\n${JSON.stringify(validEvent)}\n`,
+        )
+
+        assert.deepEqual(malformed, [JSON.stringify(validEvent)])
         assert.deepEqual(records, [validEvent])
     })
 

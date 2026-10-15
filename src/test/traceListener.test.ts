@@ -68,4 +68,94 @@ suite("TraceListener Test Suite", function () {
         socket.destroy()
         await listener.dispose()
     })
+
+    test("finishes an incomplete record when the socket disconnects", async function () {
+        const malformed: string[] = []
+        let resolveMalformed: () => void = () => {}
+        const receivedMalformed = new Promise<void>((resolve) => {
+            resolveMalformed = resolve
+        })
+        const listener = new TraceListener(
+            () => {},
+            (line) => {
+                malformed.push(line)
+                resolveMalformed()
+            },
+        )
+        const address = await listener.start()
+        const socket = net.createConnection(address.port, address.address)
+
+        await once(socket, "connect")
+        socket.end('{"session_id":')
+        await receivedMalformed
+
+        assert.deepEqual(malformed, ['{"session_id":'])
+        await listener.dispose()
+    })
+
+    test("disposes the listening socket and supports multiple sessions", async function () {
+        const records: TraceEvent[] = []
+        let resolveRecords: () => void = () => {}
+        const receivedRecords = new Promise<void>((resolve) => {
+            resolveRecords = resolve
+        })
+        const listener = new TraceListener((record) => {
+            records.push(record)
+            if (records.length === 2) {
+                resolveRecords()
+            }
+        })
+        const address = await listener.start()
+        const firstSocket = net.createConnection(address.port, address.address)
+        const secondSocket = net.createConnection(address.port, address.address)
+
+        await Promise.all([
+            once(firstSocket, "connect"),
+            once(secondSocket, "connect"),
+        ])
+        firstSocket.end(
+            JSON.stringify({ ...validEvent, session_id: "session-1" }) + "\n",
+        )
+        secondSocket.end(
+            JSON.stringify({ ...validEvent, session_id: "session-2" }) + "\n",
+        )
+        await receivedRecords
+
+        assert.deepEqual(records.map((record) => record.session_id).sort(), [
+            "session-1",
+            "session-2",
+        ])
+
+        await listener.dispose()
+        assert.isUndefined(listener.address)
+    })
+
+    test("isolates malformed input from another socket session", async function () {
+        const records: TraceEvent[] = []
+        let resolveRecord: () => void = () => {}
+        const receivedRecord = new Promise<void>((resolve) => {
+            resolveRecord = resolve
+        })
+        const listener = new TraceListener((record) => {
+            records.push(record)
+            resolveRecord()
+        })
+        const address = await listener.start()
+        const malformedSocket = net.createConnection(
+            address.port,
+            address.address,
+        )
+        const validSocket = net.createConnection(address.port, address.address)
+
+        await Promise.all([
+            once(malformedSocket, "connect"),
+            once(validSocket, "connect"),
+        ])
+        malformedSocket.end("{bad json}\n")
+        validSocket.end(`${JSON.stringify(validEvent)}\n`)
+        await receivedRecord
+
+        assert.deepEqual(records, [validEvent])
+        await listener.dispose()
+    })
 })
