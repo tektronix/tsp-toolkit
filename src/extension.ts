@@ -35,6 +35,11 @@ import {
     isWindows,
 } from "./dependencyChecker"
 import { ExtraActionsWebView } from "./ExtraActionsWebView"
+import {
+    clearTraceOutputChannel,
+    initializeTraceOutputChannel,
+    showTraceOutputChannel,
+} from "./traceOutputChannel"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
@@ -390,6 +395,7 @@ export async function activate(context: vscode.ExtensionContext) {
         "TSP Bulk Firmware Update",
     )
     context.subscriptions.push(_bulkFirmwareOutput)
+    initializeTraceOutputChannel(context)
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
@@ -397,6 +403,8 @@ export async function activate(context: vscode.ExtensionContext) {
     registerCommands(context, [
         { name: "tsp.openTerminal", cb: pickConnection },
         { name: "tsp.openTerminalIP", cb: createTerminal },
+        { name: "tsp.showInstrumentIoTrace", cb: showTraceOutputChannel },
+        { name: "tsp.clearInstrumentIoTrace", cb: clearTraceOutputChannel },
         {
             name: "InstrumentsExplorer.connect",
             cb: async () => {

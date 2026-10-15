@@ -196,6 +196,18 @@
                 "icon": "$(run)"
             },
             {
+                "command": "tsp.showInstrumentIoTrace",
+                "title": "Show Instrument I/O Trace",
+                "category": "TSP",
+                "icon": "$(output)"
+            },
+            {
+                "command": "tsp.clearInstrumentIoTrace",
+                "title": "Clear Instrument I/O Trace",
+                "category": "TSP",
+                "icon": "$(clear-all)"
+            },
+            {
                 "command": "InstrumentsExplorer.refresh",
                 "title": "Refresh",
                 "icon": {
