@@ -125,6 +125,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
     private _terminal: vscode.Terminal | undefined = undefined
     private _trace_listener: TraceListener | undefined = undefined
+    private _terminal_close_listener: vscode.Disposable | undefined = undefined
     private _background_process: child.ChildProcess | undefined = undefined
     private _updateInProgress = false
 
@@ -146,8 +147,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     }
 
     dispose() {
-        this._trace_listener?.dispose().catch(() => {})
-        this._trace_listener = undefined
+        this._terminal_close_listener?.dispose()
+        this._terminal_close_listener = undefined
+        this.disposeTraceListener().catch(() => {})
 
         if (this._terminal) {
             this._terminal.dispose()
@@ -156,6 +158,12 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         this.terminateBackgroundProcess(this._background_process)
         this._onChangedStatus.dispose()
+    }
+
+    private async disposeTraceListener(): Promise<void> {
+        const listener = this._trace_listener
+        this._trace_listener = undefined
+        await listener?.dispose()
     }
 
     enable(enable: boolean) {
@@ -722,14 +730,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             if (cancelIfRequested()) {
                 this._terminal.dispose()
                 this._terminal = undefined
-                await this._trace_listener.dispose()
-                this._trace_listener = undefined
+                await this.disposeTraceListener()
                 return false
             }
 
             this.status = ConnectionStatus.Connected
 
-            vscode.window.onDidCloseTerminal((t) => {
+            this._terminal_close_listener?.dispose()
+            this._terminal_close_listener = vscode.window.onDidCloseTerminal((t) => {
                 Log.info("Terminal closed", LOGLOC)
 
                 if (
@@ -743,6 +751,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 ) {
                     this.status = ConnectionStatus.Active
                     this._terminal = undefined
+                    this._terminal_close_listener?.dispose()
+                    this._terminal_close_listener = undefined
+                    this.disposeTraceListener().catch(() => {})
 
                     if (
                         t.exitStatus?.reason !==
@@ -765,6 +776,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
             return true
         } finally {
+            if (this._terminal === undefined) {
+                await this.disposeTraceListener().catch(() => {})
+            }
             cancellationListener.dispose()
         }
     }
