@@ -5,6 +5,7 @@ import { assert } from "chai"
 import { suite, test } from "mocha"
 
 import { TraceListener } from "../traceListener"
+import { formatTraceEvent } from "../traceFormatter"
 import { TraceEvent } from "../traceParser"
 
 const validEvent: TraceEvent = {
@@ -157,5 +158,47 @@ suite("TraceListener Test Suite", function () {
 
         assert.deepEqual(records, [validEvent])
         await listener.dispose()
+    })
+
+    test("consumes fake producer JSONL and formats correlated live output", async function () {
+        const outputLines: string[] = []
+        let resolveOutput: () => void = () => {}
+        const receivedOutput = new Promise<void>((resolve) => {
+            resolveOutput = resolve
+        })
+        const listener = new TraceListener((record) => {
+            outputLines.push(formatTraceEvent(record))
+            if (outputLines.length === 2) {
+                resolveOutput()
+            }
+        })
+        const address = await listener.start()
+        const socket = net.createConnection(address.port, address.address)
+        const firstEvent = { ...validEvent, session_id: "fake-session-1" }
+        const secondEvent = {
+            ...validEvent,
+            session_id: "fake-session-2",
+            direction: "read" as const,
+            byte_length: 3,
+            data: "ACK",
+        }
+        const firstLine = JSON.stringify(firstEvent) + "\n"
+        const secondLine = JSON.stringify(secondEvent) + "\n"
+
+        try {
+            await once(socket, "connect")
+            const splitIndex = Math.floor(firstLine.length / 2)
+            socket.write(firstLine.slice(0, splitIndex))
+            socket.write(firstLine.slice(splitIndex) + secondLine)
+            await receivedOutput
+
+            assert.deepEqual(outputLines, [
+                '2026-10-15T13:00:00Z session=fake-session-1 WRITE lan address=127.0.0.1:5025 bytes=4 encoding=utf8 data="*IDN"',
+                '2026-10-15T13:00:00Z session=fake-session-2 READ lan address=127.0.0.1:5025 bytes=3 encoding=utf8 data="ACK"',
+            ])
+        } finally {
+            socket.destroy()
+            await listener.dispose()
+        }
     })
 })
