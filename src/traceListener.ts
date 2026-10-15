@@ -8,8 +8,8 @@ import {
 /**
  * Owns the localhost socket used by the CLI to deliver trace records.
  *
- * Record parsing is intentionally handled by a later trace-parser layer. The
- * listener only establishes the endpoint and keeps accepted sockets alive.
+ * Each accepted socket is parsed independently so one malformed connection
+ * cannot affect other trace sessions.
  */
 export class TraceListener {
     private readonly _sockets = new Set<net.Socket>()

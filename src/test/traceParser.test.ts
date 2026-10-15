@@ -1,17 +1,36 @@
 import { assert } from "chai"
 import { suite, test } from "mocha"
 
-import { TraceJsonlParser } from "../traceParser"
+import {
+    MAX_TRACE_RECORD_BYTES,
+    TraceEvent,
+    TraceJsonlParser,
+} from "../traceParser"
+
+const validEvent: TraceEvent = {
+    timestamp: "2026-10-15T13:00:00Z",
+    session_id: "session-1",
+    direction: "write",
+    protocol: "lan",
+    address: "127.0.0.1:5025",
+    byte_length: 4,
+    encoding: "utf8",
+    data: "*IDN",
+}
 
 suite("TraceJsonlParser Test Suite", function () {
     test("parses split and coalesced JSON lines", function () {
         const records: unknown[] = []
         const parser = new TraceJsonlParser((record) => records.push(record))
 
-        parser.push('{"id":1}\n{"id":')
-        parser.push("2}\n")
+        parser.push(
+            `${JSON.stringify(validEvent)}\n${JSON.stringify(validEvent).slice(0, 20)}`,
+        )
+        parser.push(`${JSON.stringify(validEvent).slice(20)}\n`)
 
-        assert.deepEqual(records, [{ id: 1 }, { id: 2 }])
+        assert.lengthOf(records, 2)
+        assert.deepEqual(records[0], validEvent)
+        assert.deepEqual(records[1], validEvent)
     })
 
     test("isolates malformed lines and continues parsing", function () {
@@ -22,10 +41,10 @@ suite("TraceJsonlParser Test Suite", function () {
             (line) => malformed.push(line),
         )
 
-        parser.push('{bad json}\n{"id":3}\n')
+        parser.push(`{bad json}\n${JSON.stringify(validEvent)}\n`)
 
         assert.deepEqual(malformed, ["{bad json}"])
-        assert.deepEqual(records, [{ id: 3 }])
+        assert.deepEqual(records, [validEvent])
     })
 
     test("isolates an incomplete record when the stream ends", function () {
@@ -35,9 +54,34 @@ suite("TraceJsonlParser Test Suite", function () {
             (line) => malformed.push(line),
         )
 
-        parser.push('{"id":')
+        parser.push('{"session_id":')
         parser.finish()
 
-        assert.deepEqual(malformed, ['{"id":'])
+        assert.deepEqual(malformed, ['{"session_id":'])
+    })
+
+    test("rejects invalid event fields", function () {
+        const malformed: string[] = []
+        const parser = new TraceJsonlParser(
+            () => assert.fail("invalid event should not be delivered"),
+            (line) => malformed.push(line),
+        )
+
+        parser.push(`${JSON.stringify({ ...validEvent, direction: "send" })}\n`)
+
+        assert.lengthOf(malformed, 1)
+    })
+
+    test("bounds an unterminated trace record", function () {
+        const malformed: string[] = []
+        const parser = new TraceJsonlParser(
+            () => assert.fail("oversized event should not be delivered"),
+            (line) => malformed.push(line),
+        )
+
+        parser.push("x".repeat(MAX_TRACE_RECORD_BYTES + 1))
+        parser.push(`${JSON.stringify(validEvent)}\n`)
+
+        assert.deepEqual(malformed, ["[oversized trace record]"])
     })
 })

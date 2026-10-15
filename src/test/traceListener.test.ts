@@ -5,6 +5,18 @@ import { assert } from "chai"
 import { suite, test } from "mocha"
 
 import { TraceListener } from "../traceListener"
+import { TraceEvent } from "../traceParser"
+
+const validEvent: TraceEvent = {
+    timestamp: "2026-10-15T13:00:00Z",
+    session_id: "session-1",
+    direction: "write",
+    protocol: "lan",
+    address: "127.0.0.1:5025",
+    byte_length: 4,
+    encoding: "utf8",
+    data: "*IDN",
+}
 
 suite("TraceListener Test Suite", function () {
     test("binds to an available localhost TCP port", async function () {
@@ -47,10 +59,12 @@ suite("TraceListener Test Suite", function () {
         const socket = net.createConnection(address.port, address.address)
 
         await once(socket, "connect")
-        socket.write('{"id":1}\n{"id":2}\n')
+        socket.write(
+            `${JSON.stringify(validEvent)}\n${JSON.stringify(validEvent)}\n`,
+        )
         await receivedRecords
 
-        assert.deepEqual(records, [{ id: 1 }, { id: 2 }])
+        assert.deepEqual(records, [validEvent, validEvent])
         socket.destroy()
         await listener.dispose()
     })
