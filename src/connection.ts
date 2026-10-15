@@ -4,6 +4,7 @@ import { join } from "path"
 import { mkdtempSync, statSync } from "fs"
 import * as vscode from "vscode"
 import { EXECUTABLE } from "./kic-cli"
+import { TraceListener } from "./traceListener"
 import { IIDNInfo, InstrInfo, IoType } from "./resourceManager"
 import { LOG_DIR } from "./utility"
 import { Log } from "./logging"
@@ -121,6 +122,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     >()
 
     private _terminal: vscode.Terminal | undefined = undefined
+    private _trace_listener: TraceListener | undefined = undefined
     private _background_process: child.ChildProcess | undefined = undefined
     private _updateInProgress = false
 
@@ -142,6 +144,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
     }
 
     dispose() {
+        this._trace_listener?.dispose().catch(() => {})
+        this._trace_listener = undefined
+
         if (this._terminal) {
             this._terminal.dispose()
             this._terminal = undefined
@@ -640,6 +645,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 return false
             }
 
+            this._trace_listener = new TraceListener()
+            const trace_address = await this._trace_listener.start()
+
             const terminal_args = [
                 "--log-file",
                 join(
@@ -648,6 +656,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 ),
                 "connect",
                 this.addr,
+                "--trace-socket",
+                `${trace_address.address}:${trace_address.port}`,
             ]
 
             for (const a of additional_terminal_args) {
@@ -707,6 +717,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             if (cancelIfRequested()) {
                 this._terminal.dispose()
                 this._terminal = undefined
+                await this._trace_listener.dispose()
+                this._trace_listener = undefined
                 return false
             }
 
