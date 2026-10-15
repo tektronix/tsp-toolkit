@@ -30,4 +30,28 @@ suite("TraceListener Test Suite", function () {
         socket.destroy()
         await listener.dispose()
     })
+
+    test("passes socket records to the parser callback", async function () {
+        const records: unknown[] = []
+        let resolveRecords: () => void = () => {}
+        const receivedRecords = new Promise<void>((resolve) => {
+            resolveRecords = resolve
+        })
+        const listener = new TraceListener((record) => {
+            records.push(record)
+            if (records.length === 2) {
+                resolveRecords()
+            }
+        })
+        const address = await listener.start()
+        const socket = net.createConnection(address.port, address.address)
+
+        await once(socket, "connect")
+        socket.write('{"id":1}\n{"id":2}\n')
+        await receivedRecords
+
+        assert.deepEqual(records, [{ id: 1 }, { id: 2 }])
+        socket.destroy()
+        await listener.dispose()
+    })
 })

@@ -1,4 +1,9 @@
 import * as net from "node:net"
+import {
+    TraceJsonlParser,
+    TraceMalformedLineHandler,
+    TraceRecordHandler,
+} from "./traceParser"
 
 /**
  * Owns the localhost socket used by the CLI to deliver trace records.
@@ -9,13 +14,35 @@ import * as net from "node:net"
 export class TraceListener {
     private readonly _sockets = new Set<net.Socket>()
     private readonly _server = net.createServer((socket) => {
+        const parser = new TraceJsonlParser(
+            this._onRecord,
+            this._onMalformedLine,
+        )
+        let parserFinished = false
+        const finishParser = () => {
+            if (parserFinished) {
+                return
+            }
+
+            parserFinished = true
+            parser.finish()
+        }
+
         this._sockets.add(socket)
+        socket.on("data", (chunk: Buffer) => parser.push(chunk))
+        socket.once("end", finishParser)
         socket.once("close", () => {
+            finishParser()
             this._sockets.delete(socket)
         })
     })
 
     private _address: net.AddressInfo | undefined
+
+    constructor(
+        private readonly _onRecord: TraceRecordHandler = () => {},
+        private readonly _onMalformedLine: TraceMalformedLineHandler = () => {},
+    ) {}
 
     get address(): net.AddressInfo | undefined {
         return this._address
