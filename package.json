@@ -255,10 +255,16 @@
                 "icon": "$(save)"
             },
             {
-                "command": "InstrumentsExplorer.remove",
-                "title": "Remove",
+                "command": "InstrumentsExplorer.show",
+                "title": "Show",
                 "category": "TSP",
-                "icon": "$(trash)"
+                "icon": "$(eye)"
+            },
+            {
+                "command": "InstrumentsExplorer.hide",
+                "title": "Hide",
+                "category": "TSP",
+                "icon": "$(eye-closed)"
             },
             {
                 "command": "systemConfigurations.addSystem",
@@ -373,6 +379,12 @@
                     "type": "array",
                     "default": [],
                     "description": "A list of saved instrument details",
+                    "scope": "application"
+                },
+                "tsp.hiddenInstruments": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Instrument details moved to Hidden Instruments by Hide. Use Show on a hidden instrument to return it to the saved list.",
                     "scope": "application"
                 },
                 "tsp.reset": {
@@ -610,7 +622,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "InstrumentsExplorer.remove",
+                    "command": "InstrumentsExplorer.show",
+                    "when": "false"
+                },
+                {
+                    "command": "InstrumentsExplorer.hide",
                     "when": "false"
                 },
                 {
@@ -681,7 +697,7 @@
                 },
                 {
                     "command": "tsp.openTerminalIP",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /CONN.*Enabled.*/ && !(viewItem =~ /CONN.*Connected.*/)",
+                    "when": "view == InstrumentsExplorer && (viewItem =~ /CONN.*Enabled.*/ || viewItem =~ /CONN.*Hidden.*/) && !(viewItem =~ /CONN.*Connected.*/)",
                     "group": "inline"
                 },
                 {
@@ -691,11 +707,16 @@
                 },
                 {
                     "command": "InstrumentsExplorer.save",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*/ && !(viewItem =~ /.*Saved.*/)",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*/ && !(viewItem =~ /.*Saved.*/) && !(viewItem =~ /.*Hidden.*/)",
                     "group": "inline"
                 },
                 {
-                    "command": "InstrumentsExplorer.remove",
+                    "command": "InstrumentsExplorer.show",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Hidden.*/",
+                    "group": "inline"
+                },
+                {
+                    "command": "InstrumentsExplorer.hide",
                     "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },

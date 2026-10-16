@@ -48,6 +48,11 @@ export function connectionStatusIcon(
     status: ConnectionStatus | undefined,
 ): vscode.ThemeIcon {
     switch (status) {
+        case ConnectionStatus.Hidden:
+            return new vscode.ThemeIcon(
+                "eye-closed",
+                new vscode.ThemeColor("list.deemphasizedForeground"),
+            )
         case undefined:
         case ConnectionStatus.Inactive:
             return new vscode.ThemeIcon(
@@ -76,8 +81,8 @@ export function connectionStatusIcon(
 
 export function statusToString(status: ConnectionStatus | undefined): string {
     switch (status) {
-        case ConnectionStatus.Ignored:
-            return "Ignored"
+        case ConnectionStatus.Hidden:
+            return "Hidden"
         case undefined:
         case ConnectionStatus.Inactive:
             return "Inactive"
@@ -94,9 +99,9 @@ export function contextValueStatus(
     contextValue: string,
     status: ConnectionStatus | undefined,
 ): string {
-    if (contextValue.match(/Connected|Connecting|Active|Inactive/)) {
+    if (contextValue.match(/Connected|Connecting|Active|Inactive|Hidden/)) {
         return contextValue.replace(
-            /Connected|Connecting|Active|Inactive/,
+            /Connected|Connecting|Active|Inactive|Hidden/,
             statusToString(status ?? ConnectionStatus.Inactive),
         )
     } else {
@@ -160,6 +165,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             )
         } else {
             this.contextValue = this.contextValue + term
+        }
+        this.contextValue = this.contextValue?.replace(/Hidden/g, "")
+        if (this.parent?.hidden) {
+            this.contextValue += "Hidden"
         }
     }
 
@@ -613,8 +622,9 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 return false
             }
 
-            InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
-            await InstrumentProvider.instance.saveInstrument(this._parent)
+            const trackedInstrument =
+                InstrumentProvider.instance.addOrUpdateInstrument(this._parent)
+            await InstrumentProvider.instance.saveInstrument(trackedInstrument)
 
             // check after await: save operation may complete after cancellation
             if (cancelIfRequested()) {
@@ -709,7 +719,6 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
                 this._terminal = undefined
                 return false
             }
-
             this.status = ConnectionStatus.Connected
 
             vscode.window.onDidCloseTerminal((t) => {
@@ -1813,6 +1822,11 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         // Polling an instrument while it is being updated competes with the
         // update for the instrument's attention and can cause the update to fail.
         if (this._parent?.connections.some((c) => c.updateInProgress)) {
+            return
+        }
+
+        if (this._terminal && this._terminal.exitStatus === undefined) {
+            this.status = ConnectionStatus.Connected
             return
         }
 

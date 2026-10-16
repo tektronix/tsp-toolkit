@@ -20,6 +20,7 @@ export interface BulkUpdateConnectionLike {
 
 export interface BulkUpdateInstrumentLike {
     name: string
+    hidden?: boolean
     info: {
         model: string
         serial_number: string
@@ -84,7 +85,7 @@ export function getEligibleMP5103Candidates(
     const dedupedBySerial = new Map<string, BulkUpdateCandidate>()
 
     for (const instrument of instruments) {
-        if (instrument.info.model !== MP5103_MODEL) {
+        if (instrument.hidden || instrument.info.model !== MP5103_MODEL) {
             continue
         }
 
