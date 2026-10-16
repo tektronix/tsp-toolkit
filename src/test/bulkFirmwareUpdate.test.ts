@@ -38,6 +38,21 @@ function buildMockInstrument(
 }
 
 suite("Bulk Firmware Update Test Suite", function () {
+    test("Hidden instruments are excluded even with active connections", function () {
+        const instrument = {
+            ...buildMockInstrument(
+                "MP5103",
+                "SN-IGNORED",
+                "Hidden MP5103",
+                ConnectionStatus.Active,
+                async () => {},
+            ),
+            hidden: true,
+        }
+
+        assert.isEmpty(getEligibleMP5103Candidates([instrument]))
+    })
+
     test("Visibility gating uses available MP5103 unique serial count", function () {
         const instruments = [
             buildMockInstrument(
@@ -83,7 +98,7 @@ suite("Bulk Firmware Update Test Suite", function () {
             ConnectionStatus.Connecting,
             ConnectionStatus.Active,
             ConnectionStatus.Inactive,
-            ConnectionStatus.Ignored,
+            ConnectionStatus.Hidden,
             undefined,
         ].map((status, i) =>
             buildMockInstrument(

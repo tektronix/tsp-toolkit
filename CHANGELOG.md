@@ -29,6 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Python class name normalization
+- Users can now hide instruments they don't want to see
 - Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
 - **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
 - **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
@@ -37,6 +38,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
 - **tsp-toolkit-language-interop** Update python class documentation to clarify naming conventions for TSP script classes
 - Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+
+
 
 ## [1.5.2]
 

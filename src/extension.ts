@@ -263,6 +263,11 @@ export async function createTerminal(
                 }
             }
 
+            await InstrumentProvider.instance.showHiddenConnection(conn)
+            if (token.isCancellationRequested) {
+                return undefined
+            }
+
             if (
                 await conn.connect(name, {
                     progress,

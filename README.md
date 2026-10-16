@@ -92,7 +92,17 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 
 - **Auto-Discovery**: Automatically find TSP instruments on your local network.
 - **Manual Connection**: Connect to instruments via IP address or VISA resource string.
-- **Instrument Management**: Save, rename, and remove instruments from your list.
+- **Instrument Management**: Save, rename, and hide instruments from your list.
+  **Hide** (crossed-eye icon) moves an instrument to **Hidden Instruments** and removes it from
+  the saved list. Hidden instruments remain hidden after discovery, refresh,
+  and restarting VS Code. Use **Show** (open-eye icon) on a hidden instrument to return it
+  to the saved list. Hidden instruments skip status polling, but discovery can still
+  update their information and connections. Status polling resumes after **Show**.
+  Use **Connect** on a connection under a hidden instrument to automatically
+  show the instrument and connect using that connection. Entering a hidden
+  instrument's known connection string with **New Connection** also shows it before
+  connecting. Once shown, the instrument remains visible even if the connection
+  attempt fails or is cancelled.
 - **Firmware Update**: Update instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
