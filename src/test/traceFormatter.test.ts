@@ -7,7 +7,7 @@ import { TraceEvent } from "../traceParser"
 suite("Trace Formatter Test Suite", function () {
     test("formats trace metadata and payload for live display", function () {
         const event: TraceEvent = {
-            timestamp: "2026-10-15T13:00:00Z",
+            timestamp: "2026-10-15T13:00:00.123456789Z",
             session_id: "session-1",
             direction: "write",
             protocol: "lan",
@@ -20,7 +20,7 @@ suite("Trace Formatter Test Suite", function () {
         assert.deepEqual(
             formatTraceEvent(event).split(/\s{2,}/),
             [
-                "2026-10-15T13:00:00Z",
+                "2026-10-15T13:00:00.123",
                 "session-",
                 "WRITE",
                 "LAN",
@@ -34,7 +34,7 @@ suite("Trace Formatter Test Suite", function () {
 
     test("formats missing addresses and Base64 payloads", function () {
         const event: TraceEvent = {
-            timestamp: "2026-10-15T13:00:01Z",
+            timestamp: "2026-10-15T13:00:01.987654321Z",
             session_id: "session-2",
             direction: "read",
             protocol: "visa",
@@ -47,7 +47,7 @@ suite("Trace Formatter Test Suite", function () {
         assert.deepEqual(
             formatTraceEvent(event).split(/\s{2,}/),
             [
-                "2026-10-15T13:00:01Z",
+                "2026-10-15T13:00:01.987",
                 "session-",
                 "READ",
                 "VISA",
@@ -61,7 +61,7 @@ suite("Trace Formatter Test Suite", function () {
 
     test("truncates long session IDs and addresses for readable columns", function () {
         const event: TraceEvent = {
-            timestamp: "2026-10-15T13:00:00Z",
+            timestamp: "2026-10-15T13:00:00.123456789Z",
             session_id: "12345678-90ab-cdef-1234-567890abcdef",
             direction: "write",
             protocol: "lan",
@@ -74,7 +74,7 @@ suite("Trace Formatter Test Suite", function () {
         assert.deepEqual(
             formatTraceEvent(event).split(/\s{2,}/),
             [
-                "2026-10-15T13:00:00Z",
+                "2026-10-15T13:00:00.123",
                 "12345678",
                 "WRITE",
                 "LAN",
@@ -84,5 +84,20 @@ suite("Trace Formatter Test Suite", function () {
                 '"*IDN"',
             ],
         )
+    })
+
+    test("preserves invalid timestamps for diagnostics", function () {
+        const event: TraceEvent = {
+            timestamp: "not-a-timestamp",
+            session_id: "session-3",
+            direction: "read",
+            protocol: "lan",
+            address: null,
+            byte_length: 0,
+            encoding: "utf8",
+            data: "",
+        }
+
+        assert.include(formatTraceEvent(event), "not-a-timestamp")
     })
 })

@@ -9,7 +9,7 @@ import { formatTraceEvent } from "../traceFormatter"
 import { TraceEvent } from "../traceParser"
 
 const validEvent: TraceEvent = {
-    timestamp: "2026-10-15T13:00:00Z",
+    timestamp: "2026-10-15T13:00:00.123456789Z",
     session_id: "session-1",
     direction: "write",
     protocol: "lan",
@@ -196,7 +196,7 @@ suite("TraceListener Test Suite", function () {
                 outputLines.map((line) => line.split(/\s{2,}/)),
                 [
                     [
-                        "2026-10-15T13:00:00Z",
+                        "2026-10-15T13:00:00.123",
                         "fake-ses",
                         "WRITE",
                         "LAN",
@@ -206,7 +206,7 @@ suite("TraceListener Test Suite", function () {
                         '"*IDN"',
                     ],
                     [
-                        "2026-10-15T13:00:00Z",
+                        "2026-10-15T13:00:00.123",
                         "fake-ses",
                         "READ",
                         "LAN",
