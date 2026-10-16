@@ -1,7 +1,7 @@
 import { assert } from "chai"
 import { suite, test } from "mocha"
 
-import { formatTraceEvent } from "../traceFormatter"
+import { formatTraceEvent, formatTraceHeader } from "../traceFormatter"
 import { TraceEvent } from "../traceParser"
 
 suite("Trace Formatter Test Suite", function () {
@@ -99,5 +99,18 @@ suite("Trace Formatter Test Suite", function () {
         }
 
         assert.include(formatTraceEvent(event), "not-a-timestamp")
+    })
+
+    test("aligns column headings with formatted trace fields", function () {
+        assert.deepEqual(formatTraceHeader().split(/\s{2,}/), [
+            "TIMESTAMP",
+            "SESSION",
+            "DIR",
+            "PROTO",
+            "ADDRESS",
+            "BYTES",
+            "ENCODING",
+            "PAYLOAD",
+        ])
     })
 })
