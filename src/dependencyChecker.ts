@@ -1,6 +1,5 @@
 import { promisify } from "util"
 import { platform } from "node:os"
-import fs from "node:fs"
 import { execFile } from "child_process"
 import * as vscode from "vscode"
 import { Log, SourceLocation } from "./logging"
