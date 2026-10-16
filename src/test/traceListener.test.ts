@@ -192,10 +192,31 @@ suite("TraceListener Test Suite", function () {
             socket.write(firstLine.slice(splitIndex) + secondLine)
             await receivedOutput
 
-            assert.deepEqual(outputLines, [
-                '2026-10-15T13:00:00Z session=fake-session-1 WRITE lan address=127.0.0.1:5025 bytes=4 encoding=utf8 data="*IDN"',
-                '2026-10-15T13:00:00Z session=fake-session-2 READ lan address=127.0.0.1:5025 bytes=3 encoding=utf8 data="ACK"',
-            ])
+            assert.deepEqual(
+                outputLines.map((line) => line.split(/\s{2,}/)),
+                [
+                    [
+                        "2026-10-15T13:00:00Z",
+                        "fake-ses",
+                        "WRITE",
+                        "LAN",
+                        "127.0.0.1:5025",
+                        "4",
+                        "UTF8",
+                        '"*IDN"',
+                    ],
+                    [
+                        "2026-10-15T13:00:00Z",
+                        "fake-ses",
+                        "READ",
+                        "LAN",
+                        "127.0.0.1:5025",
+                        "3",
+                        "UTF8",
+                        '"ACK"',
+                    ],
+                ],
+            )
         } finally {
             socket.destroy()
             await listener.dispose()
