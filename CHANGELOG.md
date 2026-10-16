@@ -25,7 +25,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
 - **tsp-toolkit-kic-cli** - Detect when instrument has closed the connection gracefully and gracefully close the program
 - Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
-- Updated dependency checks to more reliably detect whether required amd optional dependencies are installed.
+- Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
 
 ### Added
 - Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
