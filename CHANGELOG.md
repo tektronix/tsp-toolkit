@@ -26,6 +26,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Detect when instrument has closed the connection gracefully and gracefully close the program
 - Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
 - Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
+- Don't get info from saved instruments when doing autorefresh in order to prevent issues with USB and GPIB instruments
 
 ### Added
 - Python class name normalization

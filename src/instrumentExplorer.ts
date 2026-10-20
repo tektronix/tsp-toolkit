@@ -151,6 +151,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
                         .get("autorefresh") as boolean) &&
                     this.timeoutID
                 ) {
+                    StatusBarManager.instance.hide()
                     clearTimeout(this.timeoutID)
                     this.timeoutID = undefined
                 } else if (
