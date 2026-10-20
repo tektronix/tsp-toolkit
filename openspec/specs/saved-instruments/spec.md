@@ -1,4 +1,4 @@
-# Spec Delta
+# saved-instruments Specification
 
 ## Purpose
 
@@ -7,7 +7,7 @@ Describes how the extension remembers instruments between sessions in the
 Instruments view, which actions write or delete entries and what they write, and how saved
 instruments are cleared. This is a baseline of current behavior, including known quirks.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Saved instrument storage
 
@@ -101,15 +101,20 @@ type.
 ### Requirement: When saved entries are written
 
 The extension SHALL write a saved instrument's entries (as in "Writing an instrument's
-entries") when the user saves it, when a connection attempt to it succeeds (see
-`instrument-connection-lifecycle`), when it is renamed, when one of its addresses is
-updated, and each time discovery reports it. At the end of every refresh cycle, the
+entries") when the user saves it, when it is identified during a connection attempt,
+before its terminal opens (see `instrument-connection-lifecycle`), when it is renamed,
+when one of its addresses is updated, and each time discovery reports it. At the end of every refresh cycle, the
 extension SHALL write the entries of every saved instrument.
 
 #### Scenario: Connecting saves
 
 - **WHEN** the user connects to a discovered instrument that is not saved
 - **THEN** it becomes `Saved` and its entries are added to `tsp.savedInstruments`
+
+#### Scenario: Connection cancelled after identification
+
+- **WHEN** the user cancels a connection attempt after the instrument has been identified
+- **THEN** the instrument stays `Saved` and keeps its entries
 
 #### Scenario: Refresh keeps entries current
 

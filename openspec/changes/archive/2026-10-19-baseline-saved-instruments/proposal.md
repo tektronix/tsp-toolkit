@@ -40,6 +40,8 @@ lock them in:
   address. The next write (at the latest the end of the next refresh cycle) then writes the
   in-memory name and addresses back over the edit. Adding or removing whole instruments by
   hand does work.
+- **Whitespace-only names are accepted.** Rename only checks that the input is not empty,
+  so a name made only of spaces is applied and written to every entry.
 
 ### Note for `fix-discovery-exit-cull`
 
@@ -71,5 +73,7 @@ None.
   handler), `src/instrumentExplorer.ts` (save, remove, rename, update address),
   `src/instrument.ts` (`Instrument.from`), and `src/extension.ts` (Reset to Defaults and
   `updateExtensionSettings`), plus `contributes.configuration` in `package.json`.
-- `saveInstrumentToList()` in `instrumentProvider.ts` is never called, so the spec does not
-  describe it (it is the only code that would write `socket_port`).
+- `saveInstrumentToList()` in `instrumentProvider.ts` and `saveWhileConnect()` in
+  `instrumentExplorer.ts` are never called, so the spec does not describe them.
+  `saveInstrumentToList()` is the only code that would write `socket_port`; connecting
+  saves through `InstrumentProvider.saveInstrument()` in `connection.ts` instead.
