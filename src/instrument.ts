@@ -356,6 +356,10 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         }
         const output = await vscode.window.showSaveDialog({
             title: "Save buffers to a file",
+            filters: {
+                "Text Files": ["txt"],
+                "CSV Files": ["csv"],
+            },
         })
         if (!output || !buffers || !delimiter || !fields) {
             return
