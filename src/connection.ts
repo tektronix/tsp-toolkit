@@ -1830,23 +1830,29 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        const info = await this.ping(1000)
+        if (
+            !(vscode.workspace
+                .getConfiguration("tsp")
+                .get("autorefresh") as boolean)
+        ) {
+            const info = await this.ping(1000)
 
-        if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
-            this.status = ConnectionStatus.Active
-            return
-        }
+            if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
+                this.status = ConnectionStatus.Active
+                return
+            }
 
-        let new_status = ConnectionStatus.Inactive
+            let new_status = ConnectionStatus.Inactive
 
-        if (info?.serial_number === this._parent?.info.serial_number) {
-            new_status = ConnectionStatus.Active
-        }
+            if (info?.serial_number === this._parent?.info.serial_number) {
+                new_status = ConnectionStatus.Active
+            }
 
-        if (this.status !== new_status) {
-            this.status = new_status
-            this.lastFound = new Date()
-            this._onChangedStatus.fire(this.status)
+            if (this.status !== new_status) {
+                this.status = new_status
+                this.lastFound = new Date()
+                this._onChangedStatus.fire(this.status)
+            }
         }
     }
 }
