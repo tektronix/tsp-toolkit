@@ -9,6 +9,7 @@ import { DISCOVER_EXECUTABLE } from "./kic-cli"
 import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
 import { StatusBarManager, StatusType } from "./statusBarManager"
+import { InstrumentSearchInputSession } from "./instrumentSearchInput"
 
 export const DISCOVERY_TIMEOUT = 2
 
@@ -18,6 +19,9 @@ export class InstrumentsExplorer implements vscode.Disposable {
     >
     private treeDataProvider?: InstrumentProvider
     private timeoutID?: NodeJS.Timeout
+    private searchInput?: InstrumentSearchInputSession
+    private searchContextUpdate: Promise<void> = Promise.resolve()
+    private searchContextActive: boolean | undefined
     //private _kicProcessMgr: KicProcessMgr
     private _discoveryInProgress: boolean = false
 
@@ -42,6 +46,28 @@ export class InstrumentsExplorer implements vscode.Disposable {
         })
 
         this.treeDataProvider = treeDataProvider
+        const searchDataSubscription = treeDataProvider.onDidChangeTreeData(
+            () => {
+                this.updateSearchContextFromQuery()
+            },
+        )
+        context.subscriptions.push(searchDataSubscription)
+
+        const search = vscode.commands.registerCommand(
+            "InstrumentsExplorer.search",
+            () => {
+                this.openSearch()
+            },
+        )
+        const clearSearch = vscode.commands.registerCommand(
+            "InstrumentsExplorer.clearSearch",
+            () => {
+                this.clearSearch()
+            },
+        )
+        context.subscriptions.push(search, clearSearch)
+        this.updateSearchContextFromQuery()
+
         vscode.commands.registerCommand("InstrumentsExplorer.refresh", () => {
             StatusBarManager.instance.showMessage(
                 "Checking saved instrument connections...",
@@ -157,7 +183,81 @@ export class InstrumentsExplorer implements vscode.Disposable {
         })
     }
     dispose() {
+        this.searchInput?.dispose()
+        this.searchInput = undefined
+        this.InstrumentsDiscoveryViewer.dispose()
         this.treeDataProvider?.dispose()
+    }
+
+    private openSearch() {
+        if (this.searchInput) {
+            return
+        }
+
+        this.searchInput = this.createSearchInputSession()
+        this.searchInput.show()
+    }
+
+    private createSearchInputSession(): InstrumentSearchInputSession {
+        const input = vscode.window.createInputBox()
+        input.title = "Search Instruments"
+        input.placeholder =
+            "Name, model, serial number, manufacturer, or address"
+        return new InstrumentSearchInputSession(
+            input,
+            this.treeDataProvider?.searchQuery ?? "",
+            (query) => this.treeDataProvider?.setSearchQuery(query),
+            (query) => {
+                const match = this.treeDataProvider?.findUniqueExactMatch(query)
+                if (match) {
+                    void this.InstrumentsDiscoveryViewer.reveal(match, {
+                        select: true,
+                        focus: true,
+                        expand: true,
+                    })
+                }
+            },
+            () => {
+                if (this.searchInput?.input === input) {
+                    this.searchInput = undefined
+                }
+            },
+        )
+    }
+
+    private clearSearch() {
+        if (this.searchInput) {
+            this.searchInput.clear()
+        } else {
+            this.treeDataProvider?.setSearchQuery("")
+        }
+    }
+
+    private updateSearchContextFromQuery() {
+        this.updateSearchContext(
+            (this.treeDataProvider?.searchQuery.trim().length ?? 0) > 0,
+        )
+    }
+
+    private updateSearchContext(active: boolean) {
+        if (this.searchContextActive === active) {
+            return
+        }
+        this.searchContextActive = active
+        this.searchContextUpdate = this.searchContextUpdate
+            .then(() =>
+                vscode.commands.executeCommand(
+                    "setContext",
+                    "tsp.instrumentSearchActive",
+                    active,
+                ),
+            )
+            .then(() => undefined)
+            .catch((error: unknown) => {
+                Log.error(
+                    `Unable to update instrument search context: ${String(error)}`,
+                )
+            })
     }
 
     private startDiscovery(): Promise<void> {

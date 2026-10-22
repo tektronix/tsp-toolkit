@@ -23,6 +23,11 @@ import {
     IoType,
 } from "./resourceManager"
 import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
+import {
+    filterInstrumentsBySearch,
+    findUniqueExactInstrument,
+    matchesInstrumentSearch,
+} from "./instrumentSearch"
 
 let nextID = 0
 const createID = () => nextID++
@@ -58,6 +63,9 @@ type VscTdp = vscode.TreeDataProvider<TreeData>
 
 export class InstrumentProvider implements VscTdp, vscode.Disposable {
     private _instruments: Instrument[] = []
+    private _searchQuery: string = ""
+    private _searchOfflineGroup: InactiveInstrumentList | undefined
+    private _nextSearchGroupID: number = 0
     private instruments_discovered: boolean = false
     private _savedInstrumentConfigWatcher: vscode.Disposable | undefined =
         undefined
@@ -89,6 +97,68 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
 
     get instruments(): Instrument[] {
         return this._instruments
+    }
+
+    get searchQuery(): string {
+        return this._searchQuery
+    }
+
+    setSearchQuery(query: string) {
+        if (this._searchQuery === query) {
+            return
+        }
+        const wasSearching = this._searchQuery.trim().length > 0
+        const isSearching = query.trim().length > 0
+        this._searchQuery = query
+        if (wasSearching !== isSearching) {
+            if (isSearching) {
+                this._searchOfflineGroup = new InactiveInstrumentList(
+                    true,
+                    `instrument-search-offline-${this._nextSearchGroupID++}`,
+                )
+            } else {
+                this._searchOfflineGroup = undefined
+            }
+        }
+        this._onDidChangeTreeData.fire(undefined)
+    }
+
+    findUniqueExactMatch(query: string): Instrument | undefined {
+        return findUniqueExactInstrument(
+            this._instruments,
+            query,
+            (instrument) => this.getSearchFields(instrument),
+        )
+    }
+
+    private getSearchFields(instrument: Instrument) {
+        return {
+            name: instrument.name,
+            model: instrument.info.model,
+            serialNumber: instrument.info.serial_number,
+            manufacturer: instrument.info.vendor,
+            addresses: instrument.connections.map(
+                (connection) => connection.addr,
+            ),
+        }
+    }
+
+    private filterForSearch(instruments: Instrument[]): Instrument[] {
+        return filterInstrumentsBySearch(
+            instruments,
+            this._searchQuery,
+            (instrument) => this.getSearchFields(instrument),
+        )
+    }
+
+    private getOfflineMatches(): Instrument[] {
+        return this.filterForSearch(
+            this._instruments.filter(
+                (instrument) =>
+                    instrument.status === ConnectionStatus.Inactive ||
+                    instrument.status === ConnectionStatus.Ignored,
+            ),
+        )
     }
 
     private async updateSavedAll(instruments: Instrument[]) {
@@ -337,6 +407,32 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         return element
     }
 
+    getParent(
+        element: Instrument | Connection | InactiveInstrumentList | StringData,
+    ): vscode.ProviderResult<
+        Instrument | Connection | InactiveInstrumentList | StringData
+    > {
+        if (element instanceof Connection) {
+            return element.parent
+        }
+        if (element instanceof Instrument) {
+            const isOffline =
+                element.status === ConnectionStatus.Inactive ||
+                element.status === ConnectionStatus.Ignored
+            if (
+                isOffline &&
+                this._searchOfflineGroup &&
+                matchesInstrumentSearch(
+                    this.getSearchFields(element),
+                    this._searchQuery,
+                )
+            ) {
+                return this._searchOfflineGroup
+            }
+        }
+        return undefined
+    }
+
     getChildren(
         element?:
             | Instrument
@@ -352,60 +448,55 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         //     func: `InstrumentTreeDataProvider.getChildren()`,
         // }
         if (!element) {
-            return new Promise((resolve) => {
-                resolve([
-                    ...this._instruments.filter(
-                        (x) =>
-                            x.status === ConnectionStatus.Active ||
-                            x.status === ConnectionStatus.Connecting ||
-                            x.status === ConnectionStatus.Connected,
-                    ),
-                    new InactiveInstrumentList(),
-                ])
-            })
+            const activeInstruments = this.filterForSearch(
+                this._instruments.filter(
+                    (instrument) =>
+                        instrument.status === ConnectionStatus.Active ||
+                        instrument.status === ConnectionStatus.Connecting ||
+                        instrument.status === ConnectionStatus.Connected,
+                ),
+            )
+            if (this._searchOfflineGroup) {
+                const offlineMatches = this.getOfflineMatches()
+                return [
+                    ...activeInstruments,
+                    ...(offlineMatches.length > 0
+                        ? [this._searchOfflineGroup]
+                        : []),
+                ]
+            }
+            return [...activeInstruments, new InactiveInstrumentList()]
         }
         if (element instanceof Instrument) {
-            return new Promise((resolve) => {
-                resolve([...element.connections])
-            })
+            return [...element.connections]
         }
 
         if (element instanceof InfoList) {
-            return new Promise((resolve) => {
-                if (!element.info) {
-                    resolve([])
-                } else {
-                    resolve([
-                        new StringData(`Model: ${element.info.model}`),
-                        new StringData(
-                            `FW Version: ${element.info.firmware_rev}`,
-                        ),
-                        new StringData(
-                            `Serial Number: ${element.info.serial_number}`,
-                        ),
-                    ])
-                }
-            })
+            if (!element.info) {
+                return []
+            }
+            return [
+                new StringData(`Model: ${element.info.model}`),
+                new StringData(`FW Version: ${element.info.firmware_rev}`),
+                new StringData(`Serial Number: ${element.info.serial_number}`),
+            ]
         }
         if (element instanceof Connection) {
-            return new Promise((resolve) => {
-                resolve([])
-            })
+            return []
         }
         if (element instanceof InactiveInstrumentList) {
-            return new Promise((resolve) => {
-                resolve([
-                    ...this._instruments.filter(
-                        (x) =>
-                            x.status === ConnectionStatus.Inactive ||
-                            x.status === ConnectionStatus.Ignored,
-                    ),
-                ])
-            })
+            if (this._searchOfflineGroup) {
+                return element === this._searchOfflineGroup
+                    ? this.getOfflineMatches()
+                    : []
+            }
+            return this._instruments.filter(
+                (instrument) =>
+                    instrument.status === ConnectionStatus.Inactive ||
+                    instrument.status === ConnectionStatus.Ignored,
+            )
         }
-        return new Promise((resolve) => {
-            resolve([])
-        })
+        return []
     }
 
     doWithConfigWatcherOff(cb: () => void) {

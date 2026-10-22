@@ -74,8 +74,14 @@ instr_map.set("TSPop", "versatest")
  * list. This class stores no data and is simply a sentinel.
  */
 export class InactiveInstrumentList extends vscode.TreeItem {
-    constructor() {
-        super("Offline Instruments", vscode.TreeItemCollapsibleState.Collapsed)
+    constructor(expanded: boolean = false, id?: string) {
+        super(
+            "Offline Instruments",
+            expanded
+                ? vscode.TreeItemCollapsibleState.Expanded
+                : vscode.TreeItemCollapsibleState.Collapsed,
+        )
+        this.id = id
     }
 }
 

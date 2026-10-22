@@ -196,6 +196,16 @@
                 "icon": "$(run)"
             },
             {
+                "command": "InstrumentsExplorer.search",
+                "title": "Search Instruments",
+                "icon": "$(search)"
+            },
+            {
+                "command": "InstrumentsExplorer.clearSearch",
+                "title": "Clear Instrument Search",
+                "icon": "$(clear-all)"
+            },
+            {
                 "command": "InstrumentsExplorer.refresh",
                 "title": "Refresh",
                 "icon": {
@@ -555,14 +565,24 @@
             ],
             "view/title": [
                 {
+                    "command": "InstrumentsExplorer.search",
+                    "when": "view == InstrumentsExplorer",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "InstrumentsExplorer.clearSearch",
+                    "when": "view == InstrumentsExplorer && tsp.instrumentSearchActive",
+                    "group": "navigation@2"
+                },
+                {
                     "command": "InstrumentsExplorer.refresh",
                     "when": "view == InstrumentsExplorer && config.tsp.autorefresh == false",
-                    "group": "navigation"
+                    "group": "navigation@3"
                 },
                 {
                     "command": "InstrumentsExplorer.connect",
                     "when": "view == InstrumentsExplorer",
-                    "group": "navigation"
+                    "group": "navigation@4"
                 },
                 {
                     "command": "systemConfigurations.addSystem",
