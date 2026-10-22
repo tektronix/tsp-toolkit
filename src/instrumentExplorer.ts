@@ -77,10 +77,17 @@ export class InstrumentsExplorer implements vscode.Disposable {
             },
         )
 
-        const removeInstrument = vscode.commands.registerCommand(
-            "InstrumentsExplorer.remove",
+        const hideInstrument = vscode.commands.registerCommand(
+            "InstrumentsExplorer.hide",
             async (e: Instrument) => {
-                await this.removeInstrument(e)
+                await this.hideInstrument(e)
+            },
+        )
+
+        const showInstrument = vscode.commands.registerCommand(
+            "InstrumentsExplorer.show",
+            async (e: Instrument) => {
+                await this.saveInstrument(e)
             },
         )
 
@@ -92,7 +99,8 @@ export class InstrumentsExplorer implements vscode.Disposable {
         )
 
         context.subscriptions.push(saveInstrument)
-        context.subscriptions.push(removeInstrument)
+        context.subscriptions.push(showInstrument)
+        context.subscriptions.push(hideInstrument)
         context.subscriptions.push(changeIPAddr)
 
         StatusBarManager.instance.showMessage(
@@ -301,8 +309,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
     //from connect
 
-    private async removeInstrument(instr: Instrument) {
-        instr.saved = false
-        await this.treeDataProvider?.removeInstrument(instr)
+    private async hideInstrument(instr: Instrument) {
+        await this.treeDataProvider?.hideInstrument(instr)
     }
 }
