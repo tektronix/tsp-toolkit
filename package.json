@@ -717,7 +717,7 @@
                 },
                 {
                     "command": "InstrumentsExplorer.hide",
-                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
+                    "when": "view == InstrumentsExplorer && viewItem =~ /Instr.*/ && !(viewItem =~ /.*Hidden.*/) && !(viewItem =~ /.*Connected.*/)",
                     "group": "inline"
                 },
                 {
