@@ -17,6 +17,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Highlights -- Feature which needs to highlighted for the release.
 -->
 
+## [1.6.1]
+
 ## [1.6.0]
 
 ### Fixed
@@ -581,7 +583,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.1
 [1.6.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.0
 [1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
