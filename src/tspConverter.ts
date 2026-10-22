@@ -4,6 +4,7 @@ import type {
     Diagnostic,
     TspInterop,
 } from "@tektronix/tsp-language-interop-types"
+import { toPythonClassName } from "./pythonClassName"
 
 function loadTspInterop(): TspInterop {
     const packageName = `@tektronix/tsp-language-interop-${process.platform}-${process.arch}`
@@ -72,17 +73,17 @@ export async function wrapTspToPython(
 
     // Derive a class name from the file name (e.g. "my_script.tsp" → "MyScript")
     const baseName = path.basename(uri.fsPath, ".tsp")
-    const className = baseName
-        .split(/[_\-\s]+/)
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .join("")
+    const className = toPythonClassName(baseName)
 
     // Run converter
     let result: { ok: boolean; code?: string; diagnostics: Diagnostic[] }
     try {
+        const embedTspSource = vscode.workspace
+            .getConfiguration("tsp")
+            .get<boolean>("embedTspSource", true)
         result = converter.convertTspToPython(source, {
             className,
-            // scriptPath: fileUri.fsPath, // Commented out for now, will re-enable once the setting is available
+            ...(embedTspSource ? {} : { scriptPath: uri.fsPath }),
         })
     } catch (err) {
         vscode.window.showErrorMessage(
