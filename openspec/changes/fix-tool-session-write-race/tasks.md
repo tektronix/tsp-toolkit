@@ -1,0 +1,21 @@
+# Tasks
+
+## 1. Serial queue helper
+
+- [ ] 1.1 Add a `createSerialQueue()` helper in a new file under `src/` that doesn't import `vscode`. It returns `enqueue<T>(op: () => Promise<T>): Promise<T>`, starts each operation only after the previous one has settled, and settles each returned promise with its own operation's result or error. Add `src/test/serialQueue.test.ts` (TDD UI) covering: operations run one at a time in request order; an operation that rejects rejects only its own promise and the next operation still runs; an operation enqueued while the queue is idle starts right away. Verify with `npx mocha --no-config -r ts-node/register --ui tdd src/test/serialQueue.test.ts`.
+
+## 2. Queue session writes
+
+- [ ] 2.1 In `src/genericSessionStorage.ts`, add a static `Map` of queues keyed by settings key, and make `addSession()`, `updateSession()`, `removeSession()`, and `removeAllSessions()` `async` operations that each run their whole read-change-write inside the key's queue and await `updateSettings()`. Add `upsertSession(name, config)` returning `"added"` or `"updated"`, make `addSession()` delegate to it, and make `updateSession()` return whether it found the session. Log failures with `Log.error` (`{ file: "genericSessionStorage.ts", func: ... }`) and rethrow. Leave `migrateLegacySessions()` unqueued, as `design.md` explains. Verify with `npm run compile`, and by reading the file to confirm that no mutating method reads the setting outside its queued operation.
+- [ ] 2.2 In `src/scriptGenWebViewManager.ts`, make `saveSession()` call `upsertSession()` and `updateSession()` call the storage's `updateSession()`, both without a prior `sessionExists()` check. When the promise resolves, call `dataProvider.addTreeItem(name)` if the result is `"added"` and `dataProvider.refresh()` otherwise, and log a rejection. In `src/triggerFlowWebViewManager.ts`, make both `saveSession()` and `updateSession()` call `upsertSession()` and handle the result the same way. Keep the "Data provider is not initialized" checks. Verify with `npm run compile`, and search both files to confirm that `sessionExists` is no longer called before a write.
+- [ ] 2.3 In `src/baseSessionManager.ts`, change the abstract `removeSession()` to return a promise and make `deleteSession()` await it before `deleteDataProviderItem()`, logging a rejection. Update both subclasses. Verify with `npm run compile` and `npm run lint` (no floating promises).
+
+## 3. Changelog
+
+- [ ] 3.1 Add a `### Fixed` entry under `## [1.6.0]` in `CHANGELOG.md`: script generation and TriggerFlow sessions are saved one change at a time, so a new TriggerFlow session is no longer saved twice and the first change to a new script generation session is no longer lost. Verify that the section keeps Keep a Changelog order and doesn't duplicate an entry from another fix change.
+
+## 4. Integration checks
+
+- [ ] 4.1 Run `npm run lint`, `npx prettier --list-different src`, and `npx mocha --config .mocharc.yml`, and verify that no new warnings or failures appear.
+- [ ] 4.2 Manual check with "Run Extension", with a TSP-Link system saved. (a) Create a TriggerFlow session and immediately make several edits in the panel: `tsp.triggerFlowSessions` holds exactly one entry for it, with the last configuration. (b) Repeat with a script generation session: one entry, with the last configuration. (c) Delete an inactive session while the panel is saving edits to another: both results are kept. (d) Run "TSP: Delete all Script Generation sessions" right after an edit: the list ends up empty. Record the results, or note what could not be exercised.
+- [ ] 4.3 Before archiving, confirm that `baseline-script-generation-and-trigger-flow` has been archived, so `openspec/specs/tool-sessions/spec.md` exists. Compare its "Saving sessions reported by the backend" requirement with this change's delta, re-apply this change's edit if the baseline text has changed, and check that no other archived change has already added a requirement named "Serialized session writes". If `fix-tool-session-scope-copy` was implemented first, confirm that the queued operations use its read and write. Verify with `openspec validate fix-tool-session-write-race`.
