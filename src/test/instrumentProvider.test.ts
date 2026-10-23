@@ -361,7 +361,7 @@ suite("Instrument hiding Test Suite", function () {
             contextMenu.find(
                 (item) => item.command === "InstrumentsExplorer.hide",
             )?.when,
-            "view == InstrumentsExplorer && viewItem =~ /Instr.*Saved.*/ && !(viewItem =~ /.*Connected.*/)",
+            "view == InstrumentsExplorer && viewItem =~ /Instr.*/ && !(viewItem =~ /.*Hidden.*/) && !(viewItem =~ /.*Connected.*/)",
         )
         assert.include(
             contextMenu.find((item) => item.command === "tsp.openTerminalIP")
