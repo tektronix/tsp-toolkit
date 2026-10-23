@@ -19,6 +19,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.6.0]
 
+### Changed
+- **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
+
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
 - Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
@@ -28,6 +31,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
 
 ### Added
+- **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
 - Python class name normalization
 - Users can now hide instruments they don't want to see
 - Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
