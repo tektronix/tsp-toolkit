@@ -17,6 +17,35 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Highlights -- Feature which needs to highlighted for the release.
 -->
 
+## [1.6.0]
+
+### Changed
+- **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
+
+### Fixed
+- Prevent creating TriggerFlow sessions until a valid system configuration is available.
+- Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
+- Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
+- **tsp-toolkit-kic-cli** - Detect when instrument has closed the connection gracefully and gracefully close the program
+- Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
+- Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
+
+### Added
+- **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
+- Python class name normalization
+- Users can now hide instruments they don't want to see
+- Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
+- **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
+- **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
+- **tsp-toolkit-kic-cli** - Linux executables now run on distributions with glibc 2.34 or newer, such as RHEL 9
+- **tsp-toolkit-language-interop** - Print instrument errors (if any) when calling TSP functions
+- **tsp-toolkit-language-interop** - Include documentation strings for functions and globals
+- **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
+- **tsp-toolkit-language-interop** Update python class documentation to clarify naming conventions for TSP script classes
+- Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+
+
+
 ## [1.5.2]
 
 ### Highlights
@@ -556,7 +585,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.0
 [1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
