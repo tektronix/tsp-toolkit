@@ -1830,11 +1830,10 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        if (
-            !(vscode.workspace
-                .getConfiguration("tsp")
-                .get("autorefresh") as boolean)
-        ) {
+        const addr_start = this._addr.substring(0, 2)
+
+        // Don't ping USB or GPIB instruments.
+        if (addr_start !== "USB" && addr_start !== "GPI") {
             const info = await this.ping(1000)
 
             if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
