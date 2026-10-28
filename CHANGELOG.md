@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
+- Don't set autorefresh enabled by default
 
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
@@ -44,6 +45,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
 - **tsp-toolkit-language-interop** Update python class documentation to clarify naming conventions for TSP script classes
 - Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+- Add a way to easily enable and disable autorefresh
 
 
 

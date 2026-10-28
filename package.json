@@ -249,6 +249,18 @@
                 "icon": "$(chip)"
             },
             {
+                "command": "InstrumentsExplorer.enableAutorefresh",
+                "title": "Enable Auto-refresh",
+                "category": "TSP",
+                "icon": "$(search-sparkle)"
+            },
+            {
+                "command": "InstrumentsExplorer.disableAutorefresh",
+                "title": "Disable Auto-refresh",
+                "category": "TSP",
+                "icon": "$(search-stop)"
+            },
+            {
                 "command": "InstrumentsExplorer.save",
                 "title": "Save",
                 "category": "TSP",
@@ -530,7 +542,7 @@
                 },
                 "tsp.autorefresh": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "scope": "resource",
                     "description": "Enable (true) or disable (false) the auto-refresh of the instrument explorer"
                 }
@@ -594,6 +606,16 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "InstrumentsExplorer.enableAutorefresh",
+                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == false",
+                    "group": "navigation"
+                },
+                {
+                    "command": "InstrumentsExplorer.disableAutorefresh",
+                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == true",
+                    "group": "navigation"
+                },
+                {
                     "command": "systemConfigurations.addSystem",
                     "when": "view == systemConfigurations",
                     "group": "navigation"
@@ -616,6 +638,14 @@
                 {
                     "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
                     "when": "false"
+                },
+                {
+                    "command": "InstrumentsExplorer.enableAutorefresh",
+                    "when": "config.tsp.autorefresh == false"
+                },
+                {
+                    "command": "InstrumentsExplorer.disableAutorefresh",
+                    "when": "config.tsp.autorefresh == true"
                 },
                 {
                     "command": "InstrumentsExplorer.save",
