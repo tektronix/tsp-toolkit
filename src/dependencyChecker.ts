@@ -1,4 +1,4 @@
-import { promisify } from "util"
+import { inspect, promisify } from "util"
 import { platform } from "node:os"
 import { execFile } from "child_process"
 import * as vscode from "vscode"
@@ -35,7 +35,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         // look for kic.exe in the binaries and run kic.exe --version, if successfull, C++ is installed
         console.log("Checking Visual C++ Redistributable...")
         const { stdout } = await execFileAsync(EXECUTABLE, ["--version"], {
-            timeout: 3000,
+            timeout: 5000,
         })
         Log.debug(`Visual C++ Redistributable check succeeded: ${stdout}`, {
             ...LOGLOC,
@@ -44,7 +44,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         return true
     } catch (error) {
         Log.error(
-            `Error checking Visual C++ Redistributable: ${String(error)}`,
+            `Error checking Visual C++ Redistributable: ${inspect(error)}`,
             {
                 ...LOGLOC,
                 func: "checkVisualCppRedistributable()",
@@ -70,7 +70,7 @@ export async function checkVisaInstallation(): Promise<boolean> {
         // run kic-visa.exe --version, if successfull, VISA is installed
         console.log("Checking VISA Installation...")
         const { stdout } = await execFileAsync(VISA_EXECUTABLE, ["--version"], {
-            timeout: 3000,
+            timeout: 5000,
         })
         Log.debug(`VISA Installation detected: ${stdout}`, {
             ...LOGLOC,
@@ -78,7 +78,7 @@ export async function checkVisaInstallation(): Promise<boolean> {
         })
         return true
     } catch (error) {
-        Log.error(`Error checking VISA installation: ${String(error)}`, {
+        Log.error(`Error checking VISA installation: ${inspect(error)}`, {
             ...LOGLOC,
             func: "checkVisaInstallation()",
         })
@@ -107,7 +107,7 @@ export async function checkVisaInstallationLinux(): Promise<boolean> {
         })
         return true
     } catch (error) {
-        Log.warn(`VISA Installation not detected: ${String(error)}`, {
+        Log.warn(`VISA Installation not detected: ${inspect(error)}`, {
             ...LOGLOC,
             func: "checkVisaInstallationLinux()",
         })
