@@ -22,6 +22,9 @@ export const isWindows = platform() === "win32"
 export const isMacOS = platform() === "darwin"
 export const isLinux = platform() === "linux"
 
+const STARTUP_PROBE_TIMEOUT_MS = 10_000
+const CONNECTION_PROBE_TIMEOUT_MS = 5_000
+
 /**
  * Check if Visual C++ Redistributable libraries are installed on Windows
  * @returns Promise<boolean> - true if installed, false otherwise
@@ -35,7 +38,7 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
         // look for kic.exe in the binaries and run kic.exe --version, if successfull, C++ is installed
         console.log("Checking Visual C++ Redistributable...")
         const { stdout } = await execFileAsync(EXECUTABLE, ["--version"], {
-            timeout: 5000,
+            timeout: STARTUP_PROBE_TIMEOUT_MS,
         })
         Log.debug(`Visual C++ Redistributable check succeeded: ${stdout}`, {
             ...LOGLOC,
@@ -61,7 +64,9 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
  * @note VISA is optional. Users can use LAN instruments without it.
  * @note Only x64 DLL is checked since VS Code is x64-only
  */
-export async function checkVisaInstallation(): Promise<boolean> {
+export async function checkVisaInstallation(
+    timeoutMs = CONNECTION_PROBE_TIMEOUT_MS,
+): Promise<boolean> {
     if (!isWindows) {
         return true // skip for non-Windows platforms
     }
@@ -70,7 +75,7 @@ export async function checkVisaInstallation(): Promise<boolean> {
         // run kic-visa.exe --version, if successfull, VISA is installed
         console.log("Checking VISA Installation...")
         const { stdout } = await execFileAsync(VISA_EXECUTABLE, ["--version"], {
-            timeout: 5000,
+            timeout: timeoutMs,
         })
         Log.debug(`VISA Installation detected: ${stdout}`, {
             ...LOGLOC,
@@ -92,14 +97,16 @@ export async function checkVisaInstallation(): Promise<boolean> {
  * @returns Promise<boolean> - true if VISA library found, false otherwise
  * @note VISA is optional. Users can use LAN instruments without it.
  */
-export async function checkVisaInstallationLinux(): Promise<boolean> {
+export async function checkVisaInstallationLinux(
+    timeoutMs = CONNECTION_PROBE_TIMEOUT_MS,
+): Promise<boolean> {
     if (!isLinux) {
         return true // skip for non-Linux platforms
     }
     try {
         // execFile rejects if kic-visa cannot load the VISA library or exits non-zero.
         const { stdout } = await execFileAsync(VISA_EXECUTABLE, ["--version"], {
-            timeout: 3000,
+            timeout: timeoutMs,
         })
         Log.debug(`VISA Installation detected: ${stdout}`, {
             ...LOGLOC,
@@ -374,7 +381,7 @@ export async function checkSystemDependencies(): Promise<void> {
         const ignoreMissingVisa = vscode.workspace
             .getConfiguration("tsp")
             .get<boolean>("ignoreMissingVisa", false)
-        const hasVisa = await checkVisaInstallation()
+        const hasVisa = await checkVisaInstallation(STARTUP_PROBE_TIMEOUT_MS)
         if (!hasVisa && !ignoreMissingVisa) {
             Log.debug(
                 "VISA not installed (optional - required only for VISA protocol support)",
@@ -425,7 +432,9 @@ export async function checkSystemDependencies(): Promise<void> {
         const ignoreMissingVisa = vscode.workspace
             .getConfiguration("tsp")
             .get<boolean>("ignoreMissingVisa", false)
-        const hasVisaLinux = await checkVisaInstallationLinux()
+        const hasVisaLinux = await checkVisaInstallationLinux(
+            STARTUP_PROBE_TIMEOUT_MS,
+        )
         if (!hasVisaLinux && !ignoreMissingVisa) {
             Log.debug(
                 "VISA not installed (optional - required only for VISA protocol support)",
