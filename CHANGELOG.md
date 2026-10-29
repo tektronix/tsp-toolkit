@@ -21,6 +21,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
+- Don't set autorefresh enabled by default
 
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
@@ -29,6 +30,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-kic-cli** - Detect when instrument has closed the connection gracefully and gracefully close the program
 - Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
 - Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
+- Don't get info from saved instruments when doing autorefresh in order to prevent issues with USB and GPIB instruments
 
 ### Added
 - **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
@@ -43,6 +45,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
 - **tsp-toolkit-language-interop** Update python class documentation to clarify naming conventions for TSP script classes
 - Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+- Add a way to easily enable and disable autorefresh
 
 
 
