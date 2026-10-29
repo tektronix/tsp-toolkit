@@ -229,10 +229,6 @@ export class TriggerFlowWebViewManager
             )
             return
         }
-        if (!this.storage.sessionExists(name)) {
-            this.saveSession(name, config)
-            return
-        }
 
         this.storage.updateSession(name, config)
         this.dataProvider.refresh()
