@@ -667,6 +667,22 @@ export async function activate(context: vscode.ExtensionContext) {
                 )
             },
         },
+        {
+            name: "InstrumentsExplorer.enableAutorefresh",
+            cb: () => {
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .update("autorefresh", true)
+            },
+        },
+        {
+            name: "InstrumentsExplorer.disableAutorefresh",
+            cb: () => {
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .update("autorefresh", false)
+            },
+        },
     ])
 
     Log.debug("Setting up HelpDocumentWebView", LOGLOC)

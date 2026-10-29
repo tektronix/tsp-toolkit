@@ -1830,23 +1830,28 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        const info = await this.ping(1000)
+        const addr_start = this._addr.substring(0, 2)
 
-        if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
-            this.status = ConnectionStatus.Active
-            return
-        }
+        // Don't ping USB or GPIB instruments.
+        if (addr_start !== "USB" && addr_start !== "GPI") {
+            const info = await this.ping(1000)
 
-        let new_status = ConnectionStatus.Inactive
+            if (Date.now() - this.lastFound.getTime() < CULL_THRESHOLD_MS) {
+                this.status = ConnectionStatus.Active
+                return
+            }
 
-        if (info?.serial_number === this._parent?.info.serial_number) {
-            new_status = ConnectionStatus.Active
-        }
+            let new_status = ConnectionStatus.Inactive
 
-        if (this.status !== new_status) {
-            this.status = new_status
-            this.lastFound = new Date()
-            this._onChangedStatus.fire(this.status)
+            if (info?.serial_number === this._parent?.info.serial_number) {
+                new_status = ConnectionStatus.Active
+            }
+
+            if (this.status !== new_status) {
+                this.status = new_status
+                this.lastFound = new Date()
+                this._onChangedStatus.fire(this.status)
+            }
         }
     }
 }
