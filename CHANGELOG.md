@@ -19,6 +19,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.6.1]
 
+### Changed
+- **tsp-toolkit-script-gen** - Generated sweep scripts configure each channel directly, making them much shorter
+
+### Fixed
+- **tsp-toolkit-script-gen** - Waiting on more than two other channels of the same role no longer skips one of them
+- **tsp-toolkit-script-gen** - Measurement buffers of MPSU channels are now referenced correctly in generated scripts
+
 ## [1.6.0]
 
 ### Changed
