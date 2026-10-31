@@ -18,7 +18,17 @@ export interface TraceEvent {
     data: string
 }
 
-export type TraceRecordHandler = (record: TraceEvent) => void
+export interface TraceLifecycleEvent {
+    event: "connection_closed"
+    timestamp: string
+    session_id: string
+    protocol: TraceProtocol
+    address: string | null
+    reason: string
+}
+
+export type TraceRecord = TraceEvent | TraceLifecycleEvent
+export type TraceRecordHandler = (record: TraceRecord) => void
 export type TraceMalformedLineHandler = (line: string, error: Error) => void
 
 /**
@@ -102,7 +112,7 @@ export class TraceJsonlParser {
         }
 
         try {
-            this._onRecord(validateTraceEvent(JSON.parse(line) as unknown))
+            this._onRecord(validateTraceRecord(JSON.parse(line) as unknown))
         } catch (error) {
             this.reportMalformedLine(
                 line,
@@ -162,6 +172,50 @@ export function validateTraceEvent(value: unknown): TraceEvent {
         encoding: value.encoding,
         data: value.data,
     }
+}
+
+export function validateTraceLifecycleEvent(value: unknown): TraceLifecycleEvent {
+    if (!isRecord(value)) {
+        throw new Error("Trace lifecycle event must be a JSON object")
+    }
+    if (value.event !== "connection_closed") {
+        throw new Error("Trace lifecycle event type is invalid")
+    }
+    if (typeof value.timestamp !== "string" || value.timestamp.length === 0) {
+        throw new Error("Trace lifecycle event timestamp must be a non-empty string")
+    }
+    if (typeof value.session_id !== "string" || value.session_id.length === 0) {
+        throw new Error("Trace lifecycle event session_id must be a non-empty string")
+    }
+    if (!isTraceProtocol(value.protocol)) {
+        throw new Error("Trace lifecycle event protocol is invalid")
+    }
+    if (value.address !== null && typeof value.address !== "string") {
+        throw new Error("Trace lifecycle event address must be a string or null")
+    }
+    if (
+        typeof value.reason !== "string" ||
+        value.reason.length === 0 ||
+        value.reason.length > 256
+    ) {
+        throw new Error("Trace lifecycle event reason is invalid")
+    }
+
+    return {
+        event: "connection_closed",
+        timestamp: value.timestamp,
+        session_id: value.session_id,
+        protocol: value.protocol,
+        address: value.address,
+        reason: value.reason,
+    }
+}
+
+export function validateTraceRecord(value: unknown): TraceRecord {
+    if (isRecord(value) && value.event === "connection_closed") {
+        return validateTraceLifecycleEvent(value)
+    }
+    return validateTraceEvent(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

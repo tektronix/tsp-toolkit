@@ -21,7 +21,9 @@ const validEvent: TraceEvent = {
 suite("TraceJsonlParser Test Suite", function () {
     test("parses split and coalesced JSON lines", function () {
         const records: unknown[] = []
-        const parser = new TraceJsonlParser((record) => records.push(record))
+        const parser = new TraceJsonlParser((record) =>
+            records.push(record as TraceEvent),
+        )
 
         parser.push(
             `${JSON.stringify(validEvent)}\n${JSON.stringify(validEvent).slice(0, 20)}`,
@@ -40,7 +42,9 @@ suite("TraceJsonlParser Test Suite", function () {
             data: "µ",
         }
         const records: TraceEvent[] = []
-        const parser = new TraceJsonlParser((record) => records.push(record))
+        const parser = new TraceJsonlParser((record) =>
+            records.push(record as TraceEvent),
+        )
         const encoded = Buffer.from(`${JSON.stringify(event)}\n`)
         const characterIndex = encoded.indexOf(Buffer.from("µ"))
 
@@ -60,6 +64,25 @@ suite("TraceJsonlParser Test Suite", function () {
             data: "AP8Q",
         }
         const records: TraceEvent[] = []
+        const parser = new TraceJsonlParser((record) =>
+            records.push(record as TraceEvent),
+        )
+
+        parser.push(`${JSON.stringify(event)}\n`)
+
+        assert.deepEqual(records, [event])
+    })
+
+    test("delivers validated connection lifecycle events", function () {
+        const event = {
+            event: "connection_closed" as const,
+            timestamp: "2026-10-15T13:00:02Z",
+            session_id: "session-1",
+            protocol: "lan" as const,
+            address: "127.0.0.1:5025",
+            reason: "eof",
+        }
+        const records: unknown[] = []
         const parser = new TraceJsonlParser((record) => records.push(record))
 
         parser.push(`${JSON.stringify(event)}\n`)
@@ -91,7 +114,7 @@ suite("TraceJsonlParser Test Suite", function () {
                     shouldFail = false
                     throw new Error("display failure")
                 }
-                records.push(record)
+                records.push(record as TraceEvent)
             },
             (line) => malformed.push(line),
         )

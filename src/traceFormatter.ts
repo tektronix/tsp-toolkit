@@ -1,4 +1,4 @@
-import { TraceEvent } from "./traceParser"
+import { TraceEvent, TraceLifecycleEvent, TraceRecord } from "./traceParser"
 
 const SESSION_ID_WIDTH = 8
 const ADDRESS_WIDTH = 24
@@ -29,6 +29,28 @@ export function formatTraceEvent(event: TraceEvent): string {
         event.encoding.toUpperCase().padEnd(ENCODING_WIDTH),
         JSON.stringify(event.data),
     ].join("  ")
+}
+
+export function formatTraceLifecycleEvent(event: TraceLifecycleEvent): string {
+    const sessionId = event.session_id.slice(0, SESSION_ID_WIDTH)
+    const address = event.address ?? "<unknown>"
+
+    return [
+        formatTraceTimestamp(event.timestamp),
+        sessionId.padEnd(SESSION_ID_WIDTH),
+        "CLOSE".padEnd(DIRECTION_WIDTH),
+        event.protocol.toUpperCase().padEnd(PROTOCOL_WIDTH),
+        address.slice(0, ADDRESS_WIDTH).padEnd(ADDRESS_WIDTH),
+        "".padStart(BYTE_LENGTH_WIDTH),
+        "".padEnd(ENCODING_WIDTH),
+        JSON.stringify(event.reason),
+    ].join("  ")
+}
+
+export function formatTraceRecord(record: TraceRecord): string {
+    return "event" in record
+        ? formatTraceLifecycleEvent(record)
+        : formatTraceEvent(record)
 }
 
 export function formatTraceHeader(): string {

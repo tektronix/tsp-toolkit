@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
-import { TraceEvent } from "./traceParser"
-import { formatTraceEvent, formatTraceHeader } from "./traceFormatter"
+import { TraceRecord } from "./traceParser"
+import { formatTraceHeader, formatTraceRecord } from "./traceFormatter"
 
 export const TRACE_OUTPUT_CHANNEL_NAME = "TSP Instrument I/O Trace"
 
@@ -37,6 +37,6 @@ export function appendTraceOutputLine(line: string): void {
     traceOutputChannel?.appendLine(line)
 }
 
-export function appendTraceEvent(event: TraceEvent): void {
-    appendTraceOutputLine(formatTraceEvent(event))
+export function appendTraceEvent(event: TraceRecord): void {
+    appendTraceOutputLine(formatTraceRecord(event))
 }

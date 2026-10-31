@@ -105,6 +105,31 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 
 When connected to an instrument, you interact with it through the integrated terminal:
 
+### Live instrument I/O trace
+
+TSP Toolkit displays the physical instrument reads and writes for an active
+terminal in the shared `TSP Instrument I/O Trace` output channel. The CLI
+listener is created on localhost before the terminal starts, and each
+connection receives a unique session ID so multiple terminals remain
+distinguishable. Use the trace show and clear commands to inspect or reset
+the shared output.
+
+Payload records are newline-delimited JSON internally and are parsed
+incrementally, so TCP packet boundaries do not affect display. A transport EOF
+or terminal error is shown as a separate `CLOSE` row with its protocol,
+address, session, and bounded reason; it has no payload or byte count. Trace
+listener and malformed-record failures do not terminate the terminal session.
+
+The v1(initial version) display is live-only. It does not save trace files, reconstruct logical
+messages, filter traffic, or include ping, login checks, discovery, or setup
+traffic.
+
+REPL control commands such as `.exit`, `.help`, `.reset`, and `.abort` are not
+shown as read/write trace rows because they are handled locally by the CLI and
+are not instrument transport bytes. The trace shows the physical I/O caused by
+an operation, plus a separate `CLOSE` lifecycle row when the transport
+observes a resulting close.
+
 - **Direct Command Execution**: Type TSP commands directly in the terminal and press Enter to execute them.
 - **Terminal Commands**: The terminal supports special commands prefixed with a period (`.`). Here are the most important ones:
   - `.help` - Display available terminal commands.

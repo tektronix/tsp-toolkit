@@ -1,8 +1,12 @@
 import { assert } from "chai"
 import { suite, test } from "mocha"
 
-import { formatTraceEvent, formatTraceHeader } from "../traceFormatter"
-import { TraceEvent } from "../traceParser"
+import {
+    formatTraceEvent,
+    formatTraceHeader,
+    formatTraceLifecycleEvent,
+} from "../traceFormatter"
+import { TraceEvent, TraceLifecycleEvent } from "../traceParser"
 
 suite("Trace Formatter Test Suite", function () {
     test("formats trace metadata and payload for live display", function () {
@@ -55,6 +59,29 @@ suite("Trace Formatter Test Suite", function () {
                 "3",
                 "BASE64",
                 '"AP8Q"',
+            ],
+        )
+    })
+
+    test("formats connection lifecycle events without payload metadata", function () {
+        const event: TraceLifecycleEvent = {
+            event: "connection_closed",
+            timestamp: "2026-10-15T13:00:01.987654321Z",
+            session_id: "session-2",
+            protocol: "visa",
+            address: null,
+            reason: "eof",
+        }
+
+        assert.deepEqual(
+            formatTraceLifecycleEvent(event).split(/\s{2,}/),
+            [
+                "2026-10-15T13:00:01.987",
+                "session-",
+                "CLOSE",
+                "VISA",
+                "<unknown>",
+                '"eof"',
             ],
         )
     })

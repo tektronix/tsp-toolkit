@@ -5,8 +5,8 @@ import { assert } from "chai"
 import { suite, test } from "mocha"
 
 import { TraceListener } from "../traceListener"
-import { formatTraceEvent } from "../traceFormatter"
-import { TraceEvent } from "../traceParser"
+import { formatTraceRecord } from "../traceFormatter"
+import { TraceEvent, TraceRecord } from "../traceParser"
 
 const validEvent: TraceEvent = {
     timestamp: "2026-10-15T13:00:00.123456789Z",
@@ -95,7 +95,7 @@ suite("TraceListener Test Suite", function () {
     })
 
     test("disposes the listening socket and supports multiple sessions", async function () {
-        const records: TraceEvent[] = []
+        const records: TraceRecord[] = []
         let resolveRecords: () => void = () => {}
         const receivedRecords = new Promise<void>((resolve) => {
             resolveRecords = resolve
@@ -132,7 +132,7 @@ suite("TraceListener Test Suite", function () {
     })
 
     test("isolates malformed input from another socket session", async function () {
-        const records: TraceEvent[] = []
+        const records: TraceRecord[] = []
         let resolveRecord: () => void = () => {}
         const receivedRecord = new Promise<void>((resolve) => {
             resolveRecord = resolve
@@ -167,7 +167,7 @@ suite("TraceListener Test Suite", function () {
             resolveOutput = resolve
         })
         const listener = new TraceListener((record) => {
-            outputLines.push(formatTraceEvent(record))
+            outputLines.push(formatTraceRecord(record))
             if (outputLines.length === 2) {
                 resolveOutput()
             }
