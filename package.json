@@ -573,6 +573,7 @@
                     "group": "tsp"
                 },
                 {
+                    "when": "resourceIsFolder",
                     "command": "tsp.fetchExampleScripts",
                     "group": "tsp"
                 }

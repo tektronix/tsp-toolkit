@@ -31,6 +31,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
 - Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
 - Don't get info from saved instruments when doing autorefresh in order to prevent issues with USB and GPIB instruments
+- Restricted "Import TSP Example Scripts" context menu option to directories/folders only
 
 ### Added
 - **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
