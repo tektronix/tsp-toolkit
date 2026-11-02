@@ -1,7 +1,6 @@
 import { inspect, promisify } from "util"
 import { platform } from "node:os"
 import { execFile } from "child_process"
-import * as vscode from "vscode"
 import { Log, SourceLocation } from "./logging"
 import { EXECUTABLE, VISA_EXECUTABLE } from "./kic-cli"
 
@@ -44,17 +43,27 @@ export async function checkVisualCppRedistributable(): Promise<boolean> {
             ...LOGLOC,
             func: "checkVisualCppRedistributable()",
         })
-        return true
     } catch (error) {
-        Log.error(
-            `Error checking Visual C++ Redistributable: ${inspect(error)}`,
-            {
-                ...LOGLOC,
-                func: "checkVisualCppRedistributable()",
-            },
-        )
-        return false
+        if (
+            !(
+                error instanceof Error &&
+                "killed" in error &&
+                "signal" in error &&
+                error.killed === true &&
+                error.signal === "SIGTERM"
+            )
+        ) {
+            Log.error(
+                `Error checking Visual C++ Redistributable: ${inspect(error)}`,
+                {
+                    ...LOGLOC,
+                    func: "checkVisualCppRedistributable()",
+                },
+            )
+            return false
+        }
     }
+    return true
 }
 
 /**
@@ -81,14 +90,24 @@ export async function checkVisaInstallation(
             ...LOGLOC,
             func: "checkVisaInstallation()",
         })
-        return true
     } catch (error) {
-        Log.error(`Error checking VISA installation: ${inspect(error)}`, {
-            ...LOGLOC,
-            func: "checkVisaInstallation()",
-        })
-        return false
+        if (
+            !(
+                error instanceof Error &&
+                "killed" in error &&
+                "signal" in error &&
+                error.killed === true &&
+                error.signal === "SIGTERM"
+            )
+        ) {
+            Log.error(`Error checking VISA installation: ${inspect(error)}`, {
+                ...LOGLOC,
+                func: "checkVisaInstallation()",
+            })
+            return false
+        }
     }
+    return true
 }
 
 /**
@@ -122,7 +141,7 @@ export async function checkVisaInstallationLinux(
     }
 }
 
-interface MissingDependency {
+export interface MissingDependency {
     name: string
     description: string
     downloadUrl: string
@@ -190,183 +209,41 @@ export async function checkGlibcVersion(): Promise<boolean> {
     }
 }
 
-/**
- * Show an interactive menu to browse and take action on missing dependencies
- */
-async function showDependencyDetailsMenu(
-    missing: MissingDependency[],
-): Promise<void> {
-    while (true) {
-        // Create QuickPick items for each dependency
-        const items = missing.map((dep) => ({
-            label: `$(warning) ${dep.name}`,
-            description: dep.description,
-            detail: "Click to download or learn more",
-            dep: dep,
-        }))
-
-        // Add a "Done" option to exit the menu
-        const doneItem = {
-            label: "$(check) Done",
-            description: "Close this menu",
-            detail: "",
-            dep: null as MissingDependency | null,
-        }
-
-        const allItems = [...items, doneItem]
-
-        const chosen = await vscode.window.showQuickPick(allItems, {
-            placeHolder: `${missing.length} missing ${missing.length === 1 ? "dependency" : "dependencies"} - Select one to view options`,
-            title: "Missing Dependencies",
-            ignoreFocusOut: true,
-        })
-
-        // User cancelled or clicked Done
-        if (!chosen || !chosen.dep) {
-            break
-        }
-
-        // Show actions for the selected dependency
-        const actions: string[] = ["$(cloud-download) Download"]
-        if (chosen.dep.learnMoreUrl) {
-            actions.push("$(info) Learn More")
-        }
-        actions.push("$(arrow-left) Back to List")
-
-        const action = await vscode.window.showQuickPick(actions, {
-            placeHolder: `${chosen.dep.name} - ${chosen.dep.description}`,
-            title: `Actions for ${chosen.dep.name}`,
-            ignoreFocusOut: true,
-        })
-
-        if (action?.includes("Download")) {
-            await vscode.env.openExternal(
-                vscode.Uri.parse(chosen.dep.downloadUrl),
-            )
-            // Show confirmation and continue
-            await vscode.window.showInformationMessage(
-                `Opening ${chosen.dep.name} download page in your browser...`,
-            )
-            continue
-        } else if (action?.includes("Learn More") && chosen.dep.learnMoreUrl) {
-            await vscode.env.openExternal(
-                vscode.Uri.parse(chosen.dep.learnMoreUrl),
-            )
-            // Show confirmation and continue
-            await vscode.window.showInformationMessage(
-                `Opening ${chosen.dep.name} information page in your browser...`,
-            )
-            continue
-        } else if (!action || action.includes("Back")) {
-            // User wants to go back to the list, continue the loop
-            continue
-        } else {
-            // User cancelled, go back to list
-            continue
-        }
-    }
+export interface DependencyCheckResult {
+    /** true if every dependency (required and optional) is present */
+    ok: boolean
+    /** dependencies that are missing and should be reported to the user */
+    missing: MissingDependency[]
 }
 
 /**
- * Show a consolidated notification for all missing dependencies
+ * Check all dependencies for the current platform without any UI.
+ * @param ignoreMissingVisa - don't report VISA as missing (the result still reflects it)
  */
-async function showMissingDependenciesNotification(
-    missing: MissingDependency[],
-): Promise<void> {
-    if (missing.length === 0) {
-        return
+export async function findMissingDependencies(
+    ignoreMissingVisa = false,
+): Promise<DependencyCheckResult> {
+    const logloc = { ...LOGLOC, func: "findMissingDependencies()" }
+    const missing: MissingDependency[] = []
+
+    const visaDependency: MissingDependency = {
+        name: "VISA(Optional)",
+        description:
+            "Optional - Required only for VISA protocol instrument communication",
+        downloadUrl:
+            "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
+        learnMoreUrl:
+            "https://www.ivifoundation.org/specifications/default.aspx",
+        optional: true,
     }
-
-    while (true) {
-        // Build the message
-        let message = ""
-        let depList = ""
-
-        const numRequired = missing.filter((dep) => !dep.optional).length
-        const numOptional = missing.filter((dep) => dep.optional).length
-        const hasRequired = numRequired > 0
-
-        // Create a numbered list
-        depList = missing
-            .map((dep, index) => `${index + 1}. ${dep.name}`) // 1. Name, 2. Name, ...
-            .join("\n")
-        message = `TSP Toolkit: ${numRequired > 0 ? `${numRequired} required ${numOptional > 0 ? "and " : ""}` : ""}${numOptional > 0 ? `${numOptional} optional ` : ""}${missing.length === 1 ? "dependency is" : "dependencies are"} missing. Some features may not work correctly without required dependencies`
-
-        if (!hasRequired) {
-            message += "\n" + depList + "\n"
-        }
-
-        console.log(message)
-
-        // Create action buttons based on number of dependencies
-        const actions: string[] = []
-        const actionMap = new Map<string, MissingDependency>()
-
-        // Only show individual download buttons for single dependency
-        if (missing.length === 1) {
-            missing.forEach((dependency) => {
-                const actionLabel = `Download ${dependency.name}`
-                actions.push(actionLabel)
-                actionMap.set(actionLabel, dependency)
-            })
-        }
-
-        // For multiple dependencies, show Browse All instead of individual downloads
-        if (missing.length > 1) {
-            actions.push("Browse All")
-        }
-
-        actions.push("Dismiss")
-
-        const messageApi = hasRequired
-            ? vscode.window.showErrorMessage
-            : vscode.window.showWarningMessage
-
-        const selection = await messageApi(
-            message,
-            { modal: hasRequired, detail: depList },
-            ...actions,
-        )
-
-        if (selection === "Dismiss" || !selection) {
-            // User dismissed the notification
-            break
-        } else if (selection === "Browse All") {
-            // Show a persistent menu to browse all missing dependencies
-            await showDependencyDetailsMenu(missing)
-            // After menu closes, loop back to show notification again
-            continue
-        } else if (selection) {
-            // User clicked on a specific download button
-            const dep = actionMap.get(selection)
-            if (dep) {
-                await vscode.env.openExternal(vscode.Uri.parse(dep.downloadUrl))
-                // Show confirmation and loop back to notification
-                await vscode.window.showInformationMessage(
-                    `Opening ${dep.name} download page in your browser...`,
-                )
-                continue
-            }
-        }
-    }
-}
-
-/**
- * Check all required dependencies for the current platform
- * and show notifications if any are missing
- */
-export async function checkSystemDependencies(): Promise<void> {
-    const logloc = { ...LOGLOC, func: "checkSystemDependencies()" }
-    const missingDependencies: MissingDependency[] = []
 
     if (isWindows) {
         Log.debug("Checking Windows dependencies", logloc)
 
-        // Check Visual C++ Redistributable
         const hasVCRedist = await checkVisualCppRedistributable()
         if (!hasVCRedist) {
             Log.warn("Visual C++ Redistributable not detected", logloc)
-            missingDependencies.push({
+            missing.push({
                 name: "Visual C++ Redistributable",
                 description: "Required for native modules and performance",
                 downloadUrl: "https://aka.ms/vs/17/release/vc_redist.x64.exe",
@@ -377,47 +254,28 @@ export async function checkSystemDependencies(): Promise<void> {
             Log.debug("Visual C++ Redistributable detected", logloc)
         }
 
-        // Check VISA installation (optional)
-        const ignoreMissingVisa = vscode.workspace
-            .getConfiguration("tsp")
-            .get<boolean>("ignoreMissingVisa", false)
         const hasVisa = await checkVisaInstallation(STARTUP_PROBE_TIMEOUT_MS)
         if (!hasVisa && !ignoreMissingVisa) {
             Log.debug(
                 "VISA not installed (optional - required only for VISA protocol support)",
                 logloc,
             )
-            missingDependencies.push({
-                name: "VISA(Optional)",
-                description:
-                    "Optional - Required only for VISA protocol instrument communication",
-                downloadUrl:
-                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
-                learnMoreUrl:
-                    "https://www.ivifoundation.org/specifications/default.aspx",
-                optional: true,
-            })
+            missing.push(visaDependency)
         } else {
             Log.debug("VISA installation detected", logloc)
         }
 
-        // Show consolidated notification for all missing dependencies
-        if (missingDependencies.length > 0) {
-            await showMissingDependenciesNotification(missingDependencies)
-        }
-
-        // Add more Windows dependency checks here
+        return { ok: hasVisa && hasVCRedist, missing }
     } else if (isMacOS) {
         Log.debug("Checking macOS dependencies", logloc)
-        // Add macOS dependency checks here
+        return { ok: true, missing }
     } else if (isLinux) {
         Log.debug("Checking Linux dependencies", logloc)
 
-        // Check GLIBC version
-        const hasGlibc239 = await checkGlibcVersion()
-        if (!hasGlibc239) {
+        const hasGlibc = await checkGlibcVersion()
+        if (!hasGlibc) {
             Log.warn("GLIBC version is less than 2.39", logloc)
-            missingDependencies.push({
+            missing.push({
                 name: "GLIBC >= 2.39",
                 description:
                     "Required for compatibility with modern features. Your system has an older version.",
@@ -428,10 +286,6 @@ export async function checkSystemDependencies(): Promise<void> {
             Log.debug("GLIBC version is 2.39 or higher", logloc)
         }
 
-        // Check VISA installation (optional)
-        const ignoreMissingVisa = vscode.workspace
-            .getConfiguration("tsp")
-            .get<boolean>("ignoreMissingVisa", false)
         const hasVisaLinux = await checkVisaInstallationLinux(
             STARTUP_PROBE_TIMEOUT_MS,
         )
@@ -440,25 +294,12 @@ export async function checkSystemDependencies(): Promise<void> {
                 "VISA not installed (optional - required only for VISA protocol support)",
                 logloc,
             )
-            missingDependencies.push({
-                name: "VISA(Optional)",
-                description:
-                    "Optional - Required only for VISA protocol instrument communication",
-                downloadUrl:
-                    "https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html",
-                learnMoreUrl:
-                    "https://www.ivifoundation.org/specifications/default.aspx",
-                optional: true,
-            })
+            missing.push(visaDependency)
         } else {
             Log.debug("VISA installation detected on Linux", logloc)
         }
 
-        // Show consolidated notification for all missing dependencies
-        if (missingDependencies.length > 0) {
-            await showMissingDependenciesNotification(missingDependencies)
-        }
-
-        // Add more Linux dependency checks here
+        return { ok: hasVisaLinux && hasGlibc, missing }
     }
+    return { ok: false, missing }
 }

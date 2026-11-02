@@ -27,8 +27,8 @@ import { TriggerFlowWebViewManager } from "./triggerFlowWebViewManager"
 import { GenericSessionStorage } from "./genericSessionStorage"
 import { extractTarGzToDisk, isMacOS } from "./utility"
 import { wrapTspToPython } from "./tspConverter"
+import { checkSystemDependencies } from "./dependencyUi"
 import {
-    checkSystemDependencies,
     checkVisaInstallation,
     checkVisaInstallationLinux,
     isLinux,
