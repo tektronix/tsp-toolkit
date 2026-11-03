@@ -35,6 +35,7 @@ import {
     isWindows,
 } from "./dependencyChecker"
 import { ExtraActionsWebView } from "./ExtraActionsWebView"
+import { isVersionUpgrade } from "./version"
 
 let _instrExplorer: InstrumentsExplorer
 let _tspConverterDiagnostics: vscode.DiagnosticCollection
@@ -344,8 +345,14 @@ async function checkVersionAndShowAnnouncement(
         let message = ""
         message = `TSP Toolkit v${currentVersion} has been successfully installed. Check out the features!`
 
-        if (previousVersion && currentVersion) {
+        if (
+            previousVersion &&
+            currentVersion &&
+            isVersionUpgrade(previousVersion, currentVersion)
+        ) {
             message = `TSP Toolkit just updated to v${currentVersion}. Check out what's new!`
+        } else if (previousVersion && currentVersion) {
+            return
         }
         const changelogPath = vscode.Uri.joinPath(
             context.extensionUri,
