@@ -573,6 +573,7 @@
                     "group": "tsp"
                 },
                 {
+                    "when": "explorerResourceIsFolder",
                     "command": "tsp.fetchExampleScripts",
                     "group": "tsp"
                 }
