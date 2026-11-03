@@ -23,6 +23,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
 - Don't set autorefresh enabled by default
 
+### Removed
+- Removed refresh button in favor of new Autorefresh buttons
+
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
 - Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
