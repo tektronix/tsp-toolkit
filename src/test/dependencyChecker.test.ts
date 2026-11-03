@@ -1,7 +1,8 @@
+/*
 import { assert } from "chai"
 import { suite, test } from "mocha"
 import * as dc from "../dependencyChecker"
-/* // Test commented because is takes so long to run
+// Test commented because is takes so long to run
 suite("Dependency Checker Test Suite", function () {
     test("loop dependency check", async function () {
         const ITERATIONS = 5000
