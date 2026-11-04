@@ -22,6 +22,7 @@ TSP-enabled Tektronix and Keithley instruments. This toolkit delivers a complete
     - Save buffer contents to a file
     - Start and stop saving commands and output to a file
 * **TriggerFlow® Visual Editor** - Generate trigger model code by moving trigger model block on a canvas.
+* **Python Interoperability** - Generate a Python wrapper from a TSP script to call its public functions and access supported globals from a Python application.
 
 ## Quick Start
 
@@ -67,10 +68,15 @@ TSP Toolkit provides a dedicated view container in the Activity Bar that offers 
   - Fetch configurations from connected instruments.
   - Switch between different configurations.
 
-- **Script Generation**: Create and manage TSP scripts without manual coding.
-  - Create new script generation sessions.
-  - Access saved script configurations.
-  - Generate ready-to-use TSP scripts.
+- **Tools**: Create and manage TSP scripts without manual coding.
+  - **IV Characterization Script Generation**:
+    - Create new sessions.
+    - Access saved script configurations.
+    - Generate ready-to-use TSP scripts.
+  - **TriggerFlow® Script Generation**:
+    - Create new sessions.
+    - Access saved sessions
+    - Generate trigger model code that requires some setup code.
 
 ### Accessing the View
 
@@ -86,13 +92,24 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 
 - **Auto-Discovery**: Automatically find TSP instruments on your local network.
 - **Manual Connection**: Connect to instruments via IP address or VISA resource string.
-- **Instrument Management**: Save, rename, and remove instruments from your list.
+- **Instrument Management**: Save, rename, and hide instruments from your list.
+  **Hide** (crossed-eye icon) moves an instrument to **Hidden Instruments** and removes it from
+  the saved list. Hidden instruments remain hidden after discovery, refresh,
+  and restarting VS Code. Use **Show** (open-eye icon) on a hidden instrument to return it
+  to the saved list. Hidden instruments skip status polling, but discovery can still
+  update their information and connections. Status polling resumes after **Show**.
+  Use **Connect** on a connection under a hidden instrument to automatically
+  show the instrument and connect using that connection. Entering a hidden
+  instrument's known connection string with **New Connection** also shows it before
+  connecting. Once shown, the instrument remains visible even if the connection
+  attempt fails or is cancelled.
 - **Firmware Update**: Update instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
 - **Save Buffers to File**: Save the contents of a reading buffer to a CSV-format file
 - **Save Commands and Output to File**: Save any proceeding commands and their output to a file
-* **TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
+- **TriggerFlow® Visual Editor**: Generate trigger model code by moving trigger model block on a canvas.
+- **Python Interoperability**: Generate a Python wrapper from a TSP script to call its public functions and access supported globals from a Python application.
 
 ### Terminal Usage
 
@@ -170,6 +187,11 @@ The TSP Toolkit includes a powerful on-instrument debugging capability that allo
 - **Call Stack**: Navigate the execution call stack to understand the flow of your code.
 - **Step Controls**: Step into, step over, and step out of functions during debugging.
 
+## Python Interoperability
+
+Generate a Python wrapper for any `.tsp` file by selecting **Generate Python Wrapper from a TSP Script** from the editor, editor-tab, or Explorer context menu. Choose an existing Python file to replace or select a location and name for a new `.py` file. TSP Toolkit asks for confirmation before overwriting an existing file, then opens the saved wrapper in VS Code. The wrapper loads the script on the instrument and makes its top-level functions and supported literal globals available through Python methods.
+
+Wrapper-generation diagnostics, including syntax errors and unsupported constructs, appear in the VS Code **Problems** panel. The TSP script remains the source of instrument behavior; the generated Python class provides access to its public functions and supported globals. For requirements, usage, and supported TSP constructs, open the Command Palette with `Ctrl+Shift+P`, run **Welcome: Open Walkthrough...**, select **Getting Started with TSP Toolkit**, and then choose **Generate a Python Wrapper**.
 
 ## System Configuration
 
@@ -316,6 +338,9 @@ for more information.
 - Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
   instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
   such as using `#lua_table` to get the number of elements in a table.
+- LuaLS may report duplicate LuaDoc fields when multiple `.tsp` files that define the
+  same types are open in the workspace. Closing a file may
+  clear the warning from the remaining open file.
 - When connecting to a GPIB instrument, ensure passwords are disabled for the GPIB interface.
     - The GPIB interface doesn't provide any other mechanisms to get instrument information except by running `*IDN?`. If the interface is password protected, instrument information cannot be retrieved and TSP Toolkit can't know what kind of instrument it is attempting to connect to.
 

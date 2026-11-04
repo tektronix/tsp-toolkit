@@ -9,6 +9,7 @@ import {
     connectionStatusIcon,
 } from "./connection"
 import {
+    HiddenInstruments,
     InactiveInstrumentList,
     InfoList,
     instr_map,
@@ -22,9 +23,16 @@ import {
     InstrInfo,
     IoType,
 } from "./resourceManager"
+import { DISCOVERY_TIMEOUT } from "./instrumentExplorer"
+import {
+    BULK_MP5103_CONTEXT_KEY,
+    hasMultipleAvailableMP5103,
+} from "./bulkFirmwareUpdate"
 
 let nextID = 0
 const createID = () => nextID++
+
+export const CULL_THRESHOLD_MS: number = DISCOVERY_TIMEOUT * 3 * 1000
 
 const rpcClient: JSONRPCClient = new JSONRPCClient(
     (jsonRPCRequest) =>
@@ -50,7 +58,12 @@ const rpcClient: JSONRPCClient = new JSONRPCClient(
     createID,
 )
 
-type TreeData = Instrument | Connection | InactiveInstrumentList | StringData
+type TreeData =
+    | Instrument
+    | Connection
+    | InactiveInstrumentList
+    | HiddenInstruments
+    | StringData
 type VscTdp = vscode.TreeDataProvider<TreeData>
 
 export class InstrumentProvider implements VscTdp, vscode.Disposable {
@@ -74,14 +87,26 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             func: "InstrumentTreeDataProvider.constructor()",
         }
         Log.debug("Instantiating InstrumentTreeDataProvider", LOGLOC)
-        this.getSavedInstruments().catch(() => {})
+        this.getSavedInstruments().catch((error: unknown) => {
+            Log.error(
+                `Failed to load instrument lists: ${String(error)}`,
+                LOGLOC,
+            )
+            void vscode.window.showErrorMessage(String(error))
+        })
         this.configWatcherEnable(true)
+        this.updateBulkMp5103Context()
     }
 
     dispose() {
         for (const i of this._instruments) {
             i.dispose()
         }
+        void vscode.commands.executeCommand(
+            "setContext",
+            BULK_MP5103_CONTEXT_KEY,
+            false,
+        )
     }
 
     get instruments(): Instrument[] {
@@ -121,8 +146,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         const missing = instrument.connections.filter((v) => {
             for (const m of raw) {
                 if (
+                    m.model === instrument.info.model &&
                     m.serial_number === instrument.info.serial_number &&
-                    m.instr_address === v.addr
+                    m.io_type === v.type &&
+                    (m.instr_address === v.addr ||
+                        (m.io_type === IoType.Lan && v.type === IoType.Lan))
                 ) {
                     return false
                 }
@@ -144,12 +172,26 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
 
         for (const r of raw) {
-            if (r.serial_number === instrument.info.serial_number) {
+            if (
+                r.model === instrument.info.model &&
+                r.serial_number === instrument.info.serial_number
+            ) {
                 if (r.friendly_name !== instrument.name) {
                     r.friendly_name = instrument.name
                 }
                 if (r.firmware_revision !== instrument.info.firmware_rev) {
-                    r.firmware_revision = instrument.info.firmware_rev
+                    if (instrument.info.firmware_rev == "UNKNOWN") {
+                        //avoid writing UNKNOWN for firmware revision, instead keep the last known revision in the saved list
+                        Log.warn(
+                            `Firmware revision for ${instrument.name} is UNKNOWN, keeping the last known revision ${r.firmware_revision}`,
+                            {
+                                file: "instruments.ts",
+                                func: "InstrumentTreeDataProvider.updateSaved()",
+                            },
+                        )
+                    } else {
+                        r.firmware_revision = instrument.info.firmware_rev
+                    }
                 }
                 // Update the address if it changed for this connection
                 const matchingConnection = instrument.connections.find(
@@ -164,9 +206,24 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             }
         }
 
+        const unique = raw.filter(
+            (entry, index, entries) =>
+                entries.findIndex(
+                    (candidate) =>
+                        candidate.serial_number === entry.serial_number &&
+                        candidate.model === entry.model &&
+                        candidate.io_type === entry.io_type &&
+                        candidate.instr_address === entry.instr_address,
+                ) === index,
+        )
+
         await vscode.workspace
             .getConfiguration("tsp")
-            .update("savedInstruments", raw, vscode.ConfigurationTarget.Global)
+            .update(
+                "savedInstruments",
+                unique,
+                vscode.ConfigurationTarget.Global,
+            )
     }
 
     addOrUpdateInstruments(instruments: Instrument[]) {
@@ -184,6 +241,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }[] = []
 
         for (const i of this._instruments) {
+            if (i.hidden) {
+                continue
+            }
             for (const c of i.connections) {
                 connections.push({
                     name: i.name,
@@ -222,7 +282,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         return undefined
     }
 
-    addOrUpdateInstrument(instrument: Instrument) {
+    addOrUpdateInstrument(instrument: Instrument): Instrument {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.addOrUpdateInstrument()`,
@@ -235,20 +295,26 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         )
 
         let changed = false
+        let tracked = instrument
         if (found_idx > -1) {
-            for (const c of instrument.connections) {
-                changed = this._instruments[found_idx].addConnection(c)
-                if (
-                    this._instruments[found_idx].name !== instrument.name &&
-                    !this._instruments[found_idx].saved &&
-                    instrument.name
-                ) {
-                    this._instruments[found_idx].name = instrument.name
-                    changed = true
+            tracked = this._instruments[found_idx]
+            this._instruments[found_idx].updateInfo(instrument.info)
+            if (this._instruments[found_idx] !== instrument) {
+                for (const c of instrument.connections) {
+                    changed =
+                        this._instruments[found_idx].addConnection(c) || changed
+                    if (
+                        this._instruments[found_idx].name !== instrument.name &&
+                        !this._instruments[found_idx].saved &&
+                        instrument.name
+                    ) {
+                        this._instruments[found_idx].name = instrument.name
+                        changed = true
+                    }
                 }
-                if (changed) {
-                    this._instruments[found_idx].updateStatus()
-                }
+            }
+            if (changed) {
+                this._instruments[found_idx].updateStatus()
             }
         } else {
             if (!instrument.name) {
@@ -263,55 +329,24 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
 
         this.reloadTreeData()
+        return tracked
     }
 
-    private _onDidChangeTreeData: vscode.EventEmitter<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
-    > = new vscode.EventEmitter<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
+    private _onDidChangeTreeData = new vscode.EventEmitter<
+        void | TreeData | TreeData[] | null | undefined
     >()
 
     readonly onDidChangeTreeData: vscode.Event<
-        | void
-        | Instrument
-        | Connection
-        | InactiveInstrumentList
-        | StringData
-        | (Instrument | Connection | InactiveInstrumentList | StringData)[]
-        | null
-        | undefined
+        void | TreeData | TreeData[] | null | undefined
     > = this._onDidChangeTreeData.event
 
     getTreeItem(
-        element: Instrument | Connection | InactiveInstrumentList | StringData,
+        element: TreeData,
     ): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element
     }
 
-    getChildren(
-        element?:
-            | Instrument
-            | Connection
-            | InactiveInstrumentList
-            | StringData
-            | undefined,
-    ): vscode.ProviderResult<
-        (Instrument | Connection | InactiveInstrumentList | StringData)[]
-    > {
+    getChildren(element?: TreeData): vscode.ProviderResult<TreeData[]> {
         // const LOGLOC: SourceLocation = {
         //     file: "instruments.ts",
         //     func: `InstrumentTreeDataProvider.getChildren()`,
@@ -322,9 +357,11 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
                     ...this._instruments.filter(
                         (x) =>
                             x.status === ConnectionStatus.Active ||
+                            x.status === ConnectionStatus.Connecting ||
                             x.status === ConnectionStatus.Connected,
                     ),
                     new InactiveInstrumentList(),
+                    new HiddenInstruments(),
                 ])
             })
         }
@@ -360,12 +397,13 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             return new Promise((resolve) => {
                 resolve([
                     ...this._instruments.filter(
-                        (x) =>
-                            x.status === ConnectionStatus.Inactive ||
-                            x.status === ConnectionStatus.Ignored,
+                        (x) => x.status === ConnectionStatus.Inactive,
                     ),
                 ])
             })
+        }
+        if (element instanceof HiddenInstruments) {
+            return Promise.resolve(this._instruments.filter((i) => i.hidden))
         }
         return new Promise((resolve) => {
             resolve([])
@@ -381,8 +419,20 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         if (enabled && !this._savedInstrumentConfigWatcher) {
             this._savedInstrumentConfigWatcher =
                 vscode.workspace.onDidChangeConfiguration((e) => {
-                    if (e.affectsConfiguration("tsp.savedInstruments")) {
-                        this.getSavedInstruments().catch(() => {})
+                    if (
+                        e.affectsConfiguration("tsp.savedInstruments") ||
+                        e.affectsConfiguration("tsp.hiddenInstruments")
+                    ) {
+                        this.getSavedInstruments().catch((error: unknown) => {
+                            Log.error(
+                                `Failed to load instrument lists: ${String(error)}`,
+                                {
+                                    file: "instrumentProvider.ts",
+                                    func: "InstrumentProvider.configWatcherEnable()",
+                                },
+                            )
+                            void vscode.window.showErrorMessage(String(error))
+                        })
                     }
                 })
         } else if (!enabled && this._savedInstrumentConfigWatcher) {
@@ -392,19 +442,25 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
     }
 
     getConnection(details: ConnectionDetails): Connection | null {
-        const matching_instruments = this._instruments.filter(
-            (i) => i.name === details.name,
-        )
+        const matches = (c: Connection) =>
+            c.addr === details.addr &&
+            (c.type as string).toLowerCase() === details.type.toLowerCase()
 
-        for (const i of matching_instruments) {
-            for (const c of i.connections) {
-                if (
-                    c.addr === details.addr &&
-                    (c.type as string).toLowerCase() ===
-                        details.type.toLowerCase()
-                ) {
-                    return c
-                }
+        for (const i of this._instruments.filter(
+            (i) => i.name === details.name,
+        )) {
+            const c = i.connections.find(matches)
+            if (c) {
+                return c
+            }
+        }
+
+        // Typed connection strings usually have no name; reuse the tree's own
+        // connection so it owns the terminal and keeps its Connected status.
+        for (const i of this._instruments) {
+            const c = i.connections.find(matches)
+            if (c) {
+                return c
             }
         }
 
@@ -442,18 +498,67 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         )
     }
 
-    async saveInstrument(instr: Instrument): Promise<void> {
-        instr.saved = true
-        await this.updateSaved(instr)
-        this.reloadTreeData()
+    async showHiddenConnection(connection: Connection): Promise<void> {
+        if (connection.parent?.hidden) {
+            await this.saveInstrument(connection.parent)
+        }
     }
 
-    async removeInstrument(instr: Instrument): Promise<void> {
-        Log.info(`Remove ${instr.info.serial_number}`, {
+    async saveInstrument(instr: Instrument): Promise<void> {
+        const wasSaved = instr.saved
+        this.configWatcherEnable(false)
+        try {
+            const config = vscode.workspace.getConfiguration("tsp")
+            const saved = config.get<InstrInfo[]>("savedInstruments") ?? []
+            instr.saved = true
+            await this.updateSaved(instr)
+            const hidden = config.get<InstrInfo[]>("hiddenInstruments") ?? []
+            try {
+                await config.update(
+                    "hiddenInstruments",
+                    hidden.filter(
+                        (i) =>
+                            i.model !== instr.info.model ||
+                            i.serial_number !== instr.info.serial_number,
+                    ),
+                    vscode.ConfigurationTarget.Global,
+                )
+            } catch (error) {
+                try {
+                    await config.update(
+                        "savedInstruments",
+                        saved,
+                        vscode.ConfigurationTarget.Global,
+                    )
+                } catch (rollbackError) {
+                    throw new AggregateError(
+                        [error, rollbackError],
+                        "Failed to save instrument and restore the saved instrument list.",
+                    )
+                }
+                throw error
+            }
+            instr.hidden = false
+            this.reloadTreeData()
+        } catch (error) {
+            instr.saved = wasSaved
+            Log.error(`Failed to save instrument: ${String(error)}`, {
+                file: "instrumentProvider.ts",
+                func: "InstrumentProvider.saveInstrument()",
+            })
+            void vscode.window.showErrorMessage(String(error))
+            throw error
+        } finally {
+            this.configWatcherEnable(true)
+        }
+    }
+
+    async hideInstrument(instr: Instrument): Promise<void> {
+        Log.info(`Hide ${instr.info.serial_number}`, {
             file: "instruments.ts",
-            func: "InstrumentTreeDataProvider.removeInstrument()",
+            func: "InstrumentTreeDataProvider.hideInstrument()",
         })
-        await this.removeSavedList(instr)
+        await this.hideSavedInstrument(instr)
         this.reloadTreeData()
     }
 
@@ -464,32 +569,77 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         // Sort the connections by status
         // (we want to show higher values first, so invert the result)
         // this._instruments.sort((a, b) => -(a.status - b.status))
+        this.updateBulkMp5103Context()
         this._onDidChangeTreeData.fire(undefined)
     }
 
-    private async getSavedInstruments(): Promise<Instrument[]> {
-        return new Promise(() => {
+    private updateBulkMp5103Context() {
+        void vscode.commands.executeCommand(
+            "setContext",
+            BULK_MP5103_CONTEXT_KEY,
+            hasMultipleAvailableMP5103(this._instruments),
+        )
+    }
+
+    private getSavedInstruments(): Promise<Instrument[]> {
+        return new Promise((resolve) => {
+            const hidden: InstrInfo[] =
+                vscode.workspace
+                    .getConfiguration("tsp")
+                    .get("hiddenInstruments") ?? []
+            for (const instrument of this._instruments) {
+                instrument.hidden = hidden.some(
+                    (i) =>
+                        i.model === instrument.info.model &&
+                        i.serial_number === instrument.info.serial_number,
+                )
+                if (instrument.hidden) {
+                    instrument.saved = false
+                }
+            }
+            for (const entry of hidden) {
+                const instrument = Instrument.from(entry)
+                instrument.hidden = true
+                this.addOrUpdateInstrument(instrument)
+            }
             const raw: InstrInfo[] =
                 vscode.workspace
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
 
             this.addOrUpdateInstruments(
-                raw.map((v) => {
-                    const i =
-                        this._instruments.find(
-                            (i) => i.info.serial_number === v.serial_number,
-                        ) ?? Instrument.from(v)
-                    i.saved = true
-                    return i
-                }),
+                raw
+                    .filter(
+                        (v) =>
+                            !hidden.some(
+                                (i) =>
+                                    i.model === v.model &&
+                                    i.serial_number === v.serial_number,
+                            ),
+                    )
+                    .map((v) => {
+                        const i =
+                            this._instruments.find(
+                                (i) =>
+                                    i.info.model === v.model &&
+                                    i.info.serial_number === v.serial_number,
+                            ) ?? Instrument.from(v)
+                        i.connections.forEach((c) => {
+                            c.lastFound = new Date(0)
+                        })
+                        i.saved = true
+                        return i
+                    }),
             )
 
             //raw:  {1, 2, 3, 4}
             //inst: {   2,    4, 5, 6}
             const to_remove = this._instruments.filter((v) => {
                 for (const r of raw) {
-                    if (r.serial_number === v.info.serial_number) {
+                    if (
+                        r.model === v.info.model &&
+                        r.serial_number === v.info.serial_number
+                    ) {
                         return false
                     }
                 }
@@ -503,6 +653,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             for (const r of to_remove) {
                 this._instruments = this._instruments.filter(
                     (i) =>
+                        i.info.model !== r.info.model ||
                         i.info.serial_number !== r.info.serial_number ||
                         !i.saved,
                 )
@@ -512,7 +663,7 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             //to_remove:    {            5, 6}
             //inst:         {   2,    4      }
 
-            return this._instruments
+            resolve(this._instruments)
         })
     }
 
@@ -523,6 +674,9 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
         const parallel_info: Promise<void>[] = []
         for (let i = 0; i < this._instruments.length; i++) {
+            if (this._instruments[i].hidden) {
+                continue
+            }
             Log.debug(
                 `Checking connections for ${this._instruments[i].name}`,
                 LOGLOC,
@@ -551,35 +705,31 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             })
             rl.on("line", (line) => {
                 const discovered = JSON.parse(line) as InstrInfo
-                const existing = this._instruments.find(
-                    (i) => i.info.serial_number === discovered.serial_number,
-                )
-
-                if (existing) {
-                    const existingAddr = existing.connections[0]?.addr
-                    const discoveredAddr = discovered.instr_address
-
-                    if (existingAddr && existingAddr !== discoveredAddr) {
-                        // Update the saved instruments configuration if this instrument was saved
-                        if (existing.saved) {
-                            this.updateSaved(existing).catch((err) => {
-                                Log.error(
-                                    `Failed to update saved instrument: ${err}`,
-                                    {
-                                        file: "instruments.ts",
-                                        func: "InstrumentProvider.getContent()",
-                                    },
-                                )
-                            })
-                        }
-                    }
-                }
                 this.instruments_discovered = true
                 const inst = Instrument.from(discovered)
-                inst.connections[0].status = ConnectionStatus.Active
+                inst.connections.forEach((c) => {
+                    c.lastFound = new Date()
+                    c.status = ConnectionStatus.Active
+                })
                 inst.updateStatus()
                 if (inst.info.serial_number && inst.info.model) {
                     this.addOrUpdateInstrument(inst)
+                    const updated = this._instruments.find(
+                        (i) =>
+                            i.info.model === inst.info.model &&
+                            i.info.serial_number === inst.info.serial_number,
+                    )
+                    if (updated?.saved) {
+                        this.updateSaved(updated).catch((err) => {
+                            Log.error(
+                                `Failed to update saved instrument: ${err}`,
+                                {
+                                    file: "instruments.ts",
+                                    func: "InstrumentProvider.getContent()",
+                                },
+                            )
+                        })
+                    }
                     this.reloadTreeData()
                 }
             })
@@ -587,6 +737,20 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             discovery_proc.on("exit", (code: number) => {
                 if (code) {
                     Log.trace(`Discover Exit Code: ${code}`, LOGLOC)
+                }
+                for (const i of this._instruments) {
+                    for (const c of i.connections) {
+                        if (
+                            Date.now() - c.lastFound.getTime() <
+                                CULL_THRESHOLD_MS &&
+                            !(
+                                c.status === ConnectionStatus.Connected ||
+                                c.status === ConnectionStatus.Connecting
+                            )
+                        ) {
+                            c.status = ConnectionStatus.Inactive
+                        }
+                    }
                 }
                 resolve(this.instruments_discovered)
             })
@@ -638,17 +802,38 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
         }
         return indices
     }
-    private async removeSavedList(instr: Instrument) {
+    private async hideSavedInstrument(instr: Instrument) {
         const LOGLOC = {
             file: "instruments.ts",
-            func: "InstrumentTreeDataProvider.removeInstrument()",
+            func: "InstrumentTreeDataProvider.hideInstrument()",
         }
+        this.configWatcherEnable(false)
         try {
             const raw: Array<InstrInfo> =
                 vscode.workspace
                     .getConfiguration("tsp")
                     .get("savedInstruments") ?? []
             const config = vscode.workspace.getConfiguration("tsp")
+            const hidden = config.get<InstrInfo[]>("hiddenInstruments") ?? []
+            const hiddenEntries = hidden.filter(
+                (i) =>
+                    i.model !== instr.info.model ||
+                    i.serial_number !== instr.info.serial_number,
+            )
+            hiddenEntries.push(
+                ...instr.connections.map(
+                    (c): InstrInfo => ({
+                        io_type: c.type,
+                        instr_address: c.addr,
+                        manufacturer: instr.info.vendor,
+                        model: instr.info.model,
+                        serial_number: instr.info.serial_number,
+                        firmware_revision: instr.info.firmware_rev,
+                        instr_categ: instr.category,
+                        friendly_name: instr.name,
+                    }),
+                ),
+            )
 
             const matching_instruments_indices =
                 InstrumentProvider.getAllIndices(raw, (v) => {
@@ -668,16 +853,40 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             }
 
             await config.update(
-                "savedInstruments",
-                raw,
+                "hiddenInstruments",
+                hiddenEntries,
                 vscode.ConfigurationTarget.Global,
             )
+            try {
+                await config.update(
+                    "savedInstruments",
+                    raw,
+                    vscode.ConfigurationTarget.Global,
+                )
+            } catch (error) {
+                try {
+                    await config.update(
+                        "hiddenInstruments",
+                        hidden,
+                        vscode.ConfigurationTarget.Global,
+                    )
+                } catch (rollbackError) {
+                    throw new AggregateError(
+                        [error, rollbackError],
+                        "Failed to hide instrument and restore the hidden instrument list.",
+                    )
+                }
+                throw error
+            }
 
-            this._instruments = this._instruments.filter(
-                (i) => i.info.serial_number !== instr.info.serial_number,
-            )
+            instr.saved = false
+            instr.hidden = true
         } catch (err_msg) {
-            vscode.window.showErrorMessage(String(err_msg))
+            Log.error(`Failed to hide instrument: ${String(err_msg)}`, LOGLOC)
+            void vscode.window.showErrorMessage(String(err_msg))
+            throw err_msg
+        } finally {
+            this.configWatcherEnable(true)
         }
     }
     // async sendToAllActiveTerminals(filepath: string) {

@@ -80,12 +80,12 @@ export class InactiveInstrumentList extends vscode.TreeItem {
 }
 
 /**
- * A class used to indicate the start of the Ignored Instruments section of the instrument
+ * A class used to indicate the start of the Hidden Instruments section of the instrument
  * list. This class stores no data and is simply a sentinel.
  */
-export class IgnoredInstruments extends vscode.TreeItem {
+export class HiddenInstruments extends vscode.TreeItem {
     constructor() {
-        super("Ignored Instruments", vscode.TreeItemCollapsibleState.Collapsed)
+        super("Hidden Instruments", vscode.TreeItemCollapsibleState.Collapsed)
     }
 }
 
@@ -108,6 +108,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
 
     readonly onChanged: vscode.Event<void> = this._onChanged.event
     private _saved: boolean = false
+    private _hidden: boolean = false
     private _savingOutput: boolean = false
 
     static from(info: InstrInfo) {
@@ -173,6 +174,20 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
 
     get info(): IIDNInfo {
         return this._info
+    }
+
+    updateInfo(info: IIDNInfo) {
+        this._info = info
+        this.description = idn_to_string(info)
+        this.tooltip = new vscode.MarkdownString(
+            [
+                `* Manufacturer: ${info.vendor}`,
+                `* Model: ${info.model}`,
+                `* Serial Number: ${info.serial_number}`,
+                `* Firmware Rev: ${info.firmware_rev}`,
+            ].join("\n"),
+        )
+        this._onChanged.fire()
     }
 
     get category(): string {
@@ -247,7 +262,7 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             }
         }
         const output = await vscode.window.showSaveDialog({
-            title: "Select Output File",
+            title: "Save commands and output to file",
         })
         if (!output) {
             this.savingTspOutput = false
@@ -340,7 +355,11 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
             return
         }
         const output = await vscode.window.showSaveDialog({
-            title: "Select Output File",
+            title: "Save buffers to a file",
+            filters: {
+                "Text Files": ["txt"],
+                "CSV Files": ["csv"],
+            },
         })
         if (!output || !buffers || !delimiter || !fields) {
             return
@@ -432,6 +451,15 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         return this.updateStatus()
     }
 
+    get hidden(): boolean {
+        return this._hidden
+    }
+
+    set hidden(enabled: boolean) {
+        this._hidden = enabled
+        this.updateStatus()
+    }
+
     /**
      * @param connection A new connection interface to add to this instrument
      */
@@ -446,12 +474,54 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (sameTypeIdx > -1) {
             // If the address is the same, just update status if needed
             if (this._connections[sameTypeIdx].addr === connection.addr) {
+                const tracked = this._connections[sameTypeIdx]
+                const hasLiveTerminal = (c: Connection) =>
+                    c.terminal !== undefined &&
+                    c.terminal.exitStatus === undefined
+
+                // Adopt a connection that owns a live terminal so the tree
+                // reflects its Connected status instead of a stale copy.
+                if (
+                    connection !== tracked &&
+                    hasLiveTerminal(connection) &&
+                    !hasLiveTerminal(tracked)
+                ) {
+                    connection.lastFound = new Date()
+                    connection.onChangedStatus(() => {
+                        this.updateStatus()
+                    }, this)
+                    connection.parent = this
+                    this._connections[sameTypeIdx] = connection
+                    tracked.dispose()
+                    this.updateStatus()
+                    this._onChanged.fire()
+                    return true
+                }
+
+                tracked.lastFound = new Date()
+                if (hasLiveTerminal(tracked)) {
+                    return false
+                }
                 if (
                     connection.status !== undefined &&
-                    this._connections[sameTypeIdx].status !== connection.status
+                    tracked.status !== connection.status
                 ) {
-                    this._connections[sameTypeIdx].status = connection.status
+                    tracked.status = connection.status
                 }
+
+                // Keep forwarding status as `connection` changes later (e.g.
+                // Connecting -> Connected -> Active); otherwise the tracked
+                // connection's icon freezes at whatever status it had here.
+                connection.onChangedStatus(() => {
+                    if (
+                        connection.status !== undefined &&
+                        !hasLiveTerminal(tracked) &&
+                        tracked.status !== connection.status
+                    ) {
+                        tracked.status = connection.status
+                    }
+                }, this)
+
                 return false
             } else {
                 // Address changed: remove the old connection
@@ -484,6 +554,9 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
      */
     async getUpdatedStatus(): Promise<void> {
         for (const c of this._connections) {
+            if (this._hidden) {
+                return
+            }
             await c.getUpdatedStatus()
         }
     }
@@ -511,13 +584,19 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         })
 
         for (const c of this._connections) {
-            if (c.status === ConnectionStatus.Active) {
-                this._status = ConnectionStatus.Active //If at least one connection is active, we show "Active"
-            } else if (c.status === ConnectionStatus.Connected) {
+            if (c.status === ConnectionStatus.Connected) {
                 this._status = ConnectionStatus.Connected
-
-                break //If any of the connections are connected, we show "Connected"
+                break
+            } else if (c.status === ConnectionStatus.Connecting) {
+                this._status = ConnectionStatus.Connecting
+                break
+            } else if (c.status === ConnectionStatus.Active) {
+                this._status = ConnectionStatus.Active
             }
+        }
+
+        if (this._hidden) {
+            this._status = ConnectionStatus.Hidden
         }
 
         this.iconPath = connectionStatusIcon(this._status)
@@ -533,10 +612,10 @@ export class Instrument extends vscode.TreeItem implements vscode.Disposable {
         if (this._status === ConnectionStatus.Connected) {
             this._connections
                 .filter((c) => c.status !== ConnectionStatus.Connected)
-                .map((c) => c.enable(false))
+                .forEach((c) => c.enable(false))
         } else {
             for (const c of this._connections) {
-                c.enable(true)
+                c.enable(!this._hidden)
             }
         }
 

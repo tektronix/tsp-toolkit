@@ -1,9 +1,107 @@
-import { existsSync, mkdirSync, PathLike } from "node:fs"
+import { existsSync, mkdirSync, PathLike, writeFileSync } from "node:fs"
 import { homedir, platform, tmpdir } from "node:os"
-import { basename, join } from "node:path"
+import { basename, dirname, join, normalize } from "node:path"
 import { env } from "node:process"
+import { promisify } from "node:util"
+import { gunzip } from "node:zlib"
 import vscode from "vscode"
 import { ConnectionDetails } from "./resourceManager"
+
+const gunzipAsync = promisify(gunzip)
+
+const TAR_BLOCK_SIZE = 512
+
+interface TarEntry {
+    name: string
+    type: "file" | "directory" | "other"
+    data: Buffer
+}
+
+function readTarString(header: Buffer, start: number, length: number): string {
+    const field = header.subarray(start, start + length)
+    const nullIndex = field.indexOf(0)
+    return field.toString("utf8", 0, nullIndex === -1 ? length : nullIndex)
+}
+
+/**
+ * Parses the (already gunzipped) contents of a POSIX/GNU ustar archive into
+ * a flat list of entries. Long-name (PAX/GNU) extension headers are not
+ * supported and are skipped.
+ */
+function parseTar(tarBuffer: Buffer): TarEntry[] {
+    const entries: TarEntry[] = []
+    let offset = 0
+
+    while (offset + TAR_BLOCK_SIZE <= tarBuffer.length) {
+        const header = tarBuffer.subarray(offset, offset + TAR_BLOCK_SIZE)
+
+        // Two consecutive zeroed blocks mark the end of the archive.
+        if (header.every((byte) => byte === 0)) {
+            break
+        }
+
+        const name = readTarString(header, 0, 100)
+        const prefix = readTarString(header, 345, 155)
+        const size = parseInt(readTarString(header, 124, 12).trim(), 8) || 0
+        const typeFlag = header[156]
+
+        offset += TAR_BLOCK_SIZE
+        const data = Buffer.from(tarBuffer.subarray(offset, offset + size))
+        // File data is padded up to the next 512-byte boundary.
+        offset += Math.ceil(size / TAR_BLOCK_SIZE) * TAR_BLOCK_SIZE
+
+        let type: TarEntry["type"]
+        if (typeFlag === 0x30 /* "0" */ || typeFlag === 0) {
+            type = "file"
+        } else if (typeFlag === 0x35 /* "5" */) {
+            type = "directory"
+        } else {
+            // Skip symlinks, PAX/GNU long-name headers, etc.
+            continue
+        }
+
+        entries.push({
+            name: prefix ? `${prefix}/${name}` : name,
+            type,
+            data,
+        })
+    }
+
+    return entries
+}
+
+// Guard against "zip slip": entries whose name tries to escape destDir via `..`.
+function resolveSafeEntryPath(destDir: string, entryName: string): string {
+    const resolvedDestDir = normalize(destDir + "/")
+    const targetPath = normalize(join(destDir, entryName))
+    if (!targetPath.startsWith(resolvedDestDir)) {
+        throw new Error(`Unsafe tar entry path: ${entryName}`)
+    }
+    return targetPath
+}
+
+/**
+ * Decompresses a `.tar.gz` archive (e.g. a GitHub codeload/archive download)
+ * and writes its files and subfolders to `destDir`, preserving structure.
+ */
+export async function extractTarGzToDisk(
+    archive: ArrayBuffer,
+    destDir: string,
+): Promise<void> {
+    const tarBuffer = await gunzipAsync(Buffer.from(archive))
+    const entries = parseTar(tarBuffer)
+
+    for (const entry of entries) {
+        const targetPath = resolveSafeEntryPath(destDir, entry.name)
+
+        if (entry.type === "directory") {
+            mkdirSync(targetPath, { recursive: true })
+        } else if (entry.type === "file") {
+            mkdirSync(dirname(targetPath), { recursive: true })
+            writeFileSync(targetPath, entry.data)
+        }
+    }
+}
 
 interface PathsInterface {
     data: PathLike

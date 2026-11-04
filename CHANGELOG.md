@@ -16,16 +16,83 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Security -- in case of vulnerabilities.
     Highlights -- Feature which needs to highlighted for the release.
 -->
+
+## [1.6.1]
+
+### Changed
+- **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
+
+### Fixed
+- **tsp-toolkit-script-gen** - Waiting on more than two other channels of the same role no longer skips one of them
+- **tsp-toolkit-script-gen** - Measurement buffers of MPSU channels are now referenced correctly in generated scripts
+
+## [1.6.0]
+
+### Changed
+- **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
+- Don't set autorefresh enabled by default
+
+### Fixed
+- Prevent creating TriggerFlow sessions until a valid system configuration is available.
+- Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
+- Fixed firmware update completion handling so that expected reboot disconnects display clear reconnect instructions
+- **tsp-toolkit-kic-cli** - Detect when instrument has closed the connection gracefully and gracefully close the program
+- Prevented stale duplicate-field warnings from closed `.tsp` files and documented the LuaLS limitation in the README's Known Issues section.
+- Updated dependency checks to more reliably detect whether required and optional dependencies are installed.
+- Don't get info from saved instruments when doing autorefresh in order to prevent issues with USB and GPIB instruments
+- Restricted "Import TSP Example Scripts" context menu option to directories/folders only
+- **tsp-toolkit-kic-cli** - Improved post-reset reliability for MP5000 instruments
+- Suppress the update notification when the extension is downgraded.
+
+### Added
+- **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
+- Python class name normalization
+- Users can now hide instruments they don't want to see
+- Update firmware on multiple MP5103 instruments at once, selecting either the mainframes or one or more slots on each mainframe (slot selections can differ between mainframes)
+- **tsp-toolkit-trigger-flow** - Template model selection modal for multi-channel templates.
+- **tsp-toolkit-trigger-flow** - Add pulse action step and set blocks
+- **tsp-toolkit-kic-cli** - Report TSP errors before and after the standalone kic executable firmware update
+- **tsp-toolkit-kic-cli** - Linux executables now run on distributions with glibc 2.34 or newer, such as RHEL 9
+- **tsp-toolkit-language-interop** - Print instrument errors (if any) when calling TSP functions
+- **tsp-toolkit-language-interop** - Include documentation strings for functions and globals
+- **tsp-toolkit-language-interop** - Add a `run()` method to the Python class template for direct execution of TSP scripts
+- **tsp-toolkit-language-interop** Update python class documentation to clarify naming conventions for TSP script classes
+- Added configurable 'Embed Tsp Source' as a VS Code setting for python wrapper generation
+- Add a way to easily enable and disable autorefresh
+
+
+
 ## [1.5.2]
+
+### Highlights
+- \[Beta\] Python wrapper feature
+
+### Fixed
+- **tsp-toolkit-trigger-flow** - Ensure maximum model limit is not exceeded when using two-model templates
+- **tsp-toolkit-script-gen** - Fix issue where backend server can become unresponsive and use too much RAM
+- **tsp-toolkit-kic-cli** - Fix issue with fetching nodes config from a large system of instruments that produces a configuration longer than 1013 bytes
+- **tsp-toolkit-kic-cli** - Fix issue in which visa executables for linux systems were not marked as executable
+- Ensure correct instrument information is displayed in the instrument explorer and user settings.json file
+- Fixed issues with save/recall session and system configuration changes
+- Fix issue on macOS where closing vscode will make webview tools not work
+- Allow user to select Script Gen or Trigger Flow session from tools view and show existing webview
 
 ### Changed
 - Rename 'Upgrade firmware' to 'Update firmware'.
 - Update instrument explorer as new discovered instruments come in rather than after discovery completes
 - **tsp-toolkit-kic-cli** - Run discovery for lan and visa in parallel
-### Added
-- TSP language interop feature.
-- **tsp-toolkit-language-interop** - Implement tsp language interop feature
+- Improved instrument connection experience by providing immediate progress feedback and cancellation behavior.
 
+### Added
+- Generate Python Wrapper from a TSP Script.
+- **tsp-toolkit-trigger-flow** - Status banner to show information, warnings and errors that do not belong to a specific model.
+- TSP language interop feature.
+- Added method to fetch the Keithley examples repository
+- Continuously discover instruments by default (disable by setting the `tsp.autorefresh` setting to `false`)
+- **tsp-toolkit-language-interop** - Implement tsp language interop feature
+- Added configurable 'Connection Timeout' as a VS Code setting for instrument connections.
+- Allow username input when authenticating with MP5000 instruments
+- Allow users to choose whether to overwrite an existing file or create a new file when generating a Python wrapper from a TSP script.
 
 
 ## [1.5.1]
@@ -51,7 +118,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-trigger-flow** - Display maximum models allowed based on system configuration.
 - **tsp-toolkit-trigger-flow** - Display trigger model name and slot information for selected block.
 - **tsp-toolkit-kic-cli** - TLS instrument communication over raw sockets are now supported by default
-- **tsp-toolkit-kic-cli** - Add connection support for 2601C-PULSE and 2605C-PULSE
+- **tsp-toolkit-kic-cli** - Add connection support for new SMUs
 
 ### Removed
 - **tsp-toolkit-trigger-flow** - Removed Apply and Cancel buttons from delay list popup.
@@ -534,7 +601,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.1
+[1.6.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.0
+[1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1
 [1.5.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.0
 [1.4.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.4.2

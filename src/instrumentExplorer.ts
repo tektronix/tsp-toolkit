@@ -10,14 +10,14 @@ import { LOG_DIR } from "./utility"
 import { ConnectionHelper } from "./resourceManager"
 import { StatusBarManager, StatusType } from "./statusBarManager"
 
-const DISCOVERY_TIMEOUT = 5
+export const DISCOVERY_TIMEOUT = 2
 
 export class InstrumentsExplorer implements vscode.Disposable {
     private InstrumentsDiscoveryViewer: vscode.TreeView<
         Instrument | Connection | InactiveInstrumentList
     >
     private treeDataProvider?: InstrumentProvider
-    private intervalID?: NodeJS.Timeout
+    private timeoutID?: NodeJS.Timeout
     //private _kicProcessMgr: KicProcessMgr
     private _discoveryInProgress: boolean = false
 
@@ -77,10 +77,17 @@ export class InstrumentsExplorer implements vscode.Disposable {
             },
         )
 
-        const removeInstrument = vscode.commands.registerCommand(
-            "InstrumentsExplorer.remove",
+        const hideInstrument = vscode.commands.registerCommand(
+            "InstrumentsExplorer.hide",
             async (e: Instrument) => {
-                await this.removeInstrument(e)
+                await this.hideInstrument(e)
+            },
+        )
+
+        const showInstrument = vscode.commands.registerCommand(
+            "InstrumentsExplorer.show",
+            async (e: Instrument) => {
+                await this.saveInstrument(e)
             },
         )
 
@@ -92,7 +99,8 @@ export class InstrumentsExplorer implements vscode.Disposable {
         )
 
         context.subscriptions.push(saveInstrument)
-        context.subscriptions.push(removeInstrument)
+        context.subscriptions.push(showInstrument)
+        context.subscriptions.push(hideInstrument)
         context.subscriptions.push(changeIPAddr)
 
         StatusBarManager.instance.showMessage(
@@ -100,17 +108,62 @@ export class InstrumentsExplorer implements vscode.Disposable {
             StatusType.Progress,
         )
 
-        this.treeDataProvider
-            ?.refresh(async () => await this.startDiscovery())
-            .then(
-                () => {
+        const start_discovery = () => {
+            this.treeDataProvider
+                ?.refresh(async () => await this.startDiscovery())
+                .then(
+                    () => {
+                        this.timeoutID = undefined
+                        StatusBarManager.instance.hide()
+                        if (
+                            vscode.workspace
+                                .getConfiguration("tsp")
+                                .get("autorefresh") as boolean
+                        ) {
+                            this.timeoutID = setTimeout(
+                                start_discovery,
+                                DISCOVERY_TIMEOUT * 1000,
+                            )
+                        }
+                    },
+                    (e: Error) => {
+                        StatusBarManager.instance.hide()
+                        Log.error(
+                            `Unable to start Discovery ${e.message}`,
+                            LOGLOC,
+                        )
+                    },
+                )
+        }
+        if (
+            vscode.workspace
+                .getConfiguration("tsp")
+                .get("autorefresh") as boolean
+        ) {
+            start_discovery()
+        }
+
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration("tsp.autorefresh")) {
+                if (
+                    !(vscode.workspace
+                        .getConfiguration("tsp")
+                        .get("autorefresh") as boolean) &&
+                    this.timeoutID
+                ) {
                     StatusBarManager.instance.hide()
-                },
-                (e: Error) => {
-                    StatusBarManager.instance.hide()
-                    Log.error(`Unable to start Discovery ${e.message}`, LOGLOC)
-                },
-            )
+                    clearTimeout(this.timeoutID)
+                    this.timeoutID = undefined
+                } else if (
+                    (vscode.workspace
+                        .getConfiguration("tsp")
+                        .get("autorefresh") as boolean) &&
+                    !this.timeoutID
+                ) {
+                    start_discovery()
+                }
+            }
+        })
     }
     dispose() {
         this.treeDataProvider?.dispose()
@@ -149,7 +202,6 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
                 discover.on("exit", () => {
                     StatusBarManager.instance.hide()
-                    clearInterval(this.intervalID)
                     this._discoveryInProgress = false
                     resolve()
                 })
@@ -258,8 +310,7 @@ export class InstrumentsExplorer implements vscode.Disposable {
 
     //from connect
 
-    private async removeInstrument(instr: Instrument) {
-        instr.saved = false
-        await this.treeDataProvider?.removeInstrument(instr)
+    private async hideInstrument(instr: Instrument) {
+        await this.treeDataProvider?.hideInstrument(instr)
     }
 }
