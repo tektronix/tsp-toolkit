@@ -903,7 +903,7 @@
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "^1.0.0",
-        "@tektronix/tsp-language-interop-types": "0.2.0-3",
+        "@tektronix/tsp-language-interop-types": " 0.2.0-5",
         "@types/chai": "4.3.18",
         "@types/mocha": "10.0.10",
         "@types/node": "22.10.2",
@@ -952,9 +952,9 @@
         "@tektronix/trigger-flow-darwin-arm64": "v0.2.3-10",
         "@tektronix/trigger-flow-linux-x64": "v0.2.3-10",
         "@tektronix/trigger-flow-win32-x64": "v0.2.3-10",
-        "@tektronix/tsp-language-interop-darwin-arm64": "0.2.0-3",
-        "@tektronix/tsp-language-interop-linux-x64": "0.2.0-3",
-        "@tektronix/tsp-language-interop-win32-x64": "0.2.0-3"
+        "@tektronix/tsp-language-interop-darwin-arm64": "0.2.0-5",
+        "@tektronix/tsp-language-interop-linux-x64": "0.2.0-5",
+        "@tektronix/tsp-language-interop-win32-x64": "0.2.0-5"
     },
     "extensionDependencies": [
         "sumneko.lua"
