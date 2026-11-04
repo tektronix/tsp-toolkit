@@ -592,11 +592,6 @@
             ],
             "view/title": [
                 {
-                    "command": "InstrumentsExplorer.refresh",
-                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == false",
-                    "group": "navigation"
-                },
-                {
                     "command": "InstrumentsExplorer.connect",
                     "when": "view == InstrumentsExplorer",
                     "group": "navigation"

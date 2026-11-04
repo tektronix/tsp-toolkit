@@ -24,6 +24,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Don't set autorefresh enabled by default
 - (**tsp-toolkit-webhelp-to-json**) Convert command parameter data type definitions from text format to JSON
 
+### Removed
+- Removed refresh button in favor of new Autorefresh buttons
+
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
 - Improved firmware update reliability for KI2600, KI3700, and TTI instruments by avoiding transfer timeouts caused by blocking socket writes.
