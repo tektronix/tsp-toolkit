@@ -1505,6 +1505,14 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
      * or the update failed
      */
     async updateInBackground(filepath: string, slot?: number): Promise<void> {
+        if (
+            this._updateInProgress ||
+            this._parent?.connections.some((c) => c.updateInProgress)
+        ) {
+            throw new Error(
+                "A firmware update is already in progress for this instrument.",
+            )
+        }
         this._updateInProgress = true
         try {
             await this.runUpdateInBackground(filepath, slot)
@@ -1830,7 +1838,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        const addr_start = this._addr.substring(0, 2)
+        const addr_start = this._addr.substring(0, 3)
 
         // Don't ping USB or GPIB instruments.
         if (addr_start !== "USB" && addr_start !== "GPI") {
