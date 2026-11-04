@@ -359,20 +359,43 @@ async function checkVersionAndShowAnnouncement(
             "CHANGELOG.md",
         )
 
-        const action = await vscode.window.showInformationMessage(
-            message,
-            "View Changelog",
+        vscode.window
+            .showInformationMessage(message, "View Changelog", "Dismiss")
+            .then(
+                (action) => {
+                    if (action === "View Changelog") {
+                        // Open CHANGELOG.md file in preview mode
+                        vscode.commands.executeCommand(
+                            "markdown.showPreview",
+                            changelogPath,
+                        )
+                    }
+                },
+                () => {},
+            )
+        advertise()
+    }
+}
+
+function advertise() {
+    vscode.window
+        .showInformationMessage(
+            "The ✨Tek Intelligence✨ connector provides your AI agent with the tools and knowledge it needs to assist in your test and measurement tasks with Tektronix and Keithley instruments. Click below to request to join the Early Access program today (opens in browser).",
+            "Join Early Access",
             "Dismiss",
         )
-
-        if (action === "View Changelog") {
-            // Open CHANGELOG.md file in preview mode
-            await vscode.commands.executeCommand(
-                "markdown.showPreview",
-                changelogPath,
-            )
-        }
-    }
+        .then(
+            (response) => {
+                if (response === "Join Early Access") {
+                    vscode.env.openExternal(
+                        vscode.Uri.parse(
+                            "http://dev.tek.com/en/Tek-intelligence",
+                        ),
+                    )
+                }
+            },
+            () => {},
+        )
 }
 
 // Called when the extension is activated.
