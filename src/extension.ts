@@ -787,7 +787,7 @@ async function startBulkMP5103FirmwareUpdate(): Promise<void> {
         InstrumentProvider.instance.instruments,
     )
 
-    if (candidates.length <= 1) {
+    if (candidates.length < 1) {
         vscode.window.showWarningMessage(
             "Bulk MP5103 firmware update requires at least two available (Active, Connecting, or Connected) MP5103 instruments.",
         )

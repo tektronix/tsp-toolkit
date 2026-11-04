@@ -124,7 +124,7 @@ export function getEligibleMP5103Candidates(
 export function hasMultipleAvailableMP5103(
     instruments: BulkUpdateInstrumentLike[],
 ): boolean {
-    return getEligibleMP5103Candidates(instruments).length > 1
+    return getEligibleMP5103Candidates(instruments).length >= 1
 }
 
 export function buildBulkUpdateSelectionItems(
