@@ -930,7 +930,7 @@
         "typescript": "5.5.4"
     },
     "dependencies": {
-        "@tektronix/keithley_instrument_libraries": "0.19.5",
+        "@tektronix/keithley_instrument_libraries": " 0.19.6-0",
         "@tektronix/web-help-documents": "0.19.5",
         "@types/cheerio": "0.22.35",
         "@vscode/codicons": "0.0.36",
