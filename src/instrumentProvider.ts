@@ -28,7 +28,6 @@ import {
     BULK_MP5103_CONTEXT_KEY,
     hasMultipleAvailableMP5103,
 } from "./bulkFirmwareUpdate"
-import { StatusBarManager, StatusType } from "./statusBarManager"
 
 let nextID = 0
 const createID = () => nextID++
@@ -673,10 +672,6 @@ export class InstrumentProvider implements VscTdp, vscode.Disposable {
             file: "instruments.ts",
             func: "InstrumentTreeDataProvider.updateStatus()",
         }
-        StatusBarManager.instance.showMessage(
-            "Checking saved instrument connections...",
-            StatusType.Progress,
-        )
         const parallel_info: Promise<void>[] = []
         for (let i = 0; i < this._instruments.length; i++) {
             if (this._instruments[i].hidden) {
