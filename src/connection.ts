@@ -769,6 +769,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
 
         Log.debug("Checking if instrument requires login", LOGLOC)
 
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
+
         const backgroundProcess = child.spawn(
             EXECUTABLE,
             [
@@ -1003,6 +1005,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             }
         }
 
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
+
         const backgroundProcess = child.spawn(EXECUTABLE, args, {
             env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
         })
@@ -1071,6 +1075,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (this._keyring) {
             args.push("--keyring", this._keyring)
         }
+
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const backgroundProcess = child.spawn(EXECUTABLE, args, {
             env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
@@ -1164,6 +1170,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             args.push("--keyring", this._keyring)
         }
 
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
+
         const backgroundProcess = child.spawn(EXECUTABLE, args, {
             env: { CLICOLOR: "1", CLICOLOR_FORCE: "1" },
         })
@@ -1238,6 +1246,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         dump_path = join(dump_dir, "dump-output")
 
         Log.trace(`Dumping data to ${dump_path}`, LOGLOC)
+
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const backgroundProcess = child.spawn(EXECUTABLE, [
             "--log-file",
@@ -1345,22 +1355,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        if (this._background_process) {
-            //wait for a background process slot to open up if it is busy
-            Log.debug(
-                "Terminal doesn't exist and background process is busy. Waiting...",
-                LOGLOC,
-            )
-
-            await new Promise<void>((resolve) =>
-                this._background_process?.on("close", () => resolve()),
-            )
-
-            Log.debug(
-                "... Background process finished starting new reset call in background process",
-                LOGLOC,
-            )
-        }
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const backgroundProcess = child.spawn(EXECUTABLE, [
             "--log-file",
@@ -1403,22 +1398,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             return
         }
 
-        if (this._background_process) {
-            //wait for a background process slot to open up if it is busy
-            Log.debug(
-                "Terminal doesn't exist and background process is busy. Waiting...",
-                LOGLOC,
-            )
-
-            await new Promise<void>((resolve) =>
-                this._background_process?.on("close", () => resolve()),
-            )
-
-            Log.debug(
-                "... Background process finished starting new abort call in background process",
-                LOGLOC,
-            )
-        }
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const backgroundProcess = child.spawn(EXECUTABLE, [
             "--log-file",
@@ -1595,29 +1575,7 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             }
         }
 
-        // Wait for any in-flight background work (such as a status ping) on this
-        // or any other connection to the same instrument to finish, so the update
-        // has the instrument to itself.
-        const busy = (this._parent?.connections ?? [this])
-            .map((c) => c._background_process)
-            .filter((p): p is child.ChildProcess => p !== undefined)
-
-        if (busy.length > 0) {
-            Log.debug("Background process is busy. Waiting...", LOGLOC)
-
-            await Promise.all(
-                busy.map(
-                    (p) =>
-                        new Promise<void>((resolve) => {
-                            if (p.exitCode !== null || p.signalCode !== null) {
-                                resolve()
-                                return
-                            }
-                            p.on("close", () => resolve())
-                        }),
-                ),
-            )
-        }
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const args = [
             "--log-file",
@@ -1638,6 +1596,8 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
         if (this._keyring) {
             args.push("--keyring", this._keyring)
         }
+
+        await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         // stdin is ignored, but kic reads credentials directly from the console,
         // so a login prompt is detected below and treated as a failure.
@@ -1705,6 +1665,37 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             if (this._background_process === backgroundProcess) {
                 this._background_process = undefined
             }
+        }
+    }
+
+    /**
+     * Wait for any in-flight background work (such as a status ping) on this
+    /* or any other connection to the same instrument to finish, so the update
+    /* has the instrument to itself.
+     */
+    private async waitForBackgroundProcessCompletion(LOGLOC: {
+        file: string
+        func: string
+    }) {
+        const busy = (this._parent?.connections ?? [this])
+            .map((c) => c._background_process)
+            .filter((p): p is child.ChildProcess => p !== undefined)
+
+        if (busy.length > 0) {
+            Log.debug("Background process is busy. Waiting...", LOGLOC)
+
+            await Promise.all(
+                busy.map(
+                    (p) =>
+                        new Promise<void>((resolve) => {
+                            if (p.exitCode !== null || p.signalCode !== null) {
+                                resolve()
+                                return
+                            }
+                            p.on("close", () => resolve())
+                        }),
+                ),
+            )
         }
     }
 
