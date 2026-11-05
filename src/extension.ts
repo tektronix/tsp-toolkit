@@ -389,7 +389,7 @@ function advertise() {
                 if (response === "Join Early Access") {
                     vscode.env.openExternal(
                         vscode.Uri.parse(
-                            "http://dev.tek.com/en/Tek-intelligence",
+                            "https://dev.tek.com/en/Tek-intelligence",
                         ),
                     )
                 }
