@@ -19,9 +19,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.6.1]
 
-### Added
-- **tsp-toolkit-script-gen** - Tab key can be used to move to the next input/entry in list editing window.
-
 ### Changed
 - **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
 - **tsp-toolkit-script-gen** - Source Limit I/V are now added/removed based on source function value
