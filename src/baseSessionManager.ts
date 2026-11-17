@@ -57,7 +57,6 @@ export enum WebviewCommandType {
 export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected child: cp.ChildProcess | undefined
     protected panel: vscode.WebviewPanel | undefined
-    private pendingSaveAsUri: vscode.Uri | undefined
     protected existingSystems: unknown[] = []
     protected treeview?: vscode.TreeView<TSessionInstance>
     protected sessionName: string | undefined
@@ -259,7 +258,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                 void this.chooseSaveAsTarget()
                 break
             case WebviewCommandType.OPEN_SAVED_SCRIPT:
-                void this.openSavedScript()
+                void this.openSavedScript(vscode.Uri.file(message.payload))
                 break
             case WebviewCommandType.CREATE_NEW_SESSION:
                 if (this.sessionName) {
@@ -391,8 +390,6 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
             if (!uri) {
                 return
             }
-
-            this.pendingSaveAsUri = uri
             await this.panel?.webview.postMessage({
                 command: "save_as_target",
                 path: uri.fsPath,
@@ -409,9 +406,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     /**
      * Open the file chosen for Save As once the generator has written it
      */
-    private async openSavedScript(): Promise<void> {
-        const uri = this.pendingSaveAsUri
-        this.pendingSaveAsUri = undefined
+    private async openSavedScript(uri: vscode.Uri): Promise<void> {
         if (!uri) {
             return
         }

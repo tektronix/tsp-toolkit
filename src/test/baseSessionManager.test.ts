@@ -101,8 +101,8 @@ function createFixture(
             },
         },
     })
-    const send = async (command: string) => {
-        manager.handleWebviewMessage({ command, payload: "" })
+    const send = async (command: string, payload = "") => {
+        manager.handleWebviewMessage({ command, payload })
         await new Promise<void>((resolve) => setImmediate(resolve))
     }
     return {
@@ -115,7 +115,7 @@ function createFixture(
         sourcePath,
         destinationPath,
         save: () => send("save_as_generated_script"),
-        openSaved: () => send("open_saved_script"),
+        openSaved: (payload: string) => send("open_saved_script", payload),
     }
 }
 
@@ -141,26 +141,24 @@ suite("Generated script Save As", function () {
         const fixture = createFixture()
         fixture.state.destination = undefined
         await fixture.save()
-        await fixture.openSaved()
 
         assert.isEmpty(fixture.posted)
         assert.isEmpty(fixture.opened)
         assert.isEmpty(fixture.errors)
     })
 
-    test("opens only the chosen file after generation succeeds, once", async function () {
+    test("opens the file reported by the generator after generation succeeds", async function () {
         const fixture = createFixture()
         await fixture.save()
-        await fixture.openSaved()
-        await fixture.openSaved()
+        await fixture.openSaved(fixture.destinationPath)
 
         assert.deepEqual(fixture.opened, [fixture.destinationPath])
         assert.isEmpty(fixture.errors)
     })
 
-    test("does not open anything without a chosen file", async function () {
+    test("does not open before the generator reports a saved file", async function () {
         const fixture = createFixture()
-        await fixture.openSaved()
+        await fixture.save()
 
         assert.isEmpty(fixture.opened)
         assert.isEmpty(fixture.errors)
@@ -170,7 +168,7 @@ suite("Generated script Save As", function () {
         const fixture = createFixture()
         await fixture.save()
         fixture.state.openError = new Error("Cannot open editor")
-        await fixture.openSaved()
+        await fixture.openSaved(fixture.destinationPath)
 
         assert.lengthOf(fixture.errors, 1)
         assert.include(fixture.errors[0], "Cannot open editor")
