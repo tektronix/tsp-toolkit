@@ -390,10 +390,13 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
             if (!uri) {
                 return
             }
-            await this.panel?.webview.postMessage({
+            const delivered = await this.panel?.webview.postMessage({
                 command: "save_as_target",
                 path: uri.fsPath,
             })
+            if (!delivered) {
+                throw new Error("The script generator is no longer available")
+            }
         } catch (error) {
             const errorMessage =
                 error instanceof Error ? error.message : String(error)
