@@ -92,7 +92,17 @@ The Instrument Explorer provides an intuitive interface for discovering, connect
 
 - **Auto-Discovery**: Automatically find TSP instruments on your local network.
 - **Manual Connection**: Connect to instruments via IP address or VISA resource string.
-- **Instrument Management**: Save, rename, and remove instruments from your list.
+- **Instrument Management**: Save, rename, and hide instruments from your list.
+  **Hide** (crossed-eye icon) moves an instrument to **Hidden Instruments** and removes it from
+  the saved list. Hidden instruments remain hidden after discovery, refresh,
+  and restarting VS Code. Use **Show** (open-eye icon) on a hidden instrument to return it
+  to the saved list. Hidden instruments skip status polling, but discovery can still
+  update their information and connections. Status polling resumes after **Show**.
+  Use **Connect** on a connection under a hidden instrument to automatically
+  show the instrument and connect using that connection. Entering a hidden
+  instrument's known connection string with **New Connection** also shows it before
+  connecting. Once shown, the instrument remains visible even if the connection
+  attempt fails or is cancelled.
 - **Firmware Update**: Update instrument firmware directly from the explorer interface.
 - **Terminal Integration**: Open terminal connections to instruments with a single click.
 - **Reset & Abort**: Control instrument state with reset and abort functions.
@@ -253,6 +263,7 @@ Extensions installed through the marketplace are subject to the [Marketplace Ter
 - [TSP Landing Page on Tek.com][tsp]
 - [TSP Video Series][tsp-video-series]
 - [TSP Toolkit TriggerFlow Demo][trigger-flow-demo-video]
+- [TSP Toolkit Python Interoperability Demo][python-interop-demo-video]
 - [App Note: How to Write TSP Scripts for TSP][app-note-how-to-write-tsp-scripts]
 - [App Note: Effortless Script Generation with TSP Toolkit ][app-note-script-gen]
 - [TSP Script Example Repository][tsp-script-examples]
@@ -328,6 +339,9 @@ for more information.
 - Due to limitations within the LuaLS project, we are unable to fully support Lua 5.0 and
   instead use Lua 5.1. Certain language feature in Lua 5.1 incorrectly appear to be supported in TSP
   such as using `#lua_table` to get the number of elements in a table.
+- LuaLS may report duplicate LuaDoc fields when multiple `.tsp` files that define the
+  same types are open in the workspace. Closing a file may
+  clear the warning from the remaining open file.
 - When connecting to a GPIB instrument, ensure passwords are disabled for the GPIB interface.
     - The GPIB interface doesn't provide any other mechanisms to get instrument information except by running `*IDN?`. If the interface is password protected, instrument information cannot be retrieved and TSP Toolkit can't know what kind of instrument it is attempting to connect to.
 
@@ -349,6 +363,7 @@ for more information.
 [tsp-toolkit-dev-process]: ./CONTRIBUTING.md#development-process
 [tsp-video-series]: https://www.youtube.com/@tektronix/search?query=TSP
 [trigger-flow-demo-video]: https://www.tek.com/en/video/product-demo/build-trigger-models-visually-with-triggerflow
+[python-interop-demo-video]: https://www.tek.com/en/video/product-demo/python-automation-with-tsp-toolkit
 [tsp]: https://www.tek.com/en/solutions/application/test-automation/tsp-for-test-automation
 [tsp-toolkit-quick-start-guide]: https://www.tek.com/en/manual/tsp-toolkit-quick-start-guide
 
