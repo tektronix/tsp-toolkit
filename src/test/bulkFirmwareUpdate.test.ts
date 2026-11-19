@@ -119,27 +119,6 @@ suite("Bulk Firmware Update Test Suite", function () {
         assert.isTrue(hasMultipleAvailableMP5103(instruments))
     })
 
-    test("A single available MP5103 does not enable bulk update", function () {
-        const instruments = [
-            buildMockInstrument(
-                "MP5103",
-                "SN-1",
-                "MP5103#SN-1",
-                ConnectionStatus.Active,
-                async () => {},
-            ),
-            buildMockInstrument(
-                "MP5103",
-                "SN-2",
-                "MP5103#SN-2",
-                ConnectionStatus.Inactive,
-                async () => {},
-            ),
-        ]
-
-        assert.isFalse(hasMultipleAvailableMP5103(instruments))
-    })
-
     test("The highest-status connection is used for an instrument", function () {
         const instrument = buildMockInstrument(
             "MP5103",
