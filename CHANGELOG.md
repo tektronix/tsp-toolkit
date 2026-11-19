@@ -17,6 +17,21 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
     Highlights -- Feature which needs to highlighted for the release.
 -->
 
+## [1.6.1]
+
+### Added
+- **tsp-toolkit-trigger-flow** - Notes added to Trigger Model blocks are converted to comments in the generated TSP script.
+- **tsp-toolkit-script-gen** - Tab key can be used to jump to the next input in the list edit window.
+
+### Changed
+- **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
+- **tsp-toolkit-script-gen** - Source Limit I/V are now added/removed based on source function value
+- **tsp-toolkit-script-gen** - Changing the channel ID now preserves compatible settings and list points while adjusting values to the new device’s supported limits.
+
+### Fixed
+- **tsp-toolkit-script-gen** - Waiting on more than two other channels of the same role no longer skips one of them
+- **tsp-toolkit-script-gen** - Measurement buffers of MPSU channels are now referenced correctly in generated scripts
+
 ## [1.6.0]
 
 ### Changed
@@ -597,7 +612,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Feature to retrieve TSP-Link network details
 
 <!-- Version Comparison Links -->
-[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/tektronix/tsp-toolkit/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.1
 [1.6.0]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.6.0
 [1.5.2]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.2
 [1.5.1]: https://github.com/tektronix/tsp-toolkit/releases/tag/v1.5.1

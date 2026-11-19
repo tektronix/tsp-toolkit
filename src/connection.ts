@@ -1575,6 +1575,29 @@ export class Connection extends vscode.TreeItem implements vscode.Disposable {
             }
         }
 
+        // Wait for any in-flight background work (such as a status ping) on this
+        // or any other connection to the same instrument to finish, so the update
+        // has the instrument to itself.
+        const busy = (this._parent?.connections ?? [this])
+            .map((c) => c._background_process)
+            .filter((p): p is child.ChildProcess => p !== undefined)
+
+        if (busy.length > 0) {
+            Log.debug("Background process is busy. Waiting...", LOGLOC)
+
+            await Promise.all(
+                busy.map(
+                    (p) =>
+                        new Promise<void>((resolve) => {
+                            if (p.exitCode !== null || p.signalCode !== null) {
+                                resolve()
+                                return
+                            }
+                            p.on("close", () => resolve())
+                        }),
+                ),
+            )
+        }
         await this.waitForBackgroundProcessCompletion(LOGLOC)
 
         const args = [
