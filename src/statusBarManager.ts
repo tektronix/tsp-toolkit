@@ -26,35 +26,42 @@ export class StatusBarManager {
         return StatusBarManager._instance
     }
 
-
     /**
      * Show a message in the status bar with icon and timeout
      * @param message The message to display
      * @param type The type of message: 'info', 'warning', 'error', 'progress'
      * @param timeout Optional timeout in milliseconds (default: 5000 for info/warning, 8000 for error, 0 for progress)
      */
-    showMessage(message: string, type: StatusType = StatusType.Info, timeout?: number): void {
-        let icon = "$(info)";
-        let defaultTimeout = 5000;
+    showMessage(
+        message: string,
+        type: StatusType = StatusType.Info,
+        timeout?: number,
+    ): void {
+        let icon = "$(info)"
+        let defaultTimeout = 5000
         switch (type) {
             case StatusType.Warning:
-                icon = "$(warning)";
-                defaultTimeout = 5000;
-                break;
+                icon = "$(warning)"
+                defaultTimeout = 5000
+                break
             case StatusType.Error:
-                icon = "$(error)";
-                defaultTimeout = 8000;
-                break;
+                icon = "$(error)"
+                defaultTimeout = 8000
+                break
             case StatusType.Progress:
-                icon = "$(sync~spin)";
-                defaultTimeout = 0;
-                break;
+                icon = "$(sync~spin)"
+                defaultTimeout = 0
+                break
             case StatusType.Info:
             default:
-                icon = "$(info)";
-                defaultTimeout = 5000;
+                icon = "$(info)"
+                defaultTimeout = 5000
         }
-        this._showMessage(message, icon, timeout !== undefined ? timeout : defaultTimeout);
+        this._showMessage(
+            message,
+            icon,
+            timeout !== undefined ? timeout : defaultTimeout,
+        )
     }
 
     /**

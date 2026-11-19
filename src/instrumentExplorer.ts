@@ -103,12 +103,11 @@ export class InstrumentsExplorer implements vscode.Disposable {
         context.subscriptions.push(hideInstrument)
         context.subscriptions.push(changeIPAddr)
 
-        StatusBarManager.instance.showMessage(
-            "Checking saved instrument connections...",
-            StatusType.Progress,
-        )
-
         const start_discovery = () => {
+            StatusBarManager.instance.showMessage(
+                "Checking saved instrument connections...",
+                StatusType.Progress,
+            )
             this.treeDataProvider
                 ?.refresh(async () => await this.startDiscovery())
                 .then(
