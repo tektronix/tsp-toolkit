@@ -118,6 +118,7 @@ suite("Bulk Firmware Update Test Suite", function () {
         )
         assert.isTrue(hasMultipleAvailableMP5103(instruments))
     })
+
     test("The highest-status connection is used for an instrument", function () {
         const instrument = buildMockInstrument(
             "MP5103",
