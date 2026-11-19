@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
+import { tmpdir } from "node:os"
 import * as path from "node:path"
 import { runInNewContext } from "node:vm"
 import { assert } from "chai"
@@ -13,8 +14,13 @@ interface ScriptUri {
 }
 
 function createFixture(
-    workspacePath = "C:\\workspace",
-    destinationPath = path.join("C:\\exports", "saved.tsp"),
+    workspacePath = path.join(tmpdir(), "tsp-toolkit", "workspace"),
+    destinationPath = path.join(
+        tmpdir(),
+        "tsp-toolkit",
+        "exports",
+        "saved.tsp",
+    ),
 ) {
     const sourcePath = path.join(workspacePath, "session.tsp")
     const fileUri = (fsPath: string): ScriptUri => ({
