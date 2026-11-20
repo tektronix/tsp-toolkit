@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - **tsp-toolkit-trigger-flow** - Notes added to Trigger Model blocks are converted to comments in the generated TSP script.
 - **tsp-toolkit-script-gen** - Tab key can be used to jump to the next input in the list edit window.
+- **tsp-toolkit-script-gen** - "Save As" option for generated script
 
 ### Changed
 - **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
