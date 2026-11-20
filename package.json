@@ -612,21 +612,6 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "InstrumentsExplorer.updateFirmwareBulkMp5103",
-                    "when": "view == InstrumentsExplorer && tsp.hasMultipleAvailableMp5103",
-                    "group": "navigation"
-                },
-                {
-                    "command": "InstrumentsExplorer.enableAutorefresh",
-                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == false",
-                    "group": "navigation"
-                },
-                {
-                    "command": "InstrumentsExplorer.disableAutorefresh",
-                    "when": "view == InstrumentsExplorer && config.tsp.autorefresh == true",
-                    "group": "navigation"
-                },
-                {
                     "command": "systemConfigurations.addSystem",
                     "when": "view == systemConfigurations",
                     "group": "navigation"
