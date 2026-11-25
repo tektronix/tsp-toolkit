@@ -47,6 +47,8 @@ export enum WebviewCommandType {
     CREATE_NEW_SESSION = "create_new_session",
     OPEN_MANUAL = "open_manual",
     GET_INITIAL_CONFIGURATION = "get_initial_configuration",
+    SAVE_AS_GENERATED_SCRIPT = "save_as_generated_script",
+    OPEN_SAVED_SCRIPT = "open_saved_script",
 }
 
 /**
@@ -258,6 +260,12 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         switch (message.command as WebviewCommandType) {
             case WebviewCommandType.OPEN_SCRIPT:
                 void this.openGeneratedScript()
+                break
+            case WebviewCommandType.SAVE_AS_GENERATED_SCRIPT:
+                void this.chooseSaveAsTarget()
+                break
+            case WebviewCommandType.OPEN_SAVED_SCRIPT:
+                void this.openSavedScript(vscode.Uri.file(message.payload))
                 break
             case WebviewCommandType.GET_SCRIPT_EDITOR_STATE:
                 this.postScriptEditorState()
@@ -511,6 +519,77 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         this.scriptEditorStateDisposables = []
         this.openScriptButtonScriptPath = undefined
         this.openScriptButtonOwnedTab = undefined
+    }
+    
+    /**
+     * Ask for the Save As target first; the generator then writes the script
+     * directly to the chosen file.
+     */
+    private async chooseSaveAsTarget(): Promise<void> {
+        const workspacePath =
+            vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath
+        if (!workspacePath) {
+            vscode.window.showErrorMessage("No workspace folder found")
+            return
+        }
+
+        if (!this.sessionName) {
+            vscode.window.showErrorMessage("No session name found")
+            return
+        }
+
+        const defaultUri = vscode.Uri.file(
+            path.join(
+                workspacePath,
+                `${this.sessionName}.${this.config.scriptExtension}`,
+            ),
+        )
+
+        try {
+            const uri = await vscode.window.showSaveDialog({
+                defaultUri,
+                filters: {
+                    "Script Files": [this.config.scriptExtension],
+                },
+            })
+            if (!uri) {
+                return
+            }
+            const delivered = await this.panel?.webview.postMessage({
+                command: "save_as_target",
+                path: uri.fsPath,
+            })
+            if (!delivered) {
+                throw new Error("The script generator is no longer available")
+            }
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error)
+            vscode.window.showErrorMessage(
+                `Failed to save generated script: ${errorMessage}`,
+            )
+        }
+    }
+
+    /**
+     * Open the file chosen for Save As once the generator has written it
+     */
+    private async openSavedScript(uri: vscode.Uri): Promise<void> {
+        if (!uri) {
+            return
+        }
+
+        try {
+            await vscode.window.showTextDocument(uri, {
+                viewColumn: vscode.ViewColumn.Beside,
+            })
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : String(error)
+            vscode.window.showErrorMessage(
+                `Failed to open saved script: ${errorMessage}`,
+            )
+        }
     }
 
     private openManual(blockName: string): void {

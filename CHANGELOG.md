@@ -22,6 +22,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - **tsp-toolkit-trigger-flow** - Notes added to Trigger Model blocks are converted to comments in the generated TSP script.
 - **tsp-toolkit-script-gen** - Tab key can be used to jump to the next input in the list edit window.
+- **tsp-toolkit-script-gen** - "Save As" option for generated script
 
 ### Changed
 - **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
@@ -38,6 +39,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Changed
 - **tsp-toolkit-trigger-flow** - Trigger model errors only list the name of blocks that contain errors. Error details can be checked by hovering over blocks that have errors.
 - Don't set autorefresh enabled by default
+- (**tsp-toolkit-webhelp-to-json**) Convert command parameter data type definitions from text format to JSON
+
+### Removed
+- Removed refresh button in favor of new Autorefresh buttons
 
 ### Fixed
 - Prevent creating TriggerFlow sessions until a valid system configuration is available.
@@ -50,6 +55,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Restricted "Import TSP Example Scripts" context menu option to directories/folders only
 - **tsp-toolkit-kic-cli** - Improved post-reset reliability for MP5000 instruments
 - Suppress the update notification when the extension is downgraded.
+- **tsp-toolkit-trigger-flow** - Clamping numeric controls to min/max values shall not generate error.
 
 ### Added
 - **tsp-toolkit-trigger-flow** - Trigger model block notes are saved in TriggerFlow sessions.
