@@ -27,6 +27,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **tsp-toolkit-script-gen** - Dramatically simplify and shorten generated scripts, making them easier to read and understand
 - **tsp-toolkit-script-gen** - Source Limit I/V are now added/removed based on source function value
 - **tsp-toolkit-script-gen** - Changing the channel ID now preserves compatible settings and list points while adjusting values to the new device’s supported limits.
+- **tsp-toolkit-script-gen** - The Open Script button now highlights only while its script tab is open.
 
 ### Fixed
 - **tsp-toolkit-script-gen** - Waiting on more than two other channels of the same role no longer skips one of them
