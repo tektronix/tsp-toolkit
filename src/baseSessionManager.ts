@@ -185,10 +185,11 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
      */
     protected async openPanel(): Promise<void> {
         if (!this.panel) {
-            this.panel = this.createWebviewPanel()
+            const panel = this.createWebviewPanel()
+            this.panel = panel
             this.setWebviewIcon()
             // Register before loading webview HTML so its initial state query is not missed.
-            this.setupWebviewMessageListener()
+            this.setupWebviewMessageListener(panel)
             this.setupScriptEditorStateListeners()
             this.setupThemeChangeListener()
             this.setupPanelDisposal()
@@ -198,10 +199,16 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
                     `http://127.0.0.1:${this.config.serverPort}`,
                     10000,
                 )
-                await this.loadWebviewContent(this.panel)
+                if (this.panel !== panel) {
+                    return
+                }
+                await this.loadWebviewContent(panel)
             } catch (error) {
+                if (this.panel !== panel) {
+                    return
+                }
                 this.handleError(
-                    this.panel,
+                    panel,
                     "Error starting server or loading content",
                     error as Error,
                 )
@@ -242,16 +249,19 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     /**
      * Setup webview message listener
      */
-    private setupWebviewMessageListener(): void {
-        this.panel?.webview.onDidReceiveMessage((message: WebviewMessage) => {
-            this.handleWebviewMessage(message)
+    private setupWebviewMessageListener(panel: vscode.WebviewPanel): void {
+        panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+            this.handleWebviewMessage(message, panel)
         })
     }
 
     /**
      * Handle messages from webview
      */
-    protected handleWebviewMessage(message: WebviewMessage): void {
+    protected handleWebviewMessage(
+        message: WebviewMessage,
+        sourcePanel?: vscode.WebviewPanel,
+    ): void {
         // Drop all messages while a deleteAll is in progress to prevent
         // the Rust process from writing sessions back after they were cleared
         if (this.isDeletingAllSessions) {
@@ -259,7 +269,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         }
         switch (message.command as WebviewCommandType) {
             case WebviewCommandType.OPEN_SCRIPT:
-                void this.openGeneratedScript()
+                void this.openGeneratedScript(sourcePanel)
                 break
             case WebviewCommandType.SAVE_AS_GENERATED_SCRIPT:
                 void this.chooseSaveAsTarget()
@@ -330,7 +340,13 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     /**
      * Open or focus the generated script and associate the button with that editor tab.
      */
-    private async openGeneratedScript(): Promise<void> {
+    private async openGeneratedScript(
+        originatingPanel: vscode.WebviewPanel | undefined = this.panel,
+    ): Promise<void> {
+        if (!originatingPanel || this.panel !== originatingPanel) {
+            return
+        }
+
         const scriptPath = this.getGeneratedScriptPath()
         if (!scriptPath) {
             if (!vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath) {
@@ -349,6 +365,9 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
             const editor = await vscode.window.showTextDocument(scriptUri, {
                 viewColumn: vscode.ViewColumn.Beside,
             })
+            if (this.panel !== originatingPanel) {
+                return
+            }
             const tab = vscode.window.tabGroups.all.find(
                 (group) => group.viewColumn === editor.viewColumn,
             )?.activeTab
@@ -369,6 +388,9 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
             }
             this.postScriptEditorState()
         } catch (error: unknown) {
+            if (this.panel !== originatingPanel) {
+                return
+            }
             this.openScriptButtonScriptPath = undefined
             this.openScriptButtonOwnedTab = undefined
             this.postScriptEditorState()

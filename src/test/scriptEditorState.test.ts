@@ -134,6 +134,17 @@ function createFixture() {
         },
     }
 
+    const replacePanel = () => {
+        manager.panel = {
+            webview: {
+                postMessage: (message) => {
+                    states.push(message.isOpen)
+                    return Promise.resolve(true)
+                },
+            },
+        }
+    }
+
     // Register the actual script editor state listeners.
     manager.setupScriptEditorStateListeners()
     return {
@@ -142,6 +153,7 @@ function createFixture() {
         scriptTab,
         states,
         vscode,
+        replacePanel,
         // Manually trigger all registered tab-change listeners.
         fire: () => listeners.forEach((listener) => listener()),
         // Expose listeners to verify that they are disposed correctly.
@@ -182,6 +194,51 @@ suite("Script editor button state", function () {
 
         // The button should be active after successfully identifying its tab
         assert.isTrue(fixture.manager.isGeneratedScriptOpen())
+    })
+
+    test("ignores a successful Open Script completion from a replaced panel", async function () {
+        const fixture = createFixture()
+        let resolveOpen!: (editor: { viewColumn: number }) => void
+        fixture.vscode.window.showTextDocument = () =>
+            new Promise((resolve) => {
+                resolveOpen = resolve
+            })
+
+        const opening = fixture.manager.openGeneratedScript()
+        fixture.manager.disposeScriptEditorStateListeners()
+        fixture.replacePanel()
+        resolveOpen({ viewColumn: 2 })
+        await opening
+
+        assert.isFalse(fixture.manager.isGeneratedScriptOpen())
+        assert.deepEqual(fixture.states, [])
+    })
+
+    test("ignores a failed Open Script completion from a replaced panel", async function () {
+        const fixture = createFixture()
+        let rejectOpen!: (error: Error) => void
+        let firstOpen = true
+        fixture.vscode.window.showTextDocument = () => {
+            if (firstOpen) {
+                firstOpen = false
+                return new Promise((_, reject) => {
+                    rejectOpen = reject
+                })
+            }
+            return Promise.resolve({ viewColumn: 2 })
+        }
+
+        const staleOpening = fixture.manager.openGeneratedScript()
+        fixture.manager.disposeScriptEditorStateListeners()
+        fixture.replacePanel()
+        await fixture.manager.openGeneratedScript()
+        assert.isTrue(fixture.manager.isGeneratedScriptOpen())
+
+        rejectOpen(new Error("Panel closed"))
+        await staleOpening
+
+        assert.isTrue(fixture.manager.isGeneratedScriptOpen())
+        assert.deepEqual(fixture.states, [true])
     })
 
     /**
