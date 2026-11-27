@@ -42,6 +42,7 @@ export interface WebviewMessage {
  */
 export enum WebviewCommandType {
     OPEN_SCRIPT = "open_script",
+    GET_SCRIPT_EDITOR_STATE = "get_script_editor_state",
     UPDATE_SESSION = "update_session",
     CREATE_NEW_SESSION = "create_new_session",
     OPEN_MANUAL = "open_manual",
@@ -61,6 +62,11 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     protected treeview?: vscode.TreeView<TSessionInstance>
     protected sessionName: string | undefined
     protected lastSentData: string | undefined
+    // Panel-scoped listeners are removed when the Script Generation UI closes.
+    private scriptEditorStateDisposables: vscode.Disposable[] = []
+    // Path identifies the session; tab identity distinguishes duplicate editors of that file.
+    private openScriptButtonScriptPath: string | undefined
+    private openScriptButtonOwnedTab: vscode.Tab | undefined
     // Guard: prevents webview messages from writing back session data during deleteAll
     private isDeletingAllSessions = false
 
@@ -179,27 +185,35 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
      */
     protected async openPanel(): Promise<void> {
         if (!this.panel) {
-            this.panel = this.createWebviewPanel()
+            const panel = this.createWebviewPanel()
+            this.panel = panel
             this.setWebviewIcon()
+            // Register before loading webview HTML so its initial state query is not missed.
+            this.setupWebviewMessageListener(panel)
+            this.setupScriptEditorStateListeners()
+            this.setupThemeChangeListener()
+            this.setupPanelDisposal()
 
             try {
                 await this.checkServerReady(
                     `http://127.0.0.1:${this.config.serverPort}`,
                     10000,
                 )
-                await this.loadWebviewContent(this.panel)
+                if (this.panel !== panel) {
+                    return
+                }
+                await this.loadWebviewContent(panel)
             } catch (error) {
+                if (this.panel !== panel) {
+                    return
+                }
                 this.handleError(
-                    this.panel,
+                    panel,
                     "Error starting server or loading content",
                     error as Error,
                 )
                 return
             }
-
-            this.setupWebviewMessageListener()
-            this.setupThemeChangeListener()
-            this.setupPanelDisposal()
         } else {
             this.panel.reveal()
         }
@@ -235,16 +249,19 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     /**
      * Setup webview message listener
      */
-    private setupWebviewMessageListener(): void {
-        this.panel?.webview.onDidReceiveMessage((message: WebviewMessage) => {
-            this.handleWebviewMessage(message)
+    private setupWebviewMessageListener(panel: vscode.WebviewPanel): void {
+        panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+            this.handleWebviewMessage(message, panel)
         })
     }
 
     /**
      * Handle messages from webview
      */
-    protected handleWebviewMessage(message: WebviewMessage): void {
+    protected handleWebviewMessage(
+        message: WebviewMessage,
+        sourcePanel?: vscode.WebviewPanel,
+    ): void {
         // Drop all messages while a deleteAll is in progress to prevent
         // the Rust process from writing sessions back after they were cleared
         if (this.isDeletingAllSessions) {
@@ -252,13 +269,16 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
         }
         switch (message.command as WebviewCommandType) {
             case WebviewCommandType.OPEN_SCRIPT:
-                this.openGeneratedScript()
+                void this.openGeneratedScript(sourcePanel)
                 break
             case WebviewCommandType.SAVE_AS_GENERATED_SCRIPT:
                 void this.chooseSaveAsTarget()
                 break
             case WebviewCommandType.OPEN_SAVED_SCRIPT:
                 void this.openSavedScript(vscode.Uri.file(message.payload))
+                break
+            case WebviewCommandType.GET_SCRIPT_EDITOR_STATE:
+                this.postScriptEditorState()
                 break
             case WebviewCommandType.CREATE_NEW_SESSION:
                 if (this.sessionName) {
@@ -318,44 +338,211 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
     }
 
     /**
-     * Open the generated script file
+     * Open or focus the generated script and associate the button with that editor tab.
      */
-    private openGeneratedScript(): void {
-        const workspacePath =
-            vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath
-        if (!workspacePath) {
-            vscode.window.showErrorMessage("No workspace folder found")
+    private async openGeneratedScript(
+        originatingPanel: vscode.WebviewPanel | undefined = this.panel,
+    ): Promise<void> {
+        if (!originatingPanel || this.panel !== originatingPanel) {
             return
         }
 
-        if (!this.sessionName) {
-            vscode.window.showErrorMessage("No session name found")
+        const scriptPath = this.getGeneratedScriptPath()
+        if (!scriptPath) {
+            if (!vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath) {
+                vscode.window.showErrorMessage("No workspace folder found")
+            } else if (!this.sessionName) {
+                vscode.window.showErrorMessage("No session name found")
+            }
+            this.openScriptButtonScriptPath = undefined
+            this.postScriptEditorState()
             return
         }
 
-        const scriptPath = path.join(
-            workspacePath,
-            `${this.sessionName}.${this.config.scriptExtension}`,
-        )
         const scriptUri = vscode.Uri.file(scriptPath)
+        try {
+            // Await the editor before resolving its group's active tab; opening can fail.
+            const editor = await vscode.window.showTextDocument(scriptUri, {
+                viewColumn: vscode.ViewColumn.Beside,
+            })
+            if (this.panel !== originatingPanel) {
+                return
+            }
+            const tab = vscode.window.tabGroups.all.find(
+                (group) => group.viewColumn === editor.viewColumn,
+            )?.activeTab
 
-        const isAlreadyOpen = vscode.window.visibleTextEditors.some(
-            (editor) => editor.document.uri.fsPath === scriptPath,
-        )
-
-        if (!isAlreadyOpen) {
-            try {
-                void vscode.window.showTextDocument(scriptUri, {
-                    viewColumn: vscode.ViewColumn.Beside,
-                })
-            } catch (error) {
-                vscode.window.showErrorMessage(
-                    `Failed to open script: ${scriptPath}. Error: ${(error as Error).message}`,
+            // Own only the tab revealed by this action, never other tabs for the same file.
+            if (
+                tab?.input instanceof vscode.TabInputText &&
+                this.isScriptPath(tab.input.uri.fsPath, scriptPath)
+            ) {
+                this.openScriptButtonScriptPath = scriptPath
+                this.openScriptButtonOwnedTab = tab
+            } else {
+                this.openScriptButtonScriptPath = undefined
+                this.openScriptButtonOwnedTab = undefined
+                console.warn(
+                    "Could not identify the script tab opened by Open Script",
                 )
             }
+            this.postScriptEditorState()
+        } catch (error: unknown) {
+            if (this.panel !== originatingPanel) {
+                return
+            }
+            this.openScriptButtonScriptPath = undefined
+            this.openScriptButtonOwnedTab = undefined
+            this.postScriptEditorState()
+            const detail =
+                error instanceof Error ? error.message : String(error)
+            void vscode.window.showErrorMessage(
+                `Failed to open script: ${scriptPath}. Error: ${detail}`,
+            )
         }
     }
 
+    /**
+     * Resolve the generated script file belonging to the current session.
+     */
+    private getGeneratedScriptPath(): string | undefined {
+        const workspacePath =
+            vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath
+        if (!workspacePath || !this.sessionName) {
+            return undefined
+        }
+
+        return path.join(
+            workspacePath,
+            `${this.sessionName}.${this.config.scriptExtension}`,
+        )
+    }
+
+    /**
+     * Compare script paths consistently on case-insensitive Windows filesystems.
+     */
+    private isScriptPath(documentPath: string, scriptPath: string): boolean {
+        const normalizedDocumentPath = path.resolve(documentPath)
+        const normalizedScriptPath = path.resolve(scriptPath)
+
+        // Windows paths may differ only by case when supplied by VS Code.
+        return process.platform === "win32"
+            ? normalizedDocumentPath.toLowerCase() ===
+                  normalizedScriptPath.toLowerCase()
+            : normalizedDocumentPath === normalizedScriptPath
+    }
+
+    /**
+     * Return true only while the exact tab owned by the Open Script action exists.
+     *
+     * This is used to determine whether the Open Script button should be highlighted.
+     *
+     * It checks three conditions:
+     * 1. A generated script path exists.
+     * 2. The button has previously recorded ownership of a script path.
+     * 3. The exact tab associated with the button is still open.
+     */
+    private isGeneratedScriptOpen(): boolean {
+        const scriptPath = this.getGeneratedScriptPath()
+        // An independently opened tab is insufficient: this session must own the live tab.
+        return (
+            scriptPath !== undefined &&
+            this.openScriptButtonScriptPath !== undefined &&
+            this.isScriptPath(this.openScriptButtonScriptPath, scriptPath) &&
+            this.hasOpenScriptTab(scriptPath)
+        )
+    }
+
+    /**
+     * Check whether the Open Script-owned tab remains in any editor group.
+     */
+    private hasOpenScriptTab(scriptPath: string): boolean {
+        // Compare tab identity, not only its URI, so a reopened copy cannot inherit ownership.
+        return this.getScriptTabs(scriptPath).some(
+            (tab) => this.openScriptButtonOwnedTab === tab,
+        )
+    }
+
+    /**
+     * Find text-editor tabs whose file path matches the generated script.
+     */
+    private getScriptTabs(scriptPath: string): vscode.Tab[] {
+        return vscode.window.tabGroups.all.flatMap((group) =>
+            group.tabs.filter(
+                (tab) =>
+                    tab.input instanceof vscode.TabInputText &&
+                    this.isScriptPath(tab.input.uri.fsPath, scriptPath),
+            ),
+        )
+    }
+
+    /**
+     * Send the derived active state to the webview for its button styling.
+     */
+    private postScriptEditorState(): void {
+        const panel = this.panel
+        if (!panel) {
+            return
+        }
+
+        // The webview cannot inspect editor tabs; send only the derived button-active state.
+        void panel.webview
+            .postMessage({
+                command: "script_editor_state",
+                isOpen: this.isGeneratedScriptOpen(),
+            })
+            .then(
+                (posted) => {
+                    if (!posted) {
+                        console.warn(
+                            "Script editor state was not delivered to the webview",
+                        )
+                    }
+                },
+                (error: unknown) => {
+                    console.error("Failed to send script editor state:", error)
+                },
+            )
+    }
+
+    /**
+     * Keep the UI state synchronized with tab changes and clear closed-tab ownership.
+     */
+    private setupScriptEditorStateListeners(): void {
+        const updateState = (): void => {
+            const trackedScriptPath = this.openScriptButtonScriptPath
+            if (
+                trackedScriptPath !== undefined &&
+                !this.hasOpenScriptTab(trackedScriptPath)
+            ) {
+                // Forget ownership on closure, even if another editor still shows this file.
+                this.openScriptButtonScriptPath = undefined
+                this.openScriptButtonOwnedTab = undefined
+            }
+            this.postScriptEditorState()
+        }
+
+        // Documents can remain cached after tab closure. Follow the button-owned
+        // tab so unrelated tabs for the same file cannot keep the highlight active.
+        this.scriptEditorStateDisposables = [
+            vscode.window.tabGroups.onDidChangeTabs(updateState),
+            vscode.window.tabGroups.onDidChangeTabGroups(updateState),
+        ]
+    }
+
+    /**
+     * Dispose tab listeners and reset ownership when the webview panel closes.
+     */
+    private disposeScriptEditorStateListeners(): void {
+        // A newly opened UI must not inherit the previous panel's button ownership.
+        for (const disposable of this.scriptEditorStateDisposables) {
+            disposable.dispose()
+        }
+        this.scriptEditorStateDisposables = []
+        this.openScriptButtonScriptPath = undefined
+        this.openScriptButtonOwnedTab = undefined
+    }
+    
     /**
      * Ask for the Save As target first; the generator then writes the script
      * directly to the chosen file.
@@ -454,6 +641,7 @@ export abstract class BaseSessionManager<TDataProvider, TSessionInstance> {
      */
     private setupPanelDisposal(): void {
         this.panel?.onDidDispose(() => {
+            this.disposeScriptEditorStateListeners()
             this.panel = undefined
             if (this.child) {
                 this.child.stdin?.write('{"shutdown": true}\n')
